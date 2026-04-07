@@ -1,10 +1,12 @@
 package com.example.guangnian
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-// 注意：这里导入的是 Android 原生的 Preview 注解，功能更强大
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.guangnian.core.network.tcp.TcpState
+import com.example.guangnian.feature.robot.screen.MainControlContent
 
-// 关键点：使用 device 参数强制指定为横屏，并开启 showSystemUi 方便看边距
 @Preview(
     device = "spec:width=896dp,height=414dp,orientation=landscape",
     showSystemUi = true,
@@ -12,6 +14,14 @@ import androidx.compose.ui.tooling.preview.Preview
 )
 @Composable
 fun AppLandscapePreview() {
-    // 直接调用你在 commonMain 里写好的跨平台 UI 入口
-    App()
+    MaterialTheme(colorScheme = darkColorScheme()) {
+        MainControlContent(
+            ip = "192.168.3.100",
+            port = "8080",
+            connectionState = TcpState.DISCONNECTED, // 你可以改成 CONNECTED 看看预览界面的变化！
+            onIpChange = {},
+            onPortChange = {},
+            onConnectClick = {}
+        )
+    }
 }
