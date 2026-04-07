@@ -46,6 +46,8 @@ kotlin {
             implementation("io.ktor:ktor-network:2.3.8")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
             implementation("com.benasher44:uuid:0.8.2")
+
+            implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
