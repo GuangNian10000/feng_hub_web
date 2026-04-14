@@ -50,7 +50,7 @@ fun InteractionScreen(
     var activeFragment by remember { mutableStateOf<String?>(null) }
     var isInspectionPaused by remember { mutableStateOf(false) }
 
-    val menus = listOf("动作", "语音合成", "智能体设置", "地图", "地图录制", "知识库")
+    val menus = listOf("动作", "语音合成", "智能体设置", "地图录制", "知识库")
 
     // 监控面板状态，激活动作面板且数据为空时自动请求列表
     LaunchedEffect(activeFragment) {
@@ -168,7 +168,13 @@ fun InteractionScreen(
                             .clip(CircleShape)
                             .background(bgColor)
                             .border(0.5.dp, Color(0x33FFFFFF), CircleShape)
-                            .clickable { isMenuOpen = !isMenuOpen },
+                            .clickable {
+                                isMenuOpen = !isMenuOpen
+                                // 展开菜单时，清除当前业务片段状态，关闭中央弹窗
+                                if (isMenuOpen) {
+                                    activeFragment = null
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         AnimatedContent(
@@ -325,7 +331,7 @@ fun InteractionScreen(
                             )
                             "语音合成" -> SpeechSynthesisPanel()
                             "智能体设置" -> AgentSettingsPanel()
-                            "地图", "地图录制" -> MapPanel()
+                            "地图录制" -> MapPanel()
                             "知识库" -> KnowledgeBasePanel()
                         }
                     }
