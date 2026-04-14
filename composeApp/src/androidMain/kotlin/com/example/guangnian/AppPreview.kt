@@ -18,10 +18,11 @@ fun AppLandscapePreview() {
         MainControlContent(
             ip = "192.168.3.100",
             port = "8080",
-            connectionState = TcpState.DISCONNECTED, // 你可以改成 CONNECTED 看看预览界面的变化！
+            connectionState = TcpState.DISCONNECTED,
             onIpChange = {},
             onPortChange = {},
-            onConnectClick = {}
+            onConnectClick = {},
+            onNavigateToInteraction = {}
         )
     }
 }

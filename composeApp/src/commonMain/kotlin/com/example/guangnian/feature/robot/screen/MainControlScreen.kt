@@ -17,30 +17,26 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.robot.viewmodel.RobotViewModel
 
-/**
- * 1. 负责获取数据和状态 (不能被 Preview 预览)
- */
 @Composable
-fun MainControlScreen() {
+fun MainControlScreen(
+    onNavigateToInteraction: () -> Unit = {}
+) {
     val viewModel: RobotViewModel = viewModel { RobotViewModel() }
     val ip by viewModel.ip.collectAsState()
     val port by viewModel.port.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
 
-    // 将状态传递给纯 UI 组件
     MainControlContent(
         ip = ip,
         port = port,
         connectionState = connectionState,
         onIpChange = viewModel::onIpChanged,
         onPortChange = viewModel::onPortChanged,
-        onConnectClick = viewModel::connect
+        onConnectClick = viewModel::connect,
+        onNavigateToInteraction = onNavigateToInteraction
     )
 }
 
-/**
- * 2. 纯粹的 UI 内容，没有任何依赖 (完美支持 Preview)
- */
 @Composable
 fun MainControlContent(
     ip: String,
@@ -48,7 +44,8 @@ fun MainControlContent(
     connectionState: TcpState,
     onIpChange: (String) -> Unit,
     onPortChange: (String) -> Unit,
-    onConnectClick: () -> Unit
+    onConnectClick: () -> Unit,
+    onNavigateToInteraction: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -66,13 +63,16 @@ fun MainControlContent(
             onConnectClick = onConnectClick
         )
         Spacer(modifier = Modifier.height(16.dp))
-        FunctionGrid(modifier = Modifier.weight(1f))
+        FunctionGrid(
+            modifier = Modifier.weight(1f),
+            onNavigateToInteraction = onNavigateToInteraction
+        )
         Spacer(modifier = Modifier.height(16.dp))
         BottomStatusBar(connectionState = connectionState)
     }
 }
 
-// ---------------- 以下都是纯粹的无状态 UI 组件 (保持不变) ----------------
+// ---------------- 以下都是纯粹的无状态 UI 组件 ----------------
 
 @Composable
 fun TopConnectionBar(
@@ -124,9 +124,13 @@ fun TopConnectionBar(
 }
 
 @Composable
-fun FunctionGrid(modifier: Modifier = Modifier) {
+fun FunctionGrid(
+    modifier: Modifier = Modifier,
+    onNavigateToInteraction: () -> Unit
+) {
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-        MenuCard("综合控制", Modifier.weight(1f))
+        // 绑定跳转回调至综合控制面板。
+        MenuCard("综合控制", Modifier.weight(1f), onClick = onNavigateToInteraction)
         Spacer(modifier = Modifier.width(24.dp))
         MenuCard("建图录制", Modifier.weight(1f))
         Spacer(modifier = Modifier.width(24.dp))
@@ -135,9 +139,9 @@ fun FunctionGrid(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun MenuCard(title: String, modifier: Modifier = Modifier) {
+fun MenuCard(title: String, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     Card(
-        modifier = modifier.fillMaxHeight().clickable { /* TODO */ },
+        modifier = modifier.fillMaxHeight().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C)),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
