@@ -25,11 +25,17 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.robot.screen.panel.*
 import com.example.guangnian.feature.robot.viewmodel.ActionViewModel
+import com.example.guangnian.feature.robot.viewmodel.RobotViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -40,11 +46,13 @@ import kotlin.math.sin
 fun InteractionScreen(
     onBackClick: () -> Unit = {}
 ) {
-    // 绑定 ViewModel 并订阅聚合状态流
     val actionViewModel: ActionViewModel = viewModel { ActionViewModel() }
     val uiState by actionViewModel.uiState.collectAsState()
 
-    // 界面控制状态
+    val robotViewModel: RobotViewModel = viewModel { RobotViewModel() }
+    val connectionState by robotViewModel.connectionState.collectAsState()
+    val connectionError by robotViewModel.connectionError.collectAsState()
+
     var isMenuOpen by remember { mutableStateOf(false) }
     var isPosturesExpanded by remember { mutableStateOf(true) }
     var activeFragment by remember { mutableStateOf<String?>(null) }
@@ -52,10 +60,47 @@ fun InteractionScreen(
 
     val menus = listOf("动作", "语音合成", "智能体设置", "地图录制", "知识库")
 
-    // 监控面板状态，激活动作面板且数据为空时自动请求列表
+    var leftJoyX by remember { mutableFloatStateOf(0f) }
+    var leftJoyY by remember { mutableFloatStateOf(0f) }
+    var isLeftJoyActive by remember { mutableStateOf(false) }
+
+    var rightJoyX by remember { mutableFloatStateOf(0f) }
+    var isRightJoyActive by remember { mutableStateOf(false) }
+
     LaunchedEffect(activeFragment) {
         if (activeFragment == "动作" && uiState.postures.isEmpty()) {
             actionViewModel.fetchPostureList()
+        }
+    }
+
+    LaunchedEffect(isLeftJoyActive) {
+        if (isLeftJoyActive) {
+            while (isActive) {
+                val distance = hypot(leftJoyX, leftJoyY)
+                val level = (distance * 10).toInt().coerceIn(0, 10)
+                if (level > 0) {
+                    var angle = atan2(-leftJoyX.toDouble(), leftJoyY.toDouble()) * 180 / PI
+                    if (angle < 0) angle += 360
+                    actionViewModel.moveTranslate(angle, level)
+                }
+                delay(300)
+            }
+        } else {
+            actionViewModel.stopTranslate()
+        }
+    }
+
+    LaunchedEffect(isRightJoyActive) {
+        if (isRightJoyActive) {
+            while (isActive) {
+                val level = (rightJoyX * 10).toInt().coerceIn(-10, 10)
+                if (level != 0) {
+                    actionViewModel.moveRotate(level)
+                }
+                delay(300)
+            }
+        } else {
+            actionViewModel.stopRotate()
         }
     }
 
@@ -65,10 +110,8 @@ fun InteractionScreen(
             .background(Color.Black)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
-        // 1. 视觉背景渲染层
         FullScreenBackgroundStream(activeFragment)
 
-        // 2. 顶部系统状态栏
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -96,19 +139,56 @@ fun InteractionScreen(
                 }
             }
 
-            GlassBox(modifier = Modifier.height(36.dp)) {
+            // 动态连接状态面板
+            GlassBox(
+                modifier = Modifier
+                    .height(36.dp) // 恢复严格的高度限制 36.dp，确保与左侧完全一致
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        // 如果断开连接，允许用户直接点击此处发起重连
+                        if (connectionState == TcpState.DISCONNECTED) {
+                            robotViewModel.connect()
+                        }
+                    }
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp), // 恢复 fillMaxHeight 保持内容垂直居中
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("CONNECTED", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("197 KB/s", color = Color.LightGray, fontSize = 10.sp)
+                    val statusColor = when (connectionState) {
+                        TcpState.CONNECTED -> Color(0xFF4CAF50)
+                        TcpState.CONNECTING -> Color(0xFFFFC107)
+                        TcpState.DISCONNECTED -> Color(0xFFE53935)
+                    }
+                    val statusText = when (connectionState) {
+                        TcpState.CONNECTED -> "已连接"
+                        TcpState.CONNECTING -> "连接中..."
+                        TcpState.DISCONNECTED -> "未连接"
+                    }
+
+                    Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+
+                    if (connectionState == TcpState.DISCONNECTED && !connectionError.isNullOrEmpty()) {
+                        Text(
+                            text = connectionError ?: "",
+                            color = Color(0xFFE53935),
+                            fontSize = 10.sp,
+                            maxLines = 1, // 强制单行
+                            softWrap = false, // 禁止换行
+                            modifier = Modifier
+                                .widthIn(max = 240.dp) // 限制最大可视宽度
+                                .horizontalScroll(rememberScrollState()) // 超出宽度时支持内部横向滑动
+                        )
+                    } else if (connectionState == TcpState.CONNECTED) {
+                        Text("197 KB/s", color = Color.LightGray, fontSize = 10.sp)
+                    } else if (connectionState == TcpState.CONNECTING) {
+                        Text("请稍候", color = Color.LightGray, fontSize = 10.sp)
+                    }
                 }
             }
         }
 
-        // 3. 任务控制台
         GlassBox(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -137,7 +217,6 @@ fun InteractionScreen(
             }
         }
 
-        // 4. 底部动态姿态快捷栏
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -161,7 +240,6 @@ fun InteractionScreen(
                         animationSpec = tween(300),
                         label = "MenuBgColor"
                     )
-                    // 功能菜单入口
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -170,7 +248,6 @@ fun InteractionScreen(
                             .border(0.5.dp, Color(0x33FFFFFF), CircleShape)
                             .clickable {
                                 isMenuOpen = !isMenuOpen
-                                // 展开菜单时，清除当前业务片段状态，关闭中央弹窗
                                 if (isMenuOpen) {
                                     activeFragment = null
                                 }
@@ -192,7 +269,6 @@ fun InteractionScreen(
                         }
                     }
 
-                    // 姿态列表平滑展开容器
                     Box(
                         modifier = Modifier.weight(1f, fill = false),
                         contentAlignment = Alignment.CenterStart
@@ -210,7 +286,6 @@ fun InteractionScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 if (uiState.postures.isEmpty()) {
-                                    // 无数据时的手动重试触发器
                                     Text(
                                         text = if (uiState.isLoading) "加载中..." else "获取失败，点击重试",
                                         color = Color.LightGray,
@@ -221,7 +296,6 @@ fun InteractionScreen(
                                             .padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
                                 } else {
-                                    // 遍历下发动态动作指令
                                     uiState.postures.forEach { posture ->
                                         Box(
                                             modifier = Modifier
@@ -255,7 +329,6 @@ fun InteractionScreen(
             }
         }
 
-        // 5. 急停响应
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -270,7 +343,6 @@ fun InteractionScreen(
             Text("急停", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
         }
 
-        // 6. 模块选择气泡菜单
         AnimatedVisibility(
             visible = isMenuOpen,
             modifier = Modifier
@@ -295,7 +367,6 @@ fun InteractionScreen(
             }
         }
 
-        // 7. 业务子面板层
         AnimatedVisibility(
             visible = activeFragment != null,
             modifier = Modifier
@@ -339,14 +410,20 @@ fun InteractionScreen(
             }
         }
 
-        // 8. 双摇杆动力控制
         ComposeJoystick(
             modifier = Modifier.align(Alignment.BottomStart).padding(start = 32.dp, bottom = 24.dp).size(130.dp),
-            onMove = { x, y -> /* 转换线性运动坐标 */ }
+            onMove = { x, y, isDragging ->
+                leftJoyX = x
+                leftJoyY = y
+                isLeftJoyActive = isDragging
+            }
         )
         ComposeJoystick(
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 32.dp, bottom = 24.dp).size(130.dp),
-            onMove = { x, y -> /* 转换旋转运动坐标 */ }
+            onMove = { x, y, isDragging ->
+                rightJoyX = x
+                isRightJoyActive = isDragging
+            }
         )
     }
 }
@@ -417,17 +494,26 @@ fun FullScreenBackgroundStream(activeFragment: String?) {
 }
 
 @Composable
-fun ComposeJoystick(modifier: Modifier = Modifier, onMove: (x: Float, y: Float) -> Unit) {
+fun ComposeJoystick(
+    modifier: Modifier = Modifier,
+    onMove: (x: Float, y: Float, isDragging: Boolean) -> Unit
+) {
     var thumbOffset by remember { mutableStateOf(Offset.Zero) }
-    var radius by remember { mutableStateOf(0f) }
+    var radius by remember { mutableFloatStateOf(0f) }
     Box(
         modifier = modifier
             .background(Color(0x33000000), CircleShape)
             .border(1.dp, Color(0x22FFFFFF), CircleShape)
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragEnd = { thumbOffset = Offset.Zero; onMove(0f, 0f) },
-                    onDragCancel = { thumbOffset = Offset.Zero; onMove(0f, 0f) }
+                    onDragEnd = {
+                        thumbOffset = Offset.Zero
+                        onMove(0f, 0f, false)
+                    },
+                    onDragCancel = {
+                        thumbOffset = Offset.Zero
+                        onMove(0f, 0f, false)
+                    }
                 ) { change, dragAmount ->
                     change.consume()
                     val newX = thumbOffset.x + dragAmount.x
@@ -437,7 +523,7 @@ fun ComposeJoystick(modifier: Modifier = Modifier, onMove: (x: Float, y: Float) 
                         val angle = atan2(newY, newX)
                         Offset(cos(angle) * radius, sin(angle) * radius)
                     }
-                    onMove(thumbOffset.x / radius, -thumbOffset.y / radius)
+                    onMove(thumbOffset.x / radius, -thumbOffset.y / radius, true)
                 }
             },
         contentAlignment = Alignment.Center

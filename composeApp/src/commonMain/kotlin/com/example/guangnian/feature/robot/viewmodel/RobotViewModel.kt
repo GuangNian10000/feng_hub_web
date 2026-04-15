@@ -4,20 +4,30 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.network.tcp.KmpTcpClient
 import com.example.guangnian.core.network.tcp.TcpState
+import com.example.guangnian.core.utils.KLog
+import com.example.guangnian.feature.robot.data.api.RobotTcpApiImpl
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 class RobotViewModel : ViewModel() {
 
-    // 实例化跨平台存储引擎
-    private val settings = Settings()
+    private companion object {
+        const val TAG = "RobotViewModel"
+    }
 
-    // --- UI 状态管理 ---
-    // 👇 初始化时，优先从本地读取。如果读不到，说明是第一次安装，使用默认值
+    private val settings = Settings()
+    private val robotApi = RobotTcpApiImpl()
+    private var heartbeatJob: Job? = null
+
     private val _ip = MutableStateFlow(settings.getString("saved_ip", "192.168.1.100"))
     val ip: StateFlow<String> = _ip.asStateFlow()
 
@@ -31,10 +41,59 @@ class RobotViewModel : ViewModel() {
             initialValue = TcpState.DISCONNECTED
         )
 
+    // 新增：暴露错误状态流给 UI
+    val connectionError: StateFlow<String?> = KmpTcpClient.connectionError
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
     init {
-        // 👇 核心：ViewModel 被创建（App启动）时，立刻执行自动连接
-        println("[UI] 启动自动连接...")
+        KLog.d(TAG, "[UI] 启动自动连接机制...")
+
+        // 👇 响应式监听：连接状态变化时，自动管理心跳生命周期
+        viewModelScope.launch {
+            connectionState.collect { state ->
+                if (state == TcpState.CONNECTED) {
+                    startHeartbeatLoop()
+                } else {
+                    stopHeartbeatLoop()
+                }
+            }
+        }
+
         connect()
+    }
+
+    // --- 心跳保活机制 ---
+    private fun startHeartbeatLoop() {
+        heartbeatJob?.cancel()
+        heartbeatJob = viewModelScope.launch {
+            KLog.d(TAG, "已连接，启动心跳保活机制")
+            while (isActive) {
+                delay(5000L) // 每 5 秒发送一次心跳
+                try {
+                    val timestamp = Clock.System.now().toEpochMilliseconds()
+                    val response = robotApi.sendHeartbeat(timestamp)
+                    KLog.d(TAG, "心跳正常，服务器返回: ${response.status}")
+                } catch (e: Exception) {
+                    KLog.e(TAG, "心跳超时或发送失败，判定为连接假死，主动断开", e)
+                    // 主动向 UI 层注入明确的断开原因
+                    KmpTcpClient.setConnectionError("心跳超时或发送失败，判定为连接假死，主动断开")
+                    //KmpTcpClient.disconnectAndReset()
+                    break
+                }
+            }
+        }
+    }
+
+    private fun stopHeartbeatLoop() {
+        if (heartbeatJob != null) {
+            KLog.d(TAG, "停止心跳保活机制")
+            heartbeatJob?.cancel()
+            heartbeatJob = null
+        }
     }
 
     // --- 用户意图 (Intent) 响应 ---
@@ -51,7 +110,7 @@ class RobotViewModel : ViewModel() {
         val currentPortStr = _port.value
         val portInt = currentPortStr.toIntOrNull() ?: 9002
 
-        // 👇 每次发起连接前，把当前的 IP 和 端口持久化保存到本地
+        // 每次发起连接前，把当前的 IP 和 端口持久化保存到本地
         settings.putString("saved_ip", currentIp)
         settings.putString("saved_port", currentPortStr)
 
