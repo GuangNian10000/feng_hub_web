@@ -58,7 +58,7 @@ fun InteractionScreen(
     var activeFragment by remember { mutableStateOf<String?>(null) }
     var isInspectionPaused by remember { mutableStateOf(false) }
 
-    val menus = listOf("动作", "语音合成", "智能体设置", "地图录制", "知识库")
+    val menus = listOf("姿态动作","动作", "语音合成", "智能体设置", "地图录制", "知识库")
 
     var leftJoyX by remember { mutableFloatStateOf(0f) }
     var leftJoyY by remember { mutableFloatStateOf(0f) }
@@ -83,7 +83,7 @@ fun InteractionScreen(
                     if (angle < 0) angle += 360
                     actionViewModel.moveTranslate(angle, level)
                 }
-                delay(300)
+                delay(100) // 发送延迟
             }
         } else {
             actionViewModel.stopTranslate()
@@ -97,7 +97,7 @@ fun InteractionScreen(
                 if (level != 0) {
                     actionViewModel.moveRotate(level)
                 }
-                delay(300)
+                delay(100) // 发送延迟
             }
         } else {
             actionViewModel.stopRotate()
@@ -395,6 +395,11 @@ fun InteractionScreen(
 
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         when (activeFragment) {
+                            "姿态动作" -> ActionPosturePanel(
+                                postures = uiState.postures,
+                                onActionClick = { actionViewModel.sendPostureCommand(it) },
+                                onRetryClick = { actionViewModel.fetchPostureList() }
+                            )
                             "动作" -> ActionPanel(
                                 postures = uiState.postures,
                                 onActionClick = { actionViewModel.sendPostureCommand(it) },

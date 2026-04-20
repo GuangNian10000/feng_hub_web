@@ -16,6 +16,16 @@ import com.example.guangnian.feature.robot.data.bean.StartupHeartbeatBean
 import com.example.guangnian.feature.robot.data.bean.TeachActionBean
 
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
+
+    // 获取动态动作列表
+    override suspend fun getPostureList() = request<List<PostureBean>>("webrtc/get_posture")
+
+    // 获取运动控制列表
+    override suspend fun getMotionList() = request<List<MotionBean>>("webrtc/get_motion")
+
+    // 获取手臂动作列表
+    override suspend fun getArmList() = request<List<ArmActionBean>>("webrtc/get_arm")
+
     // 启动机器人握手
     override suspend fun startRobot() = request<StartupHeartbeatBean>("webrtc/stl_start")
 
@@ -26,12 +36,6 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun executePosture(postureName: String) =
         executePosture(mapOf("posture_name" to postureName))
 
-    // 获取动态动作列表
-    override suspend fun getPostureList() = request<List<PostureBean>>("webrtc/get_posture")
-
-    // 获取运动控制列表
-    override suspend fun getMotionList() = request<List<MotionBean>>("webrtc/get_motion")
-
     // 执行运动控制动作
     override suspend fun executeMotion(motionId: Int) =
         request<Unit>("webrtc/execution", mapOf("motion_id" to motionId.toString()))
@@ -39,9 +43,6 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 执行预设运动控制（ahead/back/left/right/turn_left/turn_right/turn_back）
     override suspend fun executeSport(sport: String) =
         request<Unit>("webrtc/execution", mapOf("sport" to sport))
-
-    // 获取手臂动作列表
-    override suspend fun getArmList() = request<List<ArmActionBean>>("webrtc/get_arm")
 
     // 执行手臂动作
     override suspend fun executeArm(armId: Int) =
