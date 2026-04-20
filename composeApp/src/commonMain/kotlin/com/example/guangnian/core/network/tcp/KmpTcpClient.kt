@@ -117,6 +117,9 @@ object KmpTcpClient {
         }
         val finalMsg = if (msg.endsWith("\n")) msg else "$msg\n"
 
+        // 记录准备发送的原始消息内容
+        KLog.d(TAG, "准备发送: ${finalMsg.trim()}")
+
         // 核心改进：非阻塞操作。只负责把指令塞进 Channel 队列，极其轻量
         val result = sendChannel?.trySend(finalMsg)
 

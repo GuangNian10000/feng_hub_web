@@ -143,6 +143,13 @@ class ActionViewModel : ViewModel() {
         }
     }
 
+    // 添加合并控制的方法
+    fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) {
+        viewModelScope.launch {
+            robotApi.moveMixed(angle, translateLevel, rotateLevel)
+        }
+    }
+
     // 停止平移摇杆
     fun stopTranslate() {
         viewModelScope.launch {

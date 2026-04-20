@@ -73,33 +73,31 @@ fun InteractionScreen(
         }
     }
 
-    LaunchedEffect(isLeftJoyActive) {
-        if (isLeftJoyActive) {
+    // 合并为单一循环监听，当任意摇杆激活时，同时读取两侧数据发送混合指令。
+    LaunchedEffect(isLeftJoyActive, isRightJoyActive) {
+        if (isLeftJoyActive || isRightJoyActive) {
             while (isActive) {
+                // 计算平移数据（左摇杆）
                 val distance = hypot(leftJoyX, leftJoyY)
-                val level = (distance * 10).toInt().coerceIn(0, 10)
-                if (level > 0) {
-                    var angle = atan2(-leftJoyX.toDouble(), leftJoyY.toDouble()) * 180 / PI
+                val translateLevel = (distance * 10).toInt().coerceIn(0, 10)
+                var angle = 0.0
+                if (translateLevel > 0) {
+                    angle = atan2(-leftJoyX.toDouble(), leftJoyY.toDouble()) * 180 / PI
                     if (angle < 0) angle += 360
-                    actionViewModel.moveTranslate(angle, level)
                 }
-                delay(100) // 发送延迟
-            }
-        } else {
-            actionViewModel.stopTranslate()
-        }
-    }
 
-    LaunchedEffect(isRightJoyActive) {
-        if (isRightJoyActive) {
-            while (isActive) {
-                val level = (rightJoyX * 10).toInt().coerceIn(-10, 10)
-                if (level != 0) {
-                    actionViewModel.moveRotate(level)
-                }
-                delay(100) // 发送延迟
+                // 计算旋转数据（右摇杆）
+                // 反转 X 轴极性，适配机器人底盘运动学协议。
+                val rotateLevel = (-rightJoyX * 10).toInt().coerceIn(-10, 10)
+
+                // 发送合并指令
+                actionViewModel.moveMixed(angle, translateLevel, rotateLevel)
+
+                delay(100) // 维持 10Hz 发送频率
             }
         } else {
+            // 当两侧摇杆均释放时，发送停止指令
+            actionViewModel.stopTranslate()
             actionViewModel.stopRotate()
         }
     }
@@ -401,9 +399,9 @@ fun InteractionScreen(
                                 onRetryClick = { actionViewModel.fetchPostureList() }
                             )
                             "动作" -> ActionPanel(
-                                postures = uiState.postures,
-                                onActionClick = { actionViewModel.sendPostureCommand(it) },
-                                onRetryClick = { actionViewModel.fetchPostureList() }
+                                armActions = uiState.armActions,
+                                onActionClick = { actionViewModel.sendArmCommand(it) },
+                                onRetryClick = { actionViewModel.fetchArmList() }
                             )
                             "语音合成" -> SpeechSynthesisPanel()
                             "智能体设置" -> AgentSettingsPanel()

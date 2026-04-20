@@ -45,6 +45,9 @@ interface RobotTcpApi {
     // 摇杆平移控制 (webrtc/move, joystick=translate)
     suspend fun moveTranslate(angle: Double, level: Int)
 
+    // 混合摇杆控制，同时下发平移与旋转数据
+    suspend fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int)
+
     // 摇杆旋转控制 (webrtc/move, joystick=rotate)
     suspend fun moveRotate(level: Int)
 

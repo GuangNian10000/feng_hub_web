@@ -38,7 +38,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 执行运动控制动作
     override suspend fun executeMotion(motionId: Int) =
-        request<Unit>("webrtc/execution", mapOf("motion_id" to motionId.toString()))
+        request<Unit>("webrtc/execution", mapOf("motion_id" to motionId))
 
     // 执行预设运动控制（ahead/back/left/right/turn_left/turn_right/turn_back）
     override suspend fun executeSport(sport: String) =
@@ -46,7 +46,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 执行手臂动作
     override suspend fun executeArm(armId: Int) =
-        request<Unit>("webrtc/execution", mapOf("arm_id" to armId.toString()))
+        request<Unit>("webrtc/execution", mapOf("arm_id" to armId))
 
     // 平移摇杆控制
     override suspend fun moveTranslate(angle: Double, level: Int) =
@@ -54,8 +54,8 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
             "webrtc/move",
             mapOf(
                 "joystick" to "translate",
-                "angle" to angle.toString(),
-                "level" to level.toString()
+                "angle" to angle,
+                "level" to level
             )
         )
 
@@ -65,7 +65,19 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
             "webrtc/move",
             mapOf(
                 "joystick" to "rotate",
-                "level" to level.toString()
+                "level" to level
+            )
+        )
+
+    // 混合摇杆控制
+    override suspend fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) =
+        request<Unit>(
+            "webrtc/move",
+            mapOf(
+                "joystick" to "translate",
+                "angle" to angle,
+                "level" to translateLevel,
+                "rotatelevel" to rotateLevel
             )
         )
 

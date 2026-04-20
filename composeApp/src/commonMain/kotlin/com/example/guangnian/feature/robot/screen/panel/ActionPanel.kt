@@ -17,16 +17,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.guangnian.feature.robot.data.bean.PostureBean
+import com.example.guangnian.feature.robot.data.bean.ArmActionBean
 
 @Composable
 fun ActionPanel(
-    postures: List<PostureBean>,
-    onActionClick: (String) -> Unit,
+    armActions: List<ArmActionBean>,
+    onActionClick: (Int) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (postures.isEmpty()) {
+    if (armActions.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("暂无姿态动作数据", color = Color.Gray, fontSize = 14.sp)
@@ -50,10 +50,10 @@ fun ActionPanel(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(postures) { posture ->
+            items(armActions) { posture ->
                 ActionItem(
-                    text = posture.name,
-                    onClick = { onActionClick(posture.posture_name) }
+                    text = posture.arm_name,
+                    onClick = { onActionClick(posture.arm_id) }
                 )
             }
         }
