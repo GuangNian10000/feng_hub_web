@@ -51,7 +51,7 @@ object KmpTcpDispatcher {
 
     suspend fun request(requestJsonString: String, messageId: String, timeoutMs: Long = 5000): JsonObject? {
         if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
-            println("TCP 未连接，无法发送请求")
+            //println("TCP 未连接，无法发送请求")
             return null
         }
 
