@@ -1,8 +1,10 @@
 package com.example.guangnian.feature.robot.screen.panel
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -18,18 +20,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.guangnian.feature.robot.data.bean.ArmActionBean
+import com.example.guangnian.feature.robot.data.bean.FavoriteActionBean
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ActionPanel(
     armActions: List<ArmActionBean>,
+    favoriteActions: List<FavoriteActionBean>,
     onActionClick: (Int) -> Unit,
+    onActionLongClick: (Int, String) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (armActions.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("暂无姿态动作数据", color = Color.Gray, fontSize = 14.sp)
+                Text("暂无动作数据", color = Color.Gray, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(
                     modifier = Modifier
@@ -50,27 +56,41 @@ fun ActionPanel(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(armActions) { posture ->
+            items(armActions) { armAction ->
+                val isFavorited = favoriteActions.any { it.id == armAction.arm_id.toString() && it.isArmAction }
+                val displayName = if (isFavorited) "★ ${armAction.arm_name}" else armAction.arm_name
+
                 ActionItem(
-                    text = posture.arm_name,
-                    onClick = { onActionClick(posture.arm_id) }
+                    text = displayName,
+                    isFavorited = isFavorited,
+                    onClick = { onActionClick(armAction.arm_id) },
+                    onLongClick = { onActionLongClick(armAction.arm_id, armAction.arm_name) }
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ActionItem(text: String, onClick: () -> Unit) {
+private fun ActionItem(text: String, isFavorited: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     Box(
         modifier = Modifier
             .height(56.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0x33FFFFFF))
             .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(8.dp))
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = text, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = text,
+            color = if (isFavorited) Color(0xFFFFD700) else Color.White,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

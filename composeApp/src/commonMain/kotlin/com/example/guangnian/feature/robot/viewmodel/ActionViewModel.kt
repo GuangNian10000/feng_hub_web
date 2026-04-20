@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.robot.data.api.RobotTcpApiImpl
 import com.example.guangnian.feature.robot.data.bean.ArmActionBean
+import com.example.guangnian.feature.robot.data.bean.FavoriteActionBean
 import com.example.guangnian.feature.robot.data.bean.MotionBean
 import com.example.guangnian.feature.robot.data.bean.PostureBean
 import com.example.guangnian.feature.robot.data.bean.TeachActionBean
@@ -14,12 +15,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// 聚合动作模块所有 UI 状态
+// 聚合动作模块所有 UI 状态。
 data class ActionUiState(
     val postures: List<PostureBean> = emptyList(),
     val motions: List<MotionBean> = emptyList(),
     val armActions: List<ArmActionBean> = emptyList(),
     val teachActions: List<TeachActionBean> = emptyList(),
+    val favoriteActions: List<FavoriteActionBean> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -31,11 +33,11 @@ class ActionViewModel : ViewModel() {
 
     private val robotApi = RobotTcpApiImpl()
 
-    // 统一状态流
+    // 定义统一状态流。
     private val _uiState = MutableStateFlow(ActionUiState())
     val uiState: StateFlow<ActionUiState> = _uiState.asStateFlow()
 
-    // 获取姿态动作列表
+    // 拉取姿态动作列表。
     fun fetchPostureList() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -49,7 +51,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 执行姿态动作
+    // 执行姿态动作。
     fun sendPostureCommand(postureName: String) {
         viewModelScope.launch {
             try {
@@ -60,7 +62,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 获取运动控制列表
+    // 拉取运动控制列表。
     fun fetchMotionList() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -74,7 +76,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 执行运动控制动作
+    // 执行运动控制动作。
     fun sendMotionCommand(motionId: Int) {
         viewModelScope.launch {
             try {
@@ -85,7 +87,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 执行预设运动动作（ahead/back/left/right/turn_left/turn_right/turn_back）
+    // 执行预设运动动作。
     fun sendSportCommand(sport: String) {
         viewModelScope.launch {
             try {
@@ -96,7 +98,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 获取手臂动作列表
+    // 拉取手臂动作列表。
     fun fetchArmList() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -110,7 +112,22 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 执行手臂动作
+    // 切换动作收藏状态。
+    fun toggleFavorite(id: String, name: String, isArmAction: Boolean) {
+        _uiState.update { currentState ->
+            val currentFavorites = currentState.favoriteActions.toMutableList()
+            val existingIndex = currentFavorites.indexOfFirst { it.id == id && it.isArmAction == isArmAction }
+
+            if (existingIndex != -1) {
+                currentFavorites.removeAt(existingIndex)
+            } else {
+                currentFavorites.add(FavoriteActionBean(id, name, isArmAction))
+            }
+            currentState.copy(favoriteActions = currentFavorites)
+        }
+    }
+
+    // 执行手臂动作。
     fun sendArmCommand(armId: Int) {
         viewModelScope.launch {
             try {
@@ -121,7 +138,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 平移摇杆控制
+    // 发送平移摇杆指令。
     fun moveTranslate(angle: Double, level: Int) {
         viewModelScope.launch {
             try {
@@ -132,7 +149,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 旋转摇杆控制
+    // 发送旋转摇杆指令。
     fun moveRotate(level: Int) {
         viewModelScope.launch {
             try {
@@ -143,14 +160,14 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 添加合并控制的方法
+    // 发送混合摇杆指令。
     fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) {
         viewModelScope.launch {
             robotApi.moveMixed(angle, translateLevel, rotateLevel)
         }
     }
 
-    // 停止平移摇杆
+    // 停止平移摇杆。
     fun stopTranslate() {
         viewModelScope.launch {
             try {
@@ -161,7 +178,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 停止旋转摇杆
+    // 停止旋转摇杆。
     fun stopRotate() {
         viewModelScope.launch {
             try {
@@ -172,7 +189,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 开始录制示教动作
+    // 开启示教录制。
     fun startTeach(name: String) {
         viewModelScope.launch {
             try {
@@ -183,7 +200,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 结束录制示教动作
+    // 停止示教录制。
     fun stopTeach() {
         viewModelScope.launch {
             try {
@@ -194,7 +211,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 删除示教动作
+    // 删除示教动作。
     fun deleteTeach(name: String) {
         viewModelScope.launch {
             try {
@@ -205,7 +222,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 重命名示教动作
+    // 重命名示教动作。
     fun renameTeach(oldName: String, newName: String) {
         viewModelScope.launch {
             try {
@@ -216,7 +233,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 获取示教动作列表
+    // 拉取示教动作列表。
     fun fetchTeachActionList() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -230,7 +247,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 执行示教动作
+    // 执行示教动作。
     fun executeTeach(name: String) {
         viewModelScope.launch {
             try {
@@ -241,7 +258,7 @@ class ActionViewModel : ViewModel() {
         }
     }
 
-    // 急停（停止运动/建图）
+    // 触发系统急停。
     fun stopAll() {
         viewModelScope.launch {
             try {

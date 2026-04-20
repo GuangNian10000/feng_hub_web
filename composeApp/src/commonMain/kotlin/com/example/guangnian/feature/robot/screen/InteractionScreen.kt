@@ -3,6 +3,7 @@ package com.example.guangnian.feature.robot.screen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,7 +42,7 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun InteractionScreen(
     onBackClick: () -> Unit = {}
@@ -67,17 +68,19 @@ fun InteractionScreen(
     var rightJoyX by remember { mutableFloatStateOf(0f) }
     var isRightJoyActive by remember { mutableStateOf(false) }
 
+    // 控制菜单切换时自动加载数据。
     LaunchedEffect(activeFragment) {
-        if (activeFragment == "动作" && uiState.postures.isEmpty()) {
+        if (activeFragment == "姿态动作" && uiState.postures.isEmpty()) {
             actionViewModel.fetchPostureList()
+        }
+        if (activeFragment == "动作" && uiState.armActions.isEmpty()) {
+            actionViewModel.fetchArmList()
         }
     }
 
-    // 合并为单一循环监听，当任意摇杆激活时，同时读取两侧数据发送混合指令。
     LaunchedEffect(isLeftJoyActive, isRightJoyActive) {
         if (isLeftJoyActive || isRightJoyActive) {
             while (isActive) {
-                // 计算平移数据（左摇杆）
                 val distance = hypot(leftJoyX, leftJoyY)
                 val translateLevel = (distance * 10).toInt().coerceIn(0, 10)
                 var angle = 0.0
@@ -86,17 +89,13 @@ fun InteractionScreen(
                     if (angle < 0) angle += 360
                 }
 
-                // 计算旋转数据（右摇杆）
-                // 反转 X 轴极性，适配机器人底盘运动学协议。
                 val rotateLevel = (-rightJoyX * 10).toInt().coerceIn(-10, 10)
 
-                // 发送合并指令
                 actionViewModel.moveMixed(angle, translateLevel, rotateLevel)
 
-                delay(100) // 维持 10Hz 发送频率
+                delay(100)
             }
         } else {
-            // 当两侧摇杆均释放时，发送停止指令
             actionViewModel.stopTranslate()
             actionViewModel.stopRotate()
         }
@@ -137,20 +136,18 @@ fun InteractionScreen(
                 }
             }
 
-            // 动态连接状态面板
             GlassBox(
                 modifier = Modifier
-                    .height(36.dp) // 恢复严格的高度限制 36.dp，确保与左侧完全一致
+                    .height(36.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable {
-                        // 如果断开连接，允许用户直接点击此处发起重连
                         if (connectionState == TcpState.DISCONNECTED) {
                             robotViewModel.connect()
                         }
                     }
             ) {
                 Row(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp), // 恢复 fillMaxHeight 保持内容垂直居中
+                    modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -172,11 +169,11 @@ fun InteractionScreen(
                             text = connectionError ?: "",
                             color = Color(0xFFE53935),
                             fontSize = 10.sp,
-                            maxLines = 1, // 强制单行
-                            softWrap = false, // 禁止换行
+                            maxLines = 1,
+                            softWrap = false,
                             modifier = Modifier
-                                .widthIn(max = 240.dp) // 限制最大可视宽度
-                                .horizontalScroll(rememberScrollState()) // 超出宽度时支持内部横向滑动
+                                .widthIn(max = 240.dp)
+                                .horizontalScroll(rememberScrollState())
                         )
                     } else if (connectionState == TcpState.CONNECTED) {
                         Text("197 KB/s", color = Color.LightGray, fontSize = 10.sp)
@@ -283,26 +280,30 @@ fun InteractionScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (uiState.postures.isEmpty()) {
+                                // 替换数据源为 favoriteActions。
+                                if (uiState.favoriteActions.isEmpty()) {
                                     Text(
-                                        text = if (uiState.isLoading) "加载中..." else "获取失败，点击重试",
+                                        text = "暂无收藏动作，请在菜单中长按添加",
                                         color = Color.LightGray,
                                         fontSize = 13.sp,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .clickable { actionViewModel.fetchPostureList() }
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
                                 } else {
-                                    uiState.postures.forEach { posture ->
+                                    uiState.favoriteActions.forEach { fav ->
                                         Box(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(6.dp))
-                                                .clickable { actionViewModel.sendPostureCommand(posture.posture_name) }
+                                                .clickable {
+                                                    if (fav.isArmAction) {
+                                                        actionViewModel.sendArmCommand(fav.id.toInt())
+                                                    } else {
+                                                        actionViewModel.sendPostureCommand(fav.id)
+                                                    }
+                                                }
                                                 .padding(horizontal = 10.dp, vertical = 2.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Text(text = posture.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                            Text(text = fav.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
@@ -395,18 +396,22 @@ fun InteractionScreen(
                         when (activeFragment) {
                             "姿态动作" -> ActionPosturePanel(
                                 postures = uiState.postures,
+                                favoriteActions = uiState.favoriteActions,
                                 onActionClick = { actionViewModel.sendPostureCommand(it) },
+                                onActionLongClick = { id, name -> actionViewModel.toggleFavorite(id, name, false) },
                                 onRetryClick = { actionViewModel.fetchPostureList() }
                             )
                             "动作" -> ActionPanel(
                                 armActions = uiState.armActions,
+                                favoriteActions = uiState.favoriteActions,
                                 onActionClick = { actionViewModel.sendArmCommand(it) },
+                                onActionLongClick = { id, name -> actionViewModel.toggleFavorite(id.toString(), name, true) },
                                 onRetryClick = { actionViewModel.fetchArmList() }
                             )
-                            "语音合成" -> SpeechSynthesisPanel()
-                            "智能体设置" -> AgentSettingsPanel()
-                            "地图录制" -> MapPanel()
-                            "知识库" -> KnowledgeBasePanel()
+                             "语音合成" -> SpeechSynthesisPanel()
+                             "智能体设置" -> AgentSettingsPanel()
+                             "地图录制" -> MapPanel()
+                             "知识库" -> KnowledgeBasePanel()
                         }
                     }
                 }

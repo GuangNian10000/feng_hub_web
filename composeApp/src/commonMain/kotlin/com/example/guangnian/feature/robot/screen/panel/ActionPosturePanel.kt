@@ -1,8 +1,10 @@
 package com.example.guangnian.feature.robot.screen.panel
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,14 +24,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.guangnian.feature.robot.data.bean.FavoriteActionBean
 import com.example.guangnian.feature.robot.data.bean.PostureBean
 
-// 姿态动作
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ActionPosturePanel(
     postures: List<PostureBean>,
+    favoriteActions: List<FavoriteActionBean>,
     onActionClick: (String) -> Unit,
-    onRetryClick: () -> Unit, // 新增重试回调
+    onActionLongClick: (String, String) -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (postures.isEmpty()) {
@@ -53,29 +58,38 @@ fun ActionPosturePanel(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(postures) { posture ->
+                val isFavorited = favoriteActions.any { it.id == posture.posture_name && !it.isArmAction }
+                val displayName = if (isFavorited) "★ ${posture.name}" else posture.name
+
                 ActionItem(
-                    text = posture.name,
-                    onClick = { onActionClick(posture.posture_name) }
+                    text = displayName,
+                    isFavorited = isFavorited,
+                    onClick = { onActionClick(posture.posture_name) },
+                    onLongClick = { onActionLongClick(posture.posture_name, posture.name) }
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ActionItem(text: String, onClick: () -> Unit) {
+private fun ActionItem(text: String, isFavorited: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     Box(
         modifier = Modifier
             .height(56.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0x33FFFFFF))
             .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(8.dp))
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = Color.White,
+            color = if (isFavorited) Color(0xFFFFD700) else Color.White,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold
         )

@@ -20,11 +20,11 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 获取动态动作列表
     override suspend fun getPostureList() = request<List<PostureBean>>("webrtc/get_posture")
 
-    // 获取运动控制列表
-    override suspend fun getMotionList() = request<List<MotionBean>>("webrtc/get_motion")
-
     // 获取手臂动作列表
     override suspend fun getArmList() = request<List<ArmActionBean>>("webrtc/get_arm")
+
+    // 获取运动控制列表
+    override suspend fun getMotionList() = request<List<MotionBean>>("webrtc/get_motion")
 
     // 启动机器人握手
     override suspend fun startRobot() = request<StartupHeartbeatBean>("webrtc/stl_start")
