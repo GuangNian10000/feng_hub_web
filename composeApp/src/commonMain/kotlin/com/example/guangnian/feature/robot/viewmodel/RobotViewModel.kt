@@ -81,7 +81,7 @@ class RobotViewModel : ViewModel() {
                     KLog.e(TAG, "心跳超时或发送失败，判定为连接假死，主动断开", e)
                     // 主动向 UI 层注入明确的断开原因
                     KmpTcpClient.setConnectionError("心跳超时或发送失败，判定为连接假死，主动断开")
-                    //KmpTcpClient.disconnectAndReset()
+                    KmpTcpClient.disconnectAndReset()
                     break
                 }
             }
