@@ -3,6 +3,9 @@ package com.example.guangnian.feature.robot.data.api
 import com.example.guangnian.feature.robot.data.bean.ArmActionBean
 import com.example.guangnian.feature.robot.data.bean.BatteryBean
 import com.example.guangnian.core.network.tcp.BaseTcpApi
+import com.example.guangnian.core.network.tcp.TcpNode
+import com.example.guangnian.feature.robot.data.bean.AgentEntity
+import com.example.guangnian.feature.robot.data.bean.AgentListResponse
 import com.example.guangnian.feature.robot.data.bean.HeartbeatStatusBean
 import com.example.guangnian.feature.robot.data.bean.MapConfigBean
 import com.example.guangnian.feature.robot.data.bean.MotionBean
@@ -13,9 +16,30 @@ import com.example.guangnian.feature.robot.data.bean.PostureBean
 import com.example.guangnian.feature.robot.data.bean.RobotPositionBean
 import com.example.guangnian.feature.robot.data.bean.SlamPointBean
 import com.example.guangnian.feature.robot.data.bean.StartupHeartbeatBean
+import com.example.guangnian.feature.robot.data.bean.BaseBean
+import com.example.guangnian.feature.robot.data.bean.SpeechSynthesisBean
 import com.example.guangnian.feature.robot.data.bean.TeachActionBean
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
+    override suspend fun executeSynthesis(bean: SpeechSynthesisBean) =
+        request<BaseBean>("/voice/tts_synthesis/", mapOf("ttsBean" to Json.encodeToString(bean)),targetNode= TcpNode.TABLET)
+
+    override suspend fun selectAgent(agent: AgentEntity) =
+        request<BaseBean>("agent/select_agent", mapOf("agent" to Json.encodeToString(agent)),targetNode= TcpNode.TABLET)
+
+    override suspend fun deleteAgent(agent: AgentEntity) =
+        request<BaseBean>("agent/delete_agent", mapOf("agent" to Json.encodeToString(agent)),targetNode= TcpNode.TABLET)
+
+    override suspend fun editAgent(agent: AgentEntity) =
+        request<BaseBean>("agent/edit_agent", mapOf("agent" to Json.encodeToString(agent)),targetNode= TcpNode.TABLET)
+
+    override suspend fun addAgent(agent: AgentEntity) =
+        request<BaseBean>("agent/add_agent", mapOf("agent" to Json.encodeToString(agent)),targetNode= TcpNode.TABLET)
+
+    // 获取智能体列表
+    override suspend fun getAgentList() = request<AgentListResponse>("agent/get_agent_list",targetNode= TcpNode.TABLET)
 
     // 获取动态动作列表
     override suspend fun getPostureList() = request<List<PostureBean>>("webrtc/get_posture")

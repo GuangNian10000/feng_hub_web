@@ -1,5 +1,7 @@
 package com.example.guangnian.feature.robot.data.api
 
+import com.example.guangnian.feature.robot.data.bean.AgentEntity
+import com.example.guangnian.feature.robot.data.bean.AgentListResponse
 import com.example.guangnian.feature.robot.data.bean.ArmActionBean
 import com.example.guangnian.feature.robot.data.bean.BatteryBean
 import com.example.guangnian.feature.robot.data.bean.HeartbeatStatusBean
@@ -12,9 +14,30 @@ import com.example.guangnian.feature.robot.data.bean.PostureBean
 import com.example.guangnian.feature.robot.data.bean.RobotPositionBean
 import com.example.guangnian.feature.robot.data.bean.SlamPointBean
 import com.example.guangnian.feature.robot.data.bean.StartupHeartbeatBean
+import com.example.guangnian.feature.robot.data.bean.BaseBean
+import com.example.guangnian.feature.robot.data.bean.SpeechSynthesisBean
 import com.example.guangnian.feature.robot.data.bean.TeachActionBean
 
 interface RobotTcpApi {
+
+    // 语音合成
+    suspend fun executeSynthesis(bean: SpeechSynthesisBean): BaseBean
+
+    // 选中智能体
+    suspend fun selectAgent(agent: AgentEntity): BaseBean
+
+    // 删除智能体
+    suspend fun deleteAgent(agent: AgentEntity): BaseBean
+
+    // 编辑智能体
+    suspend fun editAgent(agent: AgentEntity): BaseBean
+
+    // 添加智能体
+    suspend fun addAgent(agent: AgentEntity): BaseBean
+
+    // 获取智能体
+    suspend fun getAgentList(): AgentListResponse
+
     // 启动机器人握手 (webrtc/stl_start)
     suspend fun startRobot(): StartupHeartbeatBean
 
