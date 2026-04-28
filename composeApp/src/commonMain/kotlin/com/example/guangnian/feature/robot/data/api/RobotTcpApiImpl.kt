@@ -41,6 +41,18 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 获取智能体列表
     override suspend fun getAgentList() = request<AgentListResponse>("agent/get_agent_list",targetNode= TcpNode.TABLET)
 
+    override suspend fun getKnowledgeList() =
+        request<com.example.guangnian.feature.robot.data.bean.KnowledgeListResponse>("/knowledge/get_knowledge_list/", targetNode = TcpNode.TABLET)
+
+    override suspend fun addKnowledge(knowledge: com.example.guangnian.feature.robot.data.bean.KnowledgeEntity) =
+        request<BaseBean>("/knowledge/add_knowledge/", mapOf("knowledge" to Json.encodeToString(knowledge)), targetNode = TcpNode.TABLET)
+
+    override suspend fun editKnowledge(knowledge: com.example.guangnian.feature.robot.data.bean.KnowledgeEntity) =
+        request<BaseBean>("/knowledge/edit_knowledge/", mapOf("knowledge" to Json.encodeToString(knowledge)), targetNode = TcpNode.TABLET)
+
+    override suspend fun deleteKnowledge(knowledge: com.example.guangnian.feature.robot.data.bean.KnowledgeEntity) =
+        request<BaseBean>("/knowledge/delete_knowledge/", mapOf("knowledge" to Json.encodeToString(knowledge)), targetNode = TcpNode.TABLET)
+
     // 获取动态动作列表
     override suspend fun getPostureList() = request<List<PostureBean>>("webrtc/get_posture")
 

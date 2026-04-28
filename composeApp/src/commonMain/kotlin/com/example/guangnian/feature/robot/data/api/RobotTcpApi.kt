@@ -38,6 +38,18 @@ interface RobotTcpApi {
     // 获取智能体
     suspend fun getAgentList(): AgentListResponse
 
+    // 获取知识库列表
+    suspend fun getKnowledgeList(): com.example.guangnian.feature.robot.data.bean.KnowledgeListResponse
+
+    // 添加知识库
+    suspend fun addKnowledge(knowledge: com.example.guangnian.feature.robot.data.bean.KnowledgeEntity): BaseBean
+
+    // 编辑知识库
+    suspend fun editKnowledge(knowledge: com.example.guangnian.feature.robot.data.bean.KnowledgeEntity): BaseBean
+
+    // 删除知识库
+    suspend fun deleteKnowledge(knowledge: com.example.guangnian.feature.robot.data.bean.KnowledgeEntity): BaseBean
+
     // 启动机器人握手 (webrtc/stl_start)
     suspend fun startRobot(): StartupHeartbeatBean
 
