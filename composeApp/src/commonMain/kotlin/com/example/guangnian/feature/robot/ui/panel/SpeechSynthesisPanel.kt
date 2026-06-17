@@ -134,6 +134,7 @@ class SpeechSynthesisViewModel : ViewModel() {
 
 @Composable
 fun SpeechSynthesisPanel(
+    onSetAddAction: (String, () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SpeechSynthesisViewModel = viewModel(),
     actionViewModel: ActionViewModel = viewModel() // 传入动作 ViewModel 用于获取动作列表
@@ -144,6 +145,12 @@ fun SpeechSynthesisPanel(
     var showEditDialog by remember { mutableStateOf<SpeechSynthesisBean?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     var toastMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        onSetAddAction("新增语料") {
+            showAddDialog = true
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.toastEvent.collect { msg ->
@@ -160,21 +167,6 @@ fun SpeechSynthesisPanel(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 6.dp)) {
-            // 顶部操作栏
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(
-                    onClick = { showAddDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text("新增语料", fontSize = 12.sp)
-                }
-            }
-
             // 列表区
             if (listData.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -353,7 +345,16 @@ fun SynthesisEditDialog(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "《 $title",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(vertical = 2.dp)
+                )
 
                 OutlinedTextField(
                     value = text,
@@ -490,7 +491,16 @@ fun ActionSelectionDialog(
     ) {
         Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF1E1E1E)) {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Text("选择动作", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                Text(
+                    text = "《 选择动作",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(bottom = 16.dp, end = 16.dp, top = 2.dp, start = 2.dp)
+                )
 
                 // 动作列表 Grid
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -580,7 +590,16 @@ fun SynthesisVoiceSelectionDialog(
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF1E1E1E)) {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Text("选择音色", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+                Text(
+                    text = "《 选择音色",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(bottom = 12.dp, end = 16.dp, top = 2.dp, start = 2.dp)
+                )
                 LazyRow(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(categories) { category ->
                         val isSelected = selectedCategory == category

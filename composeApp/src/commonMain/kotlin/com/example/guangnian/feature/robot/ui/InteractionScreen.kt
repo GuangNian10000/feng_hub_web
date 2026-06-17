@@ -64,6 +64,13 @@ fun InteractionScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
     var isPosturesExpanded by remember { mutableStateOf(true) }
     var activeFragment by remember { mutableStateOf<String?>(null) }
+    var onAddClickAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var addActionText by remember { mutableStateOf("") }
+
+    LaunchedEffect(activeFragment) {
+        onAddClickAction = null
+        addActionText = ""
+    }
     var isInspectionPaused by remember { mutableStateOf(false) }
 
     val menus = listOf("姿态动作", "动作", "导览管理", "语音合成", "智能体设置", "地图录制", "知识库")
@@ -395,16 +402,30 @@ fun InteractionScreen(
                 Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("》 ${activeFragment ?: ""}", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         Text(
-                            text = "关闭",
-                            color = Color.Gray,
-                            fontSize = 11.sp,
-                            modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable { activeFragment = null }.padding(4.dp)
+                            text = "《 ${activeFragment ?: ""}",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { activeFragment = null }
+                                .padding(4.dp)
                         )
+                        Spacer(Modifier.weight(1f))
+                        if (onAddClickAction != null) {
+                            Button(
+                                onClick = { onAddClickAction?.invoke() },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                                modifier = Modifier.height(26.dp).padding(end = 12.dp)
+                            ) {
+                                Text(addActionText, fontSize = 11.sp, color = Color.White)
+                            }
+                        }
                     }
 
                     Divider(color = Color.White.copy(alpha = 0.15f), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp))
@@ -436,11 +457,30 @@ fun InteractionScreen(
                                 onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
                                 onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
                                 onUpdatePoint = { actionViewModel.updateInspectionPoint(it) },
-                                onRetryClick = { actionViewModel.fetchInspectionPoints() }
+                                onRetryClick = { actionViewModel.fetchInspectionPoints() },
+                                onSetAddAction = { text, action ->
+                                    addActionText = text
+                                    onAddClickAction = action
+                                }
                             )
-                            "语音合成" -> SpeechSynthesisPanel()
-                            "智能体设置" -> AgentSettingsPanel()
-                            "知识库" -> KnowledgeBasePanel()
+                            "语音合成" -> SpeechSynthesisPanel(
+                                onSetAddAction = { text, action ->
+                                    addActionText = text
+                                    onAddClickAction = action
+                                }
+                            )
+                            "智能体设置" -> AgentSettingsPanel(
+                                onSetAddAction = { text, action ->
+                                    addActionText = text
+                                    onAddClickAction = action
+                                }
+                            )
+                            "知识库" -> KnowledgeBasePanel(
+                                onSetAddAction = { text, action ->
+                                    addActionText = text
+                                    onAddClickAction = action
+                                }
+                            )
                         }
                     }
                 }

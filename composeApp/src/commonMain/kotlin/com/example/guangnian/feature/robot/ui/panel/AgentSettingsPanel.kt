@@ -27,6 +27,7 @@ import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun AgentSettingsPanel(
+    onSetAddAction: (String, () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     agentViewModel: AgentViewModel = viewModel()
 ) {
@@ -42,6 +43,9 @@ fun AgentSettingsPanel(
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        onSetAddAction("新增智能体") {
+            showAddDialog = true
+        }
         agentViewModel.fetchAgentList()
     }
 
@@ -63,20 +67,6 @@ fun AgentSettingsPanel(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 6.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(
-                    onClick = { showAddDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text("新增智能体", fontSize = 12.sp)
-                }
-            }
-
             if (agentData.list.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text("暂无智能体数据", color = Color.LightGray, fontSize = 13.sp)
@@ -295,7 +285,16 @@ private fun AgentEditDialog(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "《 $title",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(vertical = 2.dp)
+                )
 
                 // 名称与音色并排显示，缩小占用比例
                 Row(
@@ -467,11 +466,14 @@ private fun VoiceSelectionDialog(
 
                 // 1. 顶部标题
                 Text(
-                    text = "选择音色",
+                    text = "《 选择音色",
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(bottom = 12.dp, end = 16.dp, top = 2.dp, start = 2.dp)
                 )
 
                 // 2. 动态分类筛选栏 (LazyRow横向滚动)

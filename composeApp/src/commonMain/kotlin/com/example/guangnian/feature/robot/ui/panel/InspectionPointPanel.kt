@@ -45,10 +45,28 @@ fun InspectionPointPanel(
     onDeletePoint: (String) -> Unit,
     onUpdatePoint: (InspectionPointBean) -> Unit,
     onRetryClick: () -> Unit,
+    onSetAddAction: (String, () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDeleteConfirm by remember { mutableStateOf<InspectionPointBean?>(null) }
     var showEditDialog by remember { mutableStateOf<InspectionPointBean?>(null) }
+
+    LaunchedEffect(endpoints.size, robotPosition) {
+        onSetAddAction("添加导览点") {
+            val newPoint = InspectionPointBean(
+                name = "点位_${endpoints.size + 1}",
+                position = com.example.guangnian.feature.robot.data.bean.PointPosition(
+                    x = robotPosition?.x ?: 0.0,
+                    y = robotPosition?.y ?: 0.0,
+                    yaw = robotPosition?.yaw ?: 0.0
+                ),
+                x = robotPosition?.x ?: 0.0,
+                y = robotPosition?.y ?: 0.0,
+                yaw = robotPosition?.yaw ?: 0.0
+            )
+            showEditDialog = newPoint
+        }
+    }
 
     if (showEditDialog != null) {
         InspectionPointEditDialog(
@@ -88,36 +106,6 @@ fun InspectionPointPanel(
     }
 
     Column(modifier = modifier.fillMaxSize().padding(4.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Button(
-                onClick = {
-                    val newPoint = InspectionPointBean(
-                        name = "点位_${endpoints.size + 1}",
-                        position = com.example.guangnian.feature.robot.data.bean.PointPosition(
-                            x = robotPosition?.x ?: 0.0,
-                            y = robotPosition?.y ?: 0.0,
-                            yaw = robotPosition?.yaw ?: 0.0
-                        ),
-                        x = robotPosition?.x ?: 0.0,
-                        y = robotPosition?.y ?: 0.0,
-                        yaw = robotPosition?.yaw ?: 0.0
-                    )
-                    showEditDialog = newPoint
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF03DC6B)),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                modifier = Modifier.height(32.dp)
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("添加导览点", fontSize = 12.sp)
-            }
-        }
-
         if (endpoints.isEmpty()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -249,7 +237,16 @@ private fun InspectionPointEditDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 val isEdit = initialPoint?.pointId?.isNotEmpty() == true
-                Text(if (isEdit) "编辑导览点" else "添加导览点", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "《 ${if (isEdit) "编辑导览点" else "添加导览点"}",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(vertical = 2.dp)
+                )
 
                 // 1. 基本信息 (名称 + 类型)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

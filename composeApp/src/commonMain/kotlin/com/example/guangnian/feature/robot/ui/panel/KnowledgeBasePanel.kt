@@ -25,6 +25,7 @@ import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun KnowledgeBasePanel(
+    onSetAddAction: (String, () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: KnowledgeViewModel = viewModel()
 ) {
@@ -39,6 +40,9 @@ fun KnowledgeBasePanel(
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        onSetAddAction("新增知识库") {
+            showAddDialog = true
+        }
         viewModel.fetchKnowledgeList()
     }
 
@@ -59,20 +63,6 @@ fun KnowledgeBasePanel(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 6.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(
-                    onClick = { showAddDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text("新增知识库", fontSize = 12.sp)
-                }
-            }
-
             if (knowledgeData.list.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text("暂无知识库数据", color = Color.LightGray, fontSize = 13.sp)
@@ -245,7 +235,16 @@ private fun KnowledgeEditDialog(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "《 $title",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(vertical = 2.dp)
+                )
 
                 OutlinedTextField(
                     value = question,
