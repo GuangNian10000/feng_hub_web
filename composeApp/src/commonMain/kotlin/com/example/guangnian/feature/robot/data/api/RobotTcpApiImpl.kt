@@ -229,31 +229,35 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 创建巡检点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =
         request<BaseBean>("location/add_endpoint", mapOf(
-            "name" to (point.name ?: ""),
-            "broadcastContent" to (point.broadcastContent ?: ""),
-            "playOnArrival" to (point.playOnArrival ?: true),
-            "photoOnArrival" to (point.photoOnArrival ?: false),
-            "pointType" to (point.pointType ?: 0),
+            "name" to point.name,
+            "broadcastContent" to point.broadcastContent,
+            "playOnArrival" to point.playOnArrival,
+            "photoOnArrival" to point.photoOnArrival,
+            "pointType" to point.pointType,
+            "stayTime" to point.stayTime,
+            "needRotate" to point.needRotate,
             "position" to mapOf(
-                "x" to (point.position?.x ?: point.x ?: 0.0),
-                "y" to (point.position?.y ?: point.y ?: 0.0),
-                "yaw" to (point.position?.yaw ?: point.yaw ?: 0.0)
+                "x" to point.x,
+                "y" to point.y,
+                "yaw" to point.yaw
             )
         ))
 
     // 更新巡检点
     override suspend fun updateInspectionPoint(point: InspectionPointBean) =
         request<BaseBean>("location/update_endpoint", mapOf(
-            "pointId" to (point.pointId ?: ""),
-            "name" to (point.name ?: ""),
-            "broadcastContent" to (point.broadcastContent ?: ""),
-            "playOnArrival" to (point.playOnArrival ?: true),
-            "photoOnArrival" to (point.photoOnArrival ?: false),
-            "pointType" to (point.pointType ?: 0),
+            "pointId" to point.pointId,
+            "name" to point.name,
+            "broadcastContent" to point.broadcastContent,
+            "playOnArrival" to point.playOnArrival,
+            "photoOnArrival" to point.photoOnArrival,
+            "pointType" to point.pointType,
+            "stayTime" to point.stayTime,
+            "needRotate" to point.needRotate,
             "position" to mapOf(
-                "x" to (point.position?.x ?: point.x ?: 0.0),
-                "y" to (point.position?.y ?: point.y ?: 0.0),
-                "yaw" to (point.position?.yaw ?: point.yaw ?: 0.0)
+                "x" to point.x,
+                "y" to point.y,
+                "yaw" to point.yaw
             )
         ))
 

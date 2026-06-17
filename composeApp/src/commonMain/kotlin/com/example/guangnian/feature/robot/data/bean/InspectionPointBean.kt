@@ -7,9 +7,9 @@ data class InspectionPointBean(
     val id: Int = 0,
     val pointId: String = "",
     val name: String = "", // 点位名称
-    val x: Double = 0.0, // x 坐标
+    val x: Double = 0.0, // x 坐标 (保留兼容)
     val y: Double = 0.0,
-    val yaw: Double = 0.0, // 角度
+    val yaw: Double = 0.0, // 角度 (保留兼容)
     val broadcastContent: String = "", // 广播内容
     val playOnArrival: Boolean = false, // 到达时播放广播
     val photoOnArrival: Boolean = false, // 到达时拍照
