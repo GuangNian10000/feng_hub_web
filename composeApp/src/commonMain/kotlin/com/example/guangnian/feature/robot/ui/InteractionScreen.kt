@@ -66,7 +66,7 @@ fun InteractionScreen(
     var activeFragment by remember { mutableStateOf<String?>(null) }
     var isInspectionPaused by remember { mutableStateOf(false) }
 
-    val menus = listOf("姿态动作", "动作", "语音合成", "智能体设置", "地图录制", "知识库")
+    val menus = listOf("姿态动作", "动作", "导览管理", "语音合成", "智能体设置", "地图录制", "知识库")
 
     var leftJoyX by remember { mutableFloatStateOf(0f) }
     var leftJoyY by remember { mutableFloatStateOf(0f) }
@@ -430,6 +430,7 @@ fun InteractionScreen(
                                 },
                                 onRetryClick = { actionViewModel.fetchArmList() }
                             )
+                            "导览管理" -> InspectionPointPanel()
                             "语音合成" -> SpeechSynthesisPanel()
                             "智能体设置" -> AgentSettingsPanel()
                             "知识库" -> KnowledgeBasePanel()

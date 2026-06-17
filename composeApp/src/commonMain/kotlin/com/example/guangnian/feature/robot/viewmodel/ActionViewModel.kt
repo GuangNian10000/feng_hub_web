@@ -6,6 +6,7 @@ import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.robot.data.api.RobotTcpApiImpl
 import com.example.guangnian.feature.robot.data.bean.ArmActionBean
 import com.example.guangnian.feature.robot.data.bean.FavoriteActionBean
+import com.example.guangnian.feature.robot.data.bean.InspectionPointBean
 import com.example.guangnian.feature.robot.data.bean.MotionBean
 import com.example.guangnian.feature.robot.data.bean.PostureBean
 import com.example.guangnian.feature.robot.data.bean.TeachActionBean
@@ -254,6 +255,39 @@ class ActionViewModel : ViewModel() {
                 robotApi.executeTeach(name)
             } catch (e: Exception) {
                 KLog.e(TAG, "执行示教动作失败: name=$name", e)
+            }
+        }
+    }
+
+    // 前往巡检点
+    fun startInspectionPoint(pointId: String) {
+        viewModelScope.launch {
+            try {
+                robotApi.startInspectionPoint(pointId)
+            } catch (e: Exception) {
+                KLog.e(TAG, "前往巡检点失败: pointId=$pointId", e)
+            }
+        }
+    }
+
+    // 添加巡检点
+    fun addInspectionPoint(point: InspectionPointBean) {
+        viewModelScope.launch {
+            try {
+                robotApi.addInspectionPoint(point)
+            } catch (e: Exception) {
+                KLog.e(TAG, "添加巡检点失败", e)
+            }
+        }
+    }
+
+    // 删除巡检点
+    fun deleteInspectionPoint(pointId: String) {
+        viewModelScope.launch {
+            try {
+                robotApi.deleteInspectionPoint(pointId)
+            } catch (e: Exception) {
+                KLog.e(TAG, "删除巡检点失败: pointId=$pointId", e)
             }
         }
     }
