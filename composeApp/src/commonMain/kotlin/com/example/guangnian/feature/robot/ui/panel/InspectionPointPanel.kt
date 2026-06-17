@@ -6,9 +6,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.text.style.TextOverflow
+import kotlin.math.pow
+import kotlin.math.round
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -35,10 +39,53 @@ fun InspectionPointPanel(
     onPointClick: (String) -> Unit,
     onAddCurrentPosition: (InspectionPointBean) -> Unit,
     onDeletePoint: (String) -> Unit,
+    onUpdatePoint: (InspectionPointBean) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDeleteConfirm by remember { mutableStateOf<InspectionPointBean?>(null) }
+    var showEditDialog by remember { mutableStateOf<InspectionPointBean?>(null) }
+
+    if (showEditDialog != null) {
+        var editName by remember { mutableStateOf(showEditDialog?.name ?: "") }
+        AlertDialog(
+            onDismissRequest = { showEditDialog = null },
+            title = { Text("编辑导览点", color = Color.White) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("名称") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF03DC6B),
+                            unfocusedBorderColor = Color.Gray
+                        )
+                    )
+                }
+            },
+            containerColor = Color(0xFF2C2C2C),
+            confirmButton = {
+                TextButton(onClick = {
+                    showEditDialog?.let { 
+                        onUpdatePoint(it.copy(name = editName))
+                    }
+                    showEditDialog = null
+                }) {
+                    Text("保存", color = Color(0xFF03DC6B))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = null }) {
+                    Text("取消", color = Color.White)
+                }
+            }
+        )
+    }
 
     if (showDeleteConfirm != null) {
         AlertDialog(
@@ -115,17 +162,17 @@ fun InspectionPointPanel(
                 }
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
+            LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(endpoints) { point ->
-                    InspectionPointGridItem(
+                    InspectionPointLinearItem(
                         point = point,
                         onClick = { onPointClick(point.pointId) },
-                        onLongClick = { showDeleteConfirm = point }
+                        onEditClick = { showEditDialog = point },
+                        onDeleteClick = { showDeleteConfirm = point }
                     )
                 }
             }
@@ -133,48 +180,60 @@ fun InspectionPointPanel(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun InspectionPointGridItem(
+private fun InspectionPointLinearItem(
     point: InspectionPointBean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
-    val textColor = when (point.pointType) {
+    val typeColor = when (point.pointType) {
         1 -> Color(0xFF64B5F6) // 迎宾点淡蓝色
         2 -> Color(0xFF81C784) // 充电点淡绿色
         else -> Color.White
     }
 
-    Box(
+    Row(
         modifier = Modifier
-            .height(56.dp)
+            .fillMaxWidth()
+            .height(64.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0x33FFFFFF))
-            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(8.dp))
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        contentAlignment = Alignment.Center
+            .background(Color(0x1AFFFFFF))
+            .border(1.dp, Color(0x12FFFFFF), RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = point.name.ifEmpty { "未命名" },
-                color = textColor,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "类型: ${getPointTypeLabel(point.pointType)} | X: ${point.x.format(2)} Y: ${point.y.format(2)}",
+                color = Color.Gray,
+                fontSize = 12.sp,
                 maxLines = 1
             )
-            if (point.pointType != 0) {
-                Text(
-                    text = getPointTypeLabel(point.pointType),
-                    color = textColor.copy(alpha = 0.6f),
-                    fontSize = 10.sp
-                )
-            }
+        }
+
+        IconButton(onClick = onEditClick) {
+            Icon(Icons.Default.Edit, contentDescription = "编辑", tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        }
+
+        IconButton(onClick = onDeleteClick) {
+            Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
         }
     }
+}
+
+private fun Double.format(digits: Int): String {
+    val multiplier = 10.0.pow(digits)
+    return (round(this * multiplier) / multiplier).toString()
 }
 
 private fun getPointTypeLabel(type: Int): String {

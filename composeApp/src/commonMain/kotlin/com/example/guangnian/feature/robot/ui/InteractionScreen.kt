@@ -435,6 +435,7 @@ fun InteractionScreen(
                                 onPointClick = { actionViewModel.startInspectionPoint(it) },
                                 onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
                                 onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
+                                onUpdatePoint = { actionViewModel.updateInspectionPoint(it) },
                                 onRetryClick = { actionViewModel.fetchInspectionPoints() }
                             )
                             "语音合成" -> SpeechSynthesisPanel()

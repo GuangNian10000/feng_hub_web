@@ -106,6 +106,19 @@ class ActionViewModel : ViewModel() {
         }
     }
 
+    fun updateInspectionPoint(point: InspectionPointBean) {
+        viewModelScope.launch {
+            try {
+                val result = robotApi.updateInspectionPoint(point)
+                if (result.st == 0) {
+                    fetchInspectionPoints() // 更新成功后刷新列表
+                }
+            } catch (e: Exception) {
+                KLog.e(TAG, "更新巡检点失败", e)
+            }
+        }
+    }
+
     fun startInspectionPoint(pointId: String) {
         viewModelScope.launch {
             try {
