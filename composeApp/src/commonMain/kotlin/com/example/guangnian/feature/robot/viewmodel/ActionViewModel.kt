@@ -4,25 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.robot.data.api.RobotTcpApiImpl
-import com.example.guangnian.feature.robot.data.bean.ArmActionBean
-import com.example.guangnian.feature.robot.data.bean.FavoriteActionBean
-import com.example.guangnian.feature.robot.data.bean.InspectionPointBean
-import com.example.guangnian.feature.robot.data.bean.MotionBean
-import com.example.guangnian.feature.robot.data.bean.PostureBean
-import com.example.guangnian.feature.robot.data.bean.TeachActionBean
+import com.example.guangnian.feature.robot.data.bean.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// 聚合动作模块所有 UI 状态。
 data class ActionUiState(
     val postures: List<PostureBean> = emptyList(),
     val motions: List<MotionBean> = emptyList(),
     val armActions: List<ArmActionBean> = emptyList(),
     val teachActions: List<TeachActionBean> = emptyList(),
     val favoriteActions: List<FavoriteActionBean> = emptyList(),
+    val endpoints: List<InspectionPointBean> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -33,12 +28,9 @@ class ActionViewModel : ViewModel() {
     }
 
     private val robotApi = RobotTcpApiImpl()
-
-    // 定义统一状态流。
     private val _uiState = MutableStateFlow(ActionUiState())
     val uiState: StateFlow<ActionUiState> = _uiState.asStateFlow()
 
-    // 拉取姿态动作列表。
     fun fetchPostureList() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -46,60 +38,15 @@ class ActionViewModel : ViewModel() {
                 val list = robotApi.getPostureList()
                 _uiState.update { it.copy(postures = list, isLoading = false) }
             } catch (e: Exception) {
-                KLog.e(TAG, "拉取姿态动作列表失败", e)
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
-    // 执行姿态动作。
     fun sendPostureCommand(postureName: String) {
-        viewModelScope.launch {
-            try {
-                robotApi.executePosture(postureName)
-            } catch (e: Exception) {
-                KLog.e(TAG, "发送姿态动作指令失败: $postureName", e)
-            }
-        }
+        viewModelScope.launch { robotApi.executePosture(postureName) }
     }
 
-    // 拉取运动控制列表。
-    fun fetchMotionList() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                val list = robotApi.getMotionList()
-                _uiState.update { it.copy(motions = list, isLoading = false) }
-            } catch (e: Exception) {
-                KLog.e(TAG, "拉取运动控制列表失败", e)
-                _uiState.update { it.copy(isLoading = false) }
-            }
-        }
-    }
-
-    // 执行运动控制动作。
-    fun sendMotionCommand(motionId: Int) {
-        viewModelScope.launch {
-            try {
-                robotApi.executeMotion(motionId)
-            } catch (e: Exception) {
-                KLog.e(TAG, "执行运动控制动作失败: motion_id=$motionId", e)
-            }
-        }
-    }
-
-    // 执行预设运动动作。
-    fun sendSportCommand(sport: String) {
-        viewModelScope.launch {
-            try {
-                robotApi.executeSport(sport)
-            } catch (e: Exception) {
-                KLog.e(TAG, "执行预设运动动作失败: sport=$sport", e)
-            }
-        }
-    }
-
-    // 拉取手臂动作列表。
     fun fetchArmList() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -107,199 +54,86 @@ class ActionViewModel : ViewModel() {
                 val list = robotApi.getArmList()
                 _uiState.update { it.copy(armActions = list, isLoading = false) }
             } catch (e: Exception) {
-                KLog.e(TAG, "拉取手臂动作列表失败", e)
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
-    // 切换动作收藏状态。
-    fun toggleFavorite(id: String, name: String, isArmAction: Boolean) {
-        _uiState.update { currentState ->
-            val currentFavorites = currentState.favoriteActions.toMutableList()
-            val existingIndex = currentFavorites.indexOfFirst { it.id == id && it.isArmAction == isArmAction }
-
-            if (existingIndex != -1) {
-                currentFavorites.removeAt(existingIndex)
-            } else {
-                currentFavorites.add(FavoriteActionBean(id, name, isArmAction))
-            }
-            currentState.copy(favoriteActions = currentFavorites)
-        }
-    }
-
-    // 执行手臂动作。
     fun sendArmCommand(armId: Int) {
-        viewModelScope.launch {
-            try {
-                robotApi.executeArm(armId)
-            } catch (e: Exception) {
-                KLog.e(TAG, "执行手臂动作失败: arm_id=$armId", e)
-            }
-        }
+        viewModelScope.launch { robotApi.executeArm(armId) }
     }
 
-    // 发送平移摇杆指令。
-    fun moveTranslate(angle: Double, level: Int) {
-        viewModelScope.launch {
-            try {
-                robotApi.moveTranslate(angle, level)
-            } catch (e: Exception) {
-                KLog.e(TAG, "平移摇杆控制失败: angle=$angle, level=$level", e)
-            }
-        }
-    }
+    // --- 巡检/导览点位业务逻辑 ---
 
-    // 发送旋转摇杆指令。
-    fun moveRotate(level: Int) {
-        viewModelScope.launch {
-            try {
-                robotApi.moveRotate(level)
-            } catch (e: Exception) {
-                KLog.e(TAG, "旋转摇杆控制失败: level=$level", e)
-            }
-        }
-    }
-
-    // 发送混合摇杆指令。
-    fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) {
-        viewModelScope.launch {
-            robotApi.moveMixed(angle, translateLevel, rotateLevel)
-        }
-    }
-
-    // 停止平移摇杆。
-    fun stopTranslate() {
-        viewModelScope.launch {
-            try {
-                robotApi.stopTranslate()
-            } catch (e: Exception) {
-                KLog.e(TAG, "停止平移摇杆失败", e)
-            }
-        }
-    }
-
-    // 停止旋转摇杆。
-    fun stopRotate() {
-        viewModelScope.launch {
-            try {
-                robotApi.stopRotate()
-            } catch (e: Exception) {
-                KLog.e(TAG, "停止旋转摇杆失败", e)
-            }
-        }
-    }
-
-    // 开启示教录制。
-    fun startTeach(name: String) {
-        viewModelScope.launch {
-            try {
-                robotApi.startTeach(name)
-            } catch (e: Exception) {
-                KLog.e(TAG, "开始录制示教动作失败: name=$name", e)
-            }
-        }
-    }
-
-    // 停止示教录制。
-    fun stopTeach() {
-        viewModelScope.launch {
-            try {
-                robotApi.stopTeach()
-            } catch (e: Exception) {
-                KLog.e(TAG, "结束录制示教动作失败", e)
-            }
-        }
-    }
-
-    // 删除示教动作。
-    fun deleteTeach(name: String) {
-        viewModelScope.launch {
-            try {
-                robotApi.deleteTeach(name)
-            } catch (e: Exception) {
-                KLog.e(TAG, "删除示教动作失败: name=$name", e)
-            }
-        }
-    }
-
-    // 重命名示教动作。
-    fun renameTeach(oldName: String, newName: String) {
-        viewModelScope.launch {
-            try {
-                robotApi.renameTeach(oldName, newName)
-            } catch (e: Exception) {
-                KLog.e(TAG, "重命名示教动作失败: old=$oldName, new=$newName", e)
-            }
-        }
-    }
-
-    // 拉取示教动作列表。
-    fun fetchTeachActionList() {
+    fun fetchInspectionPoints() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val list = robotApi.getTeachActionList()
-                _uiState.update { it.copy(teachActions = list, isLoading = false) }
+                KLog.d(TAG, "开始请求巡检点列表...")
+                val list = robotApi.getInspectionPoints()
+                _uiState.update { it.copy(endpoints = list, isLoading = false) }
+                KLog.d(TAG, "成功获取巡检点: ${list.size}个")
             } catch (e: Exception) {
-                KLog.e(TAG, "拉取示教动作列表失败", e)
+                KLog.e(TAG, "获取巡检点列表失败", e)
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
-    // 执行示教动作。
-    fun executeTeach(name: String) {
-        viewModelScope.launch {
-            try {
-                robotApi.executeTeach(name)
-            } catch (e: Exception) {
-                KLog.e(TAG, "执行示教动作失败: name=$name", e)
-            }
-        }
-    }
-
-    // 前往巡检点
-    fun startInspectionPoint(pointId: String) {
-        viewModelScope.launch {
-            try {
-                robotApi.startInspectionPoint(pointId)
-            } catch (e: Exception) {
-                KLog.e(TAG, "前往巡检点失败: pointId=$pointId", e)
-            }
-        }
-    }
-
-    // 添加巡检点
     fun addInspectionPoint(point: InspectionPointBean) {
         viewModelScope.launch {
             try {
-                robotApi.addInspectionPoint(point)
+                val result = robotApi.addInspectionPoint(point)
+                if (result.st == 0) {
+                    fetchInspectionPoints() // 添加成功后刷新列表
+                }
             } catch (e: Exception) {
                 KLog.e(TAG, "添加巡检点失败", e)
             }
         }
     }
 
-    // 删除巡检点
     fun deleteInspectionPoint(pointId: String) {
         viewModelScope.launch {
             try {
-                robotApi.deleteInspectionPoint(pointId)
+                val result = robotApi.deleteInspectionPoint(pointId)
+                if (result.st == 0) {
+                    fetchInspectionPoints() // 删除成功后刷新列表
+                }
             } catch (e: Exception) {
-                KLog.e(TAG, "删除巡检点失败: pointId=$pointId", e)
+                KLog.e(TAG, "删除巡检点失败", e)
             }
         }
     }
 
-    // 触发系统急停。
-    fun stopAll() {
+    fun startInspectionPoint(pointId: String) {
         viewModelScope.launch {
             try {
-                robotApi.stopAll()
+                robotApi.startInspectionPoint(pointId)
             } catch (e: Exception) {
-                KLog.e(TAG, "急停失败", e)
+                KLog.e(TAG, "前往巡检点失败", e)
             }
+        }
+    }
+
+    fun stopAll() {
+        viewModelScope.launch { robotApi.stopAll() }
+    }
+
+    fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) {
+        viewModelScope.launch { robotApi.moveMixed(angle, translateLevel, rotateLevel) }
+    }
+
+    fun stopTranslate() { viewModelScope.launch { robotApi.stopTranslate() } }
+    fun stopRotate() { viewModelScope.launch { robotApi.stopRotate() } }
+
+    fun toggleFavorite(id: String, name: String, isArmAction: Boolean) {
+        _uiState.update { currentState ->
+            val currentFavorites = currentState.favoriteActions.toMutableList()
+            val existingIndex = currentFavorites.indexOfFirst { it.id == id && it.isArmAction == isArmAction }
+            if (existingIndex != -1) currentFavorites.removeAt(existingIndex)
+            else currentFavorites.add(FavoriteActionBean(id, name, isArmAction))
+            currentState.copy(favoriteActions = currentFavorites)
         }
     }
 }

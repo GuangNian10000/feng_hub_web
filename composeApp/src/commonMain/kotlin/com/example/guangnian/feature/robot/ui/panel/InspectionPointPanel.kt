@@ -3,6 +3,7 @@ package com.example.guangnian.feature.robot.ui.panel
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -28,22 +29,26 @@ import com.example.guangnian.feature.robot.viewmodel.MapViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun InspectionPointPanel() {
-    val mapViewModel: MapViewModel = viewModel { MapViewModel() }
-    val actionViewModel: ActionViewModel = viewModel { ActionViewModel() }
-    val mapUiState by mapViewModel.uiState.collectAsState()
-
+fun InspectionPointPanel(
+    endpoints: List<InspectionPointBean>,
+    robotPosition: com.example.guangnian.feature.robot.data.bean.RobotPositionBean?,
+    onPointClick: (String) -> Unit,
+    onAddCurrentPosition: (InspectionPointBean) -> Unit,
+    onDeletePoint: (String) -> Unit,
+    onRetryClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     var showDeleteConfirm by remember { mutableStateOf<InspectionPointBean?>(null) }
 
     if (showDeleteConfirm != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
             title = { Text("确认删除", color = Color.White) },
-            text = { Text("确定要删除巡检点 “${showDeleteConfirm?.name}” 吗？", color = Color.LightGray) },
+            text = { Text("确定要删除导览点 “${showDeleteConfirm?.name}” 吗？", color = Color.LightGray) },
             containerColor = Color(0xFF2C2C2C),
             confirmButton = {
                 TextButton(onClick = {
-                    showDeleteConfirm?.let { actionViewModel.deleteInspectionPoint(it.pointId) }
+                    showDeleteConfirm?.let { onDeletePoint(it.pointId) }
                     showDeleteConfirm = null
                 }) {
                     Text("删除", color = Color(0xFFFF5252))
@@ -57,7 +62,7 @@ fun InspectionPointPanel() {
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(4.dp)) {
+    Column(modifier = modifier.fillMaxSize().padding(4.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -67,10 +72,9 @@ fun InspectionPointPanel() {
             
             Button(
                 onClick = {
-                    val robotPosition = mapUiState.robotPosition
                     if (robotPosition != null) {
                         val newPoint = InspectionPointBean(
-                            name = "点位_${mapUiState.endpoints.size + 1}",
+                            name = "点位_${endpoints.size + 1}",
                             x = robotPosition.x,
                             y = robotPosition.y,
                             yaw = robotPosition.yaw,
@@ -80,9 +84,10 @@ fun InspectionPointPanel() {
                                 yaw = robotPosition.yaw
                             )
                         )
-                        actionViewModel.addInspectionPoint(newPoint)
+                        onAddCurrentPosition(newPoint)
                     }
                 },
+                enabled = robotPosition != null,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF03DC6B)),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 modifier = Modifier.height(32.dp)
@@ -93,9 +98,21 @@ fun InspectionPointPanel() {
             }
         }
 
-        if (mapUiState.endpoints.isEmpty()) {
+        if (endpoints.isEmpty()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("暂无导览点位", color = Color.Gray, fontSize = 14.sp)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("暂无导览数据", color = Color.Gray, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0x33FFFFFF))
+                            .clickable { onRetryClick() }
+                            .padding(horizontal = 24.dp, vertical = 8.dp)
+                    ) {
+                        Text("点击重试", color = Color.White, fontSize = 14.sp)
+                    }
+                }
             }
         } else {
             LazyVerticalGrid(
@@ -104,10 +121,10 @@ fun InspectionPointPanel() {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(mapUiState.endpoints) { point ->
+                items(endpoints) { point ->
                     InspectionPointGridItem(
                         point = point,
-                        onClick = { actionViewModel.startInspectionPoint(point.pointId) },
+                        onClick = { onPointClick(point.pointId) },
                         onLongClick = { showDeleteConfirm = point }
                     )
                 }

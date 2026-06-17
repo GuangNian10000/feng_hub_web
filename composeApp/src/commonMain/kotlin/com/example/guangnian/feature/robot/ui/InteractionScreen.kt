@@ -77,11 +77,10 @@ fun InteractionScreen(
 
     // 控制菜单切换时自动加载数据
     LaunchedEffect(activeFragment) {
-        if (activeFragment == "姿态动作" && uiState.postures.isEmpty()) {
-            actionViewModel.fetchPostureList()
-        }
-        if (activeFragment == "动作" && uiState.armActions.isEmpty()) {
-            actionViewModel.fetchArmList()
+        when (activeFragment) {
+            "姿态动作" -> actionViewModel.fetchPostureList()
+            "动作" -> actionViewModel.fetchArmList()
+            "导览管理" -> actionViewModel.fetchInspectionPoints()
         }
     }
 
@@ -430,7 +429,14 @@ fun InteractionScreen(
                                 },
                                 onRetryClick = { actionViewModel.fetchArmList() }
                             )
-                            "导览管理" -> InspectionPointPanel()
+                            "导览管理" -> InspectionPointPanel(
+                                endpoints = uiState.endpoints,
+                                robotPosition = mapUiState.robotPosition,
+                                onPointClick = { actionViewModel.startInspectionPoint(it) },
+                                onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
+                                onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
+                                onRetryClick = { actionViewModel.fetchInspectionPoints() }
+                            )
                             "语音合成" -> SpeechSynthesisPanel()
                             "智能体设置" -> AgentSettingsPanel()
                             "知识库" -> KnowledgeBasePanel()
