@@ -9,8 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.guangnian.feature.robot.ui.InteractionScreen
-import com.example.guangnian.feature.robot.ui.MainControlScreen
+import com.example.guangnian.feature.console.ui.InteractionScreen
+import com.example.guangnian.feature.main.ui.MainControlScreen
 
 // 定义应用层级路由枚举。
 enum class AppRoute {
