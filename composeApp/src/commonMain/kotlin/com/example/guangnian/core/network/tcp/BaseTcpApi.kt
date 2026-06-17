@@ -37,6 +37,17 @@ abstract class BaseTcpApi {
                             is String -> put(k, v)
                             is Number -> put(k, v)
                             is Boolean -> put(k, v)
+                            is Map<*, *> -> put(k, buildJsonObject {
+                                v.forEach { (subK, subV) ->
+                                    val sk = subK.toString()
+                                    when (subV) {
+                                        is String -> put(sk, subV)
+                                        is Number -> put(sk, subV)
+                                        is Boolean -> put(sk, subV)
+                                        else -> put(sk, subV.toString())
+                                    }
+                                }
+                            })
                             else -> put(k, v.toString())
                         }
                     }

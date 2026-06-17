@@ -237,9 +237,9 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
             "stayTime" to point.stayTime,
             "needRotate" to point.needRotate,
             "position" to mapOf(
-                "x" to point.x,
-                "y" to point.y,
-                "yaw" to point.yaw
+                "x" to (point.position?.x ?: point.x),
+                "y" to (point.position?.y ?: point.y),
+                "yaw" to (point.position?.yaw ?: point.yaw)
             )
         ))
 
@@ -255,9 +255,9 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
             "stayTime" to point.stayTime,
             "needRotate" to point.needRotate,
             "position" to mapOf(
-                "x" to point.x,
-                "y" to point.y,
-                "yaw" to point.yaw
+                "x" to (point.position?.x ?: point.x),
+                "y" to (point.position?.y ?: point.y),
+                "yaw" to (point.position?.yaw ?: point.yaw)
             )
         ))
 
