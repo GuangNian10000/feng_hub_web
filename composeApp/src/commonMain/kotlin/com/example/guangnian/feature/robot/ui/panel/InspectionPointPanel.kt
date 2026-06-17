@@ -53,8 +53,12 @@ fun InspectionPointPanel(
     if (showEditDialog != null) {
         InspectionPointEditDialog(
             initialPoint = showEditDialog,
-            onConfirm = { updatedPoint ->
-                onUpdatePoint(updatedPoint)
+            onConfirm = { point ->
+                if (point.pointId.isEmpty()) {
+                    onAddCurrentPosition(point)
+                } else {
+                    onUpdatePoint(point)
+                }
                 showEditDialog = null
             },
             onDismiss = { showEditDialog = null }
@@ -86,33 +90,31 @@ fun InspectionPointPanel(
     Column(modifier = modifier.fillMaxSize().padding(4.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("导览点列表", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            
             Button(
                 onClick = {
-                    if (robotPosition != null) {
-                        val newPoint = InspectionPointBean(
-                            name = "点位_${endpoints.size + 1}",
-                            position = com.example.guangnian.feature.robot.data.bean.PointPosition(
-                                x = robotPosition.x,
-                                y = robotPosition.y,
-                                yaw = robotPosition.yaw
-                            )
-                        )
-                        onAddCurrentPosition(newPoint)
-                    }
+                    val newPoint = InspectionPointBean(
+                        name = "点位_${endpoints.size + 1}",
+                        position = com.example.guangnian.feature.robot.data.bean.PointPosition(
+                            x = robotPosition?.x ?: 0.0,
+                            y = robotPosition?.y ?: 0.0,
+                            yaw = robotPosition?.yaw ?: 0.0
+                        ),
+                        x = robotPosition?.x ?: 0.0,
+                        y = robotPosition?.y ?: 0.0,
+                        yaw = robotPosition?.yaw ?: 0.0
+                    )
+                    showEditDialog = newPoint
                 },
-                enabled = robotPosition != null,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF03DC6B)),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 modifier = Modifier.height(32.dp)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("添加当前位置", fontSize = 12.sp)
+                Text("添加导览点", fontSize = 12.sp)
             }
         }
 
@@ -246,7 +248,8 @@ private fun InspectionPointEditDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("编辑导览点", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                val isEdit = initialPoint?.pointId?.isNotEmpty() == true
+                Text(if (isEdit) "编辑导览点" else "添加导览点", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
 
                 // 1. 基本信息 (名称 + 类型)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
