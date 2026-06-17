@@ -1,4 +1,4 @@
-package com.example.guangnian.feature.robot.screen
+package com.example.guangnian.feature.robot.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

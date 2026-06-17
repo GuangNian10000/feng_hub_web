@@ -20,7 +20,7 @@ data class MapUiState(
     val mapConfig: MapConfigBean? = null,
     val mapImage: ImageBitmap? = null, // 需配合 Coil/Glide 将 PGM/URL 转换为 ImageBitmap
     val robotPosition: RobotPositionBean? = null,
-    val endpoints: List<SlamPointBean> = emptyList(),
+    val endpoints: List<InspectionPointBean> = emptyList(),
     val globalPath: List<Point2DBean> = emptyList(),
     val localPath: List<Point2DBean> = emptyList(),
     val pointCloud: List<Point2DBean> = emptyList()
@@ -72,7 +72,7 @@ class MapViewModel : ViewModel() {
                     try {
                         val global = robotApi.getGlobalPath()
                         val local = robotApi.getLocalPath()
-                        val points = robotApi.getPointList()
+                        val points = robotApi.getInspectionPoints()
                         _uiState.update {
                             it.copy(
                                 globalPath = global.points,

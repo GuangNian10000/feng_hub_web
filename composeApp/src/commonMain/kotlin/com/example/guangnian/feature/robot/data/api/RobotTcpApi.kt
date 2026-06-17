@@ -5,6 +5,7 @@ import com.example.guangnian.feature.robot.data.bean.AgentListResponse
 import com.example.guangnian.feature.robot.data.bean.ArmActionBean
 import com.example.guangnian.feature.robot.data.bean.BatteryBean
 import com.example.guangnian.feature.robot.data.bean.HeartbeatStatusBean
+import com.example.guangnian.feature.robot.data.bean.InspectionPointBean
 import com.example.guangnian.feature.robot.data.bean.MapConfigBean
 import com.example.guangnian.feature.robot.data.bean.MotionBean
 import com.example.guangnian.feature.robot.data.bean.OfflineStateBean
@@ -12,7 +13,6 @@ import com.example.guangnian.feature.robot.data.bean.PathPointsBean
 import com.example.guangnian.feature.robot.data.bean.Point2DBean
 import com.example.guangnian.feature.robot.data.bean.PostureBean
 import com.example.guangnian.feature.robot.data.bean.RobotPositionBean
-import com.example.guangnian.feature.robot.data.bean.SlamPointBean
 import com.example.guangnian.feature.robot.data.bean.StartupHeartbeatBean
 import com.example.guangnian.feature.robot.data.bean.BaseBean
 import com.example.guangnian.feature.robot.data.bean.SpeechSynthesisBean
@@ -137,6 +137,9 @@ interface RobotTcpApi {
     // 前往某标记点（坐标参数可选）
     suspend fun startPoint(pointId: String, x: Double? = null, y: Double? = null, yaw: Double? = null)
 
+    // 前往巡检点
+    suspend fun startInspectionPoint(pointId: String): BaseBean
+
     // 停止当前导航目标
     suspend fun stopPosition()
 
@@ -146,8 +149,17 @@ interface RobotTcpApi {
     // 急停（停止运动/建图）
     suspend fun stopAll()
 
-    // 获取点位列表
-    suspend fun getPointList(): List<SlamPointBean>
+    // 获取巡检点列表
+    suspend fun getInspectionPoints(): List<InspectionPointBean>
+
+    // 创建巡检点
+    suspend fun addInspectionPoint(point: InspectionPointBean): BaseBean
+
+    // 更新巡检点
+    suspend fun updateInspectionPoint(point: InspectionPointBean): BaseBean
+
+    // 删除巡检点
+    suspend fun deleteInspectionPoint(pointId: String): BaseBean
 
     // 获取全局路径规划
     suspend fun getGlobalPath(): PathPointsBean

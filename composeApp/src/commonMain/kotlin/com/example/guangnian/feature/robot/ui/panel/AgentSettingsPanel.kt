@@ -1,4 +1,4 @@
-package com.example.guangnian.feature.robot.screen.panel
+package com.example.guangnian.feature.robot.ui.panel
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

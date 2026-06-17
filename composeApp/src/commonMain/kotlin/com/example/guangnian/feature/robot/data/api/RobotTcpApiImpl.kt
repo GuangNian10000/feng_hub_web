@@ -7,6 +7,7 @@ import com.example.guangnian.core.network.tcp.TcpNode
 import com.example.guangnian.feature.robot.data.bean.AgentEntity
 import com.example.guangnian.feature.robot.data.bean.AgentListResponse
 import com.example.guangnian.feature.robot.data.bean.HeartbeatStatusBean
+import com.example.guangnian.feature.robot.data.bean.InspectionPointBean
 import com.example.guangnian.feature.robot.data.bean.MapConfigBean
 import com.example.guangnian.feature.robot.data.bean.MotionBean
 import com.example.guangnian.feature.robot.data.bean.OfflineStateBean
@@ -14,7 +15,6 @@ import com.example.guangnian.feature.robot.data.bean.PathPointsBean
 import com.example.guangnian.feature.robot.data.bean.Point2DBean
 import com.example.guangnian.feature.robot.data.bean.PostureBean
 import com.example.guangnian.feature.robot.data.bean.RobotPositionBean
-import com.example.guangnian.feature.robot.data.bean.SlamPointBean
 import com.example.guangnian.feature.robot.data.bean.StartupHeartbeatBean
 import com.example.guangnian.feature.robot.data.bean.BaseBean
 import com.example.guangnian.feature.robot.data.bean.SpeechSynthesisBean
@@ -209,6 +209,10 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<Unit>("slam/start_point", msg)
     }
 
+    // 前往巡检点
+    override suspend fun startInspectionPoint(pointId: String) =
+        request<BaseBean>("location/start_point", mapOf("pointId" to pointId))
+
     // 停止当前导航目标
     override suspend fun stopPosition() = request<Unit>("slam/stop_position")
 
@@ -218,8 +222,44 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 急停（停止运动/建图）
     override suspend fun stopAll() = request<Unit>("slam/stop_all")
 
-    // 获取点位列表
-    override suspend fun getPointList() = request<List<SlamPointBean>>("slam/point_list")
+    // 获取巡检点列表
+    override suspend fun getInspectionPoints() =
+        request<List<InspectionPointBean>>("location/get_endpoints")
+
+    // 创建巡检点
+    override suspend fun addInspectionPoint(point: InspectionPointBean) =
+        request<BaseBean>("location/add_endpoint", mapOf(
+            "name" to (point.name ?: ""),
+            "broadcastContent" to (point.broadcastContent ?: ""),
+            "playOnArrival" to (point.playOnArrival ?: true),
+            "photoOnArrival" to (point.photoOnArrival ?: false),
+            "pointType" to (point.pointType ?: 0),
+            "position" to mapOf(
+                "x" to (point.position?.x ?: point.x ?: 0.0),
+                "y" to (point.position?.y ?: point.y ?: 0.0),
+                "yaw" to (point.position?.yaw ?: point.yaw ?: 0.0)
+            )
+        ))
+
+    // 更新巡检点
+    override suspend fun updateInspectionPoint(point: InspectionPointBean) =
+        request<BaseBean>("location/update_endpoint", mapOf(
+            "pointId" to (point.pointId ?: ""),
+            "name" to (point.name ?: ""),
+            "broadcastContent" to (point.broadcastContent ?: ""),
+            "playOnArrival" to (point.playOnArrival ?: true),
+            "photoOnArrival" to (point.photoOnArrival ?: false),
+            "pointType" to (point.pointType ?: 0),
+            "position" to mapOf(
+                "x" to (point.position?.x ?: point.x ?: 0.0),
+                "y" to (point.position?.y ?: point.y ?: 0.0),
+                "yaw" to (point.position?.yaw ?: point.yaw ?: 0.0)
+            )
+        ))
+
+    // 删除巡检点
+    override suspend fun deleteInspectionPoint(pointId: String) =
+        request<BaseBean>("location/delete_endpoint", mapOf("pointId" to pointId))
 
     // 获取全局路径规划
     override suspend fun getGlobalPath() = request<PathPointsBean>("slam/get_global_path")

@@ -5,7 +5,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.guangnian.core.network.tcp.TcpState
-import com.example.guangnian.feature.robot.screen.MainControlContent
+import com.example.guangnian.feature.robot.ui.MainControlContent
 
 @Preview(
     device = "spec:width=896dp,height=414dp,orientation=landscape",

@@ -1,4 +1,4 @@
-package com.example.guangnian.feature.robot.screen.panel
+package com.example.guangnian.feature.robot.ui.panel
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,7 +24,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.guangnian.core.network.tcp.TcpNode
 import com.example.guangnian.feature.robot.data.api.RobotTcpApiImpl
 import com.example.guangnian.feature.robot.data.bean.ArmActionBean
 import com.example.guangnian.feature.robot.data.bean.SpeechSynthesisBean

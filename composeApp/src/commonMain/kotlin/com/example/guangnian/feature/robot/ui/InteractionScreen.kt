@@ -1,4 +1,4 @@
-package com.example.guangnian.feature.robot.screen
+package com.example.guangnian.feature.robot.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -36,7 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.robot.data.bean.MapConfigBean
 import com.example.guangnian.feature.robot.data.bean.Point2DBean
-import com.example.guangnian.feature.robot.screen.panel.*
+import com.example.guangnian.feature.robot.ui.panel.*
 import com.example.guangnian.feature.robot.viewmodel.ActionViewModel
 import com.example.guangnian.feature.robot.viewmodel.MapViewModel
 import com.example.guangnian.feature.robot.viewmodel.MapUiState
