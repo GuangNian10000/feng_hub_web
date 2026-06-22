@@ -642,13 +642,19 @@ fun MapBackgroundLayer(
                         
                         val px = worldToPixel(realX, realY, config, mapHeightPx)
                         
-                        // 导览点：深紫色，调整到适中大小
+                        val pointColor = when (ep.pointType) {
+                            1 -> Color(0xFFFFD600) // 迎宾点：黄色
+                            2 -> Color(0xFF4CAF50) // 充电点：绿色
+                            else -> Color(0xFF9C27B0) // 普通点：深紫色
+                        }
+                        
+                        // 导览点图标渲染
                         val pointRadius = 18f / scale
-                        drawCircle(color = Color(0xFF9C27B0), radius = pointRadius, center = px)
+                        drawCircle(color = pointColor, radius = pointRadius, center = px)
                         drawCircle(color = Color.White, radius = pointRadius + 3f / scale, center = px, style = Stroke(width = 3f / scale))
                         
                         // 绘制方向箭头
-                        drawDirectionArrow(px, 28f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.4f)
+                        drawDirectionArrow(px, 28f / scale, realYaw, pointColor, offset = pointRadius * 1.4f)
                     }
 
                     // 绘制名称文本 (单独循环以确保文本不被图标遮挡)
