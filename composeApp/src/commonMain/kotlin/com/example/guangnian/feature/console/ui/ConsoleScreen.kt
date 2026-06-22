@@ -648,13 +648,16 @@ fun MapBackgroundLayer(
                             else -> Color(0xFF9C27B0) // 普通点：深紫色
                         }
                         
+                        // 使用平方根补偿，让图标随缩放适度变化，而不是绝对静止
+                        val adaptiveFactor = 1f / sqrt(scale)
+                        val pointRadius = 12f * adaptiveFactor
+                        
                         // 导览点图标渲染
-                        val pointRadius = 18f / scale
                         drawCircle(color = pointColor, radius = pointRadius, center = px)
-                        drawCircle(color = Color.White, radius = pointRadius + 3f / scale, center = px, style = Stroke(width = 3f / scale))
+                        drawCircle(color = Color.White, radius = pointRadius + 2f * adaptiveFactor, center = px, style = Stroke(width = 2f * adaptiveFactor))
                         
                         // 绘制方向箭头
-                        drawDirectionArrow(px, 28f / scale, realYaw, pointColor, offset = pointRadius * 1.4f)
+                        drawDirectionArrow(px, 18f * adaptiveFactor, realYaw, pointColor, offset = pointRadius * 1.4f)
                     }
 
                     // 绘制名称文本 (单独循环以确保文本不被图标遮挡)
@@ -662,18 +665,19 @@ fun MapBackgroundLayer(
                         val realX = ep.position?.x ?: ep.x
                         val realY = ep.position?.y ?: ep.y
                         val px = worldToPixel(realX, realY, config, mapHeightPx)
-                        val pointRadius = 18f / scale
+                        val adaptiveFactor = 1f / sqrt(scale)
+                        val pointRadius = 12f * adaptiveFactor
 
                         val textLayoutResult = textMeasurer.measure(
                             text = ep.name ?: "",
                             style = TextStyle(
                                 color = Color.White,
-                                fontSize = 14.sp / scale,
+                                fontSize = (6.sp.value * adaptiveFactor).sp,
                                 fontWeight = FontWeight.Bold,
                                 shadow = Shadow(
                                     color = Color.Black,
-                                    offset = Offset(1.5f / scale, 1.5f / scale),
-                                    blurRadius = 3f / scale
+                                    offset = Offset(1.5f * adaptiveFactor, 1.5f * adaptiveFactor),
+                                    blurRadius = 3f * adaptiveFactor
                                 )
                             )
                         )
@@ -681,7 +685,7 @@ fun MapBackgroundLayer(
                             textLayoutResult = textLayoutResult,
                             topLeft = Offset(
                                 x = px.x - textLayoutResult.size.width / 2,
-                                y = px.y + pointRadius + 4f / scale
+                                y = px.y + pointRadius + 2.5f * adaptiveFactor
                             )
                         )
                     }
@@ -689,16 +693,18 @@ fun MapBackgroundLayer(
                     // 3. 绘制临时点
                     if ((uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION || uiState.interactionMode == MapInteractionMode.CONFIRM_POINT) && uiState.tempPoint != null) {
                         val px = worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
-                        drawCircle(color = Color(0xFF007AFF), radius = 20f / scale, center = px)
-                        drawDirectionArrow(px, 30f / scale, uiState.tempYaw.toDouble(), Color(0xFF007AFF), offset = 22f / scale)
+                        val adaptiveFactor = 1f / sqrt(scale)
+                        drawCircle(color = Color(0xFF007AFF), radius = 14f * adaptiveFactor, center = px)
+                        drawDirectionArrow(px, 20f * adaptiveFactor, uiState.tempYaw.toDouble(), Color(0xFF007AFF), offset = 16f * adaptiveFactor)
                     }
 
                     // 4. 绘制机器人位置
                     uiState.robotPosition?.let { robot ->
                         val px = worldToPixel(robot.x, robot.y, config, mapHeightPx)
-                        val robotRadius = 18f / scale
+                        val adaptiveFactor = 1f / sqrt(scale)
+                        val robotRadius = 12f * adaptiveFactor
                         drawCircle(color = Color(0xFFFFA500), radius = robotRadius, center = px)
-                        drawDirectionArrow(px, 25f / scale, robot.yaw, Color.Red, offset = robotRadius * 0.5f)
+                        drawDirectionArrow(px, 16f * adaptiveFactor, robot.yaw, Color.Red, offset = robotRadius * 0.5f)
                     }
 
                     // 5. 绘制点云 (置于最顶层)
