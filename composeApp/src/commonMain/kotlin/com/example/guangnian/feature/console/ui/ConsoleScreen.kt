@@ -536,8 +536,11 @@ fun MapBackgroundLayer(
     val mapBitmap = uiState.mapImage
 
     fun pixelToWorld(pixel: Offset, config: MapConfigBean, mapHeightPx: Float): Point2DBean {
-        val worldX = pixel.x * config.resolution + config.origin[0]
-        val worldY = (mapHeightPx - pixel.y) * config.resolution + config.origin[1]
+        val res = config.resolution
+        val originX = if (config.origin.size >= 1) config.origin[0] else 0.0
+        val originY = if (config.origin.size >= 2) config.origin[1] else 0.0
+        val worldX = pixel.x * res + originX
+        val worldY = (mapHeightPx - pixel.y) * res + originY
         return Point2DBean(worldX, worldY)
     }
 
@@ -555,13 +558,14 @@ fun MapBackgroundLayer(
                         scale = newScale
                     }
                 }
-                .pointerInput(config, uiState.interactionMode) {
+                .pointerInput(config, uiState.interactionMode, scale, offset, mapBitmap) {
                     if (config == null) return@pointerInput
                     detectTapGestures(
                         onLongPress = { screenOffset ->
                             val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
                             val mapPixelOffset = (screenOffset - offset) / scale
                             val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                            KLog.d("MapDebug", "长按创建点位: 屏幕=$screenOffset, 像素=$mapPixelOffset, 世界=$worldPos")
                             mapViewModel.onMapLongClick(screenOffset, worldPos)
                         },
                         onTap = { screenOffset ->
@@ -617,17 +621,11 @@ fun MapBackgroundLayer(
                         drawImage(image = mapBitmap, topLeft = Offset.Zero)
                     }
 
-                    drawPathLine(uiState.globalPath, config, mapHeightPx, Color(0xFF03DC6B), 5f)
-                    drawPathLine(uiState.localPath, config, mapHeightPx, Color(0xFFF3D65A), 6f)
+                    // 1. 绘制路径
+                    drawPathLine(uiState.globalPath, config, mapHeightPx, Color(0xFF03DC6B), 5f / scale)
+                    drawPathLine(uiState.localPath, config, mapHeightPx, Color(0xFFF3D65A), 6f / scale)
 
-                    if (uiState.robotPosition != null && uiState.pointCloud.isNotEmpty()) {
-                        val worldCloud = mapViewModel.calculatePointCloudWorldCoords(uiState.pointCloud, uiState.robotPosition)
-                        worldCloud.forEach { p ->
-                            val px = worldToPixel(p.x, p.y, config, mapHeightPx)
-                            drawCircle(color = Color.Red.copy(alpha = 0.8f), radius = 3f / scale, center = px)
-                        }
-                    }
-
+                    // 2. 绘制导览点
                     uiState.endpoints.forEach { ep ->
                         val realX = ep.position?.x ?: ep.x
                         val realY = ep.position?.y ?: ep.y
@@ -635,22 +633,40 @@ fun MapBackgroundLayer(
                         
                         val px = worldToPixel(realX, realY, config, mapHeightPx)
                         
-                        // 增大绘制半径，使其在缩放时更明显
-                        drawCircle(color = Color(0xFF9C27B0), radius = 20f / scale, center = px)
-                        drawDirectionArrow(px, 30f / scale, realYaw, Color(0xFF9C27B0))
+                        // 导览点：深紫色，半径增大并添加外圈以增强可见度
+                        val pointRadius = 12f / scale
+                        drawCircle(color = Color(0xFF9C27B0), radius = pointRadius, center = px)
+                        drawCircle(color = Color.White.copy(alpha = 0.5f), radius = 15f / scale, center = px, style = Stroke(width = 2f / scale))
+                        
+                        // 绘制方向箭头，参考老项目增加位移偏移
+                        drawDirectionArrow(px, 18f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.2f)
+                        
+                        // 绘制名称
+                        // TODO: 使用 nativeCanvas 绘制文本，Compose Canvas 直接绘制文本比较受限
                     }
 
-                    // 绘制临时点
+                    // 3. 绘制临时点
                     if ((uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION || uiState.interactionMode == MapInteractionMode.CONFIRM_POINT) && uiState.tempPoint != null) {
                         val px = worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
                         drawCircle(color = Color(0xFF007AFF), radius = 20f / scale, center = px)
-                        drawDirectionArrow(px, 30f / scale, uiState.tempYaw.toDouble(), Color(0xFF007AFF))
+                        drawDirectionArrow(px, 30f / scale, uiState.tempYaw.toDouble(), Color(0xFF007AFF), offset = 22f / scale)
                     }
 
+                    // 4. 绘制机器人位置
                     uiState.robotPosition?.let { robot ->
                         val px = worldToPixel(robot.x, robot.y, config, mapHeightPx)
-                        drawCircle(color = Color(0xFFFFA500), radius = 18f / scale, center = px)
-                        drawDirectionArrow(px, 25f / scale, robot.yaw, Color.Red)
+                        val robotRadius = 18f / scale
+                        drawCircle(color = Color(0xFFFFA500), radius = robotRadius, center = px)
+                        drawDirectionArrow(px, 25f / scale, robot.yaw, Color.Red, offset = robotRadius * 0.5f)
+                    }
+
+                    // 5. 绘制点云 (置于最顶层)
+                    if (uiState.robotPosition != null && uiState.pointCloud.isNotEmpty()) {
+                        val worldCloud = mapViewModel.calculatePointCloudWorldCoords(uiState.pointCloud, uiState.robotPosition)
+                        worldCloud.forEach { p ->
+                            val px = worldToPixel(p.x, p.y, config, mapHeightPx)
+                            drawCircle(color = Color.Red.copy(alpha = 0.8f), radius = 3f / scale, center = px)
+                        }
                     }
                 } else {
                     drawFallbackGrid()
@@ -693,17 +709,19 @@ fun MapBackgroundLayer(
             // 转换为相对于容器的绝对像素坐标
             val screenX = px.x * scale + offset.x
             val screenY = px.y * scale + offset.y
+            
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val popupWidthPx = with(density) { 140.dp.toPx() }
 
             Popup(
-                // 使用 TopStart 对齐，坐标完全由 offset 决定
                 alignment = Alignment.TopStart,
                 offset = androidx.compose.ui.unit.IntOffset(
-                    (screenX - 180).toInt(), // X轴：减去弹窗预估宽度的一半（120dp约180-360px，这里取中间值）使之居中
-                    (screenY + 40 * scale).toInt() // Y轴：向下偏移，避开圆点
+                    (screenX - popupWidthPx / 2).toInt(),
+                    (screenY + 30).toInt() // 避开中心点，稍微向下偏移
                 ),
                 onDismissRequest = { mapViewModel.clearInteraction() }
             ) {
-                GlassBox(modifier = Modifier.width(120.dp), bgColor = Color(0xEE2C2C2C)) {
+                GlassBox(modifier = Modifier.width(140.dp), bgColor = Color(0xEE2C2C2C)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -755,8 +773,11 @@ private fun worldToPixel(worldX: Double, worldY: Double, config: MapConfigBean, 
     val originY = if (config.origin.size >= 2) config.origin[1] else 0.0
     val res = if (config.resolution > 0) config.resolution else 0.05
     
+    // px = (真实世界坐标 - 原点坐标) / 分辨率
     val px = (worldX - originX) / res
+    // py = 总高度 - (真实世界坐标 - 原点坐标) / 分辨率 (因为 Canvas Y轴向下)
     val py = mapHeightPx - (worldY - originY) / res
+
     return Offset(px.toFloat(), py.toFloat())
 }
 
@@ -770,17 +791,25 @@ private fun DrawScope.drawPathLine(pathData: List<Point2DBean>, config: MapConfi
     drawPath(path = path, color = color, style = Stroke(width = strokeWidth))
 }
 
-private fun DrawScope.drawDirectionArrow(center: Offset, length: Float, yaw: Double, color: Color) {
+private fun DrawScope.drawDirectionArrow(center: Offset, length: Float, yaw: Double, color: Color, offset: Float = 0f) {
     val canvasYaw = -yaw // Canvas Y轴向下，需取反
-    val tipX = center.x + length * cos(canvasYaw).toFloat()
-    val tipY = center.y + length * sin(canvasYaw).toFloat()
+    
+    // 计算箭头起点（根据 offset 偏移）
+    val startX = center.x + offset * cos(canvasYaw).toFloat()
+    val startY = center.y + offset * sin(canvasYaw).toFloat()
+    
+    // 计算箭头顶点
+    val tipX = startX + length * cos(canvasYaw).toFloat()
+    val tipY = startY + length * sin(canvasYaw).toFloat()
+    
     val baseWidth = length * 0.6f
     val baseAngle1 = canvasYaw + PI / 2
     val baseAngle2 = canvasYaw - PI / 2
+    
     val path = Path().apply {
         moveTo(tipX, tipY)
-        lineTo(center.x + baseWidth * cos(baseAngle1).toFloat(), center.y + baseWidth * sin(baseAngle1).toFloat())
-        lineTo(center.x + baseWidth * cos(baseAngle2).toFloat(), center.y + baseWidth * sin(baseAngle2).toFloat())
+        lineTo(startX + baseWidth * cos(baseAngle1).toFloat(), startY + baseWidth * sin(baseAngle1).toFloat())
+        lineTo(startX + baseWidth * cos(baseAngle2).toFloat(), startY + baseWidth * sin(baseAngle2).toFloat())
         close()
     }
     drawPath(path = path, color = color)
