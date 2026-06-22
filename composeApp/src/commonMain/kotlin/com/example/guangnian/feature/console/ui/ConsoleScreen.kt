@@ -625,7 +625,7 @@ fun MapBackgroundLayer(
                     drawPathLine(uiState.globalPath, config, mapHeightPx, Color(0xFF03DC6B), 5f / scale)
                     drawPathLine(uiState.localPath, config, mapHeightPx, Color(0xFFF3D65A), 6f / scale)
 
-                    // 2. 绘制导览点
+                    // 2. 绘制导览点 (背景上层，路径上层)
                     uiState.endpoints.forEach { ep ->
                         val realX = ep.position?.x ?: ep.x
                         val realY = ep.position?.y ?: ep.y
@@ -633,16 +633,16 @@ fun MapBackgroundLayer(
                         
                         val px = worldToPixel(realX, realY, config, mapHeightPx)
                         
-                        // 导览点：深紫色，半径增大并添加外圈以增强可见度
-                        val pointRadius = 12f / scale
+                        // 导览点：深紫色，半径增大并添加外圈
+                        val pointRadius = 10f / scale
                         drawCircle(color = Color(0xFF9C27B0), radius = pointRadius, center = px)
-                        drawCircle(color = Color.White.copy(alpha = 0.5f), radius = 15f / scale, center = px, style = Stroke(width = 2f / scale))
+                        drawCircle(color = Color.White, radius = pointRadius + 2f / scale, center = px, style = Stroke(width = 2f / scale))
                         
-                        // 绘制方向箭头，参考老项目增加位移偏移
-                        drawDirectionArrow(px, 18f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.2f)
+                        // 绘制方向箭头
+                        drawDirectionArrow(px, 16f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.5f)
                         
-                        // 绘制名称
-                        // TODO: 使用 nativeCanvas 绘制文本，Compose Canvas 直接绘制文本比较受限
+                        // 绘制名称：这里简单使用 Compose drawContext 逻辑，如果需要更复杂的文本，建议用独立的 UI 层
+                        // 但为了性能，我们在 Canvas 里尽量绘制简单图形
                     }
 
                     // 3. 绘制临时点

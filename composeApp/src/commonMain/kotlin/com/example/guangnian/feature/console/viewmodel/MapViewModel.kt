@@ -98,24 +98,36 @@ class MapViewModel : ViewModel() {
                 }
             }
 
-            // 1Hz 路径与终点刷新
+            // 1Hz 路径刷新 (独立协程，避免失败影响其他任务)
             launch {
                 while (isActive) {
                     try {
                         val global = robotApi.getGlobalPath()
                         val local = robotApi.getLocalPath()
-                        val points = robotApi.getInspectionPoints()
-                        KLog.d("MapViewModel", "获取到点位数量: ${points.size}")
                         _uiState.update {
                             it.copy(
                                 globalPath = global.points,
-                                localPath = local.points,
-                                endpoints = points
+                                localPath = local.points
                             )
                         }
                     } catch (e: Exception) {
-                        KLog.e("MapViewModel", "刷新路径或点位失败: ${e.message}")
-                        e.printStackTrace()
+                        // 路径不存在时通常会报错，静默处理
+                    }
+                    delay(1000)
+                }
+            }
+
+            // 1Hz 导览点刷新 (独立协程，确保始终尝试更新)
+            launch {
+                while (isActive) {
+                    try {
+                        val points = robotApi.getInspectionPoints()
+                        if (points.isNotEmpty() || _uiState.value.endpoints.isNotEmpty()) {
+                            KLog.d("MapViewModel", "收到导览点更新: ${points.size}个")
+                            _uiState.update { it.copy(endpoints = points) }
+                        }
+                    } catch (e: Exception) {
+                        KLog.e("MapViewModel", "刷新导览点失败: ${e.message}")
                     }
                     delay(1000)
                 }
