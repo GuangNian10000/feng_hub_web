@@ -524,9 +524,14 @@ fun MapBackgroundLayer(
             .fillMaxSize()
             .background(Color(0xFF121212))
             .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    scale = (scale * zoom).coerceIn(0.1f, 10f)
-                    offset += pan
+                detectTransformGestures { centroid, pan, zoom, _ ->
+                    val oldScale = scale
+                    val newScale = (scale * zoom).coerceIn(0.1f, 10f)
+                    
+                    // 以手势中心点为基准计算偏移补偿
+                    // 公式：新偏移 = 中心点 + 平移量 - (中心点 - 旧偏移) * (新缩放 / 旧缩放)
+                    offset = centroid + pan - (centroid - offset) * (newScale / oldScale)
+                    scale = newScale
                 }
             }
     ) {
@@ -541,6 +546,8 @@ fun MapBackgroundLayer(
                     scaleY = scale
                     translationX = offset.x
                     translationY = offset.y
+                    // 指定原点为左上角 (0,0)，配合上面的公式实现精准中心缩放
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
                 }
         ) {
             if (config != null) {
