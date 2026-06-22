@@ -25,10 +25,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PointMode
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -534,6 +542,7 @@ fun MapBackgroundLayer(
     var isInitialized by remember(config) { mutableStateOf(false) }
 
     val mapBitmap = uiState.mapImage
+    val textMeasurer = rememberTextMeasurer()
 
     fun pixelToWorld(pixel: Offset, config: MapConfigBean, mapHeightPx: Float): Point2DBean {
         val res = config.resolution
@@ -633,16 +642,42 @@ fun MapBackgroundLayer(
                         
                         val px = worldToPixel(realX, realY, config, mapHeightPx)
                         
-                        // 导览点：深紫色，半径增大并添加外圈
-                        val pointRadius = 20f / scale
+                        // 导览点：深紫色，调整到适中大小
+                        val pointRadius = 18f / scale
                         drawCircle(color = Color(0xFF9C27B0), radius = pointRadius, center = px)
-                        drawCircle(color = Color.White, radius = pointRadius + 4f / scale, center = px, style = Stroke(width = 4f / scale))
+                        drawCircle(color = Color.White, radius = pointRadius + 3f / scale, center = px, style = Stroke(width = 3f / scale))
                         
                         // 绘制方向箭头
-                        drawDirectionArrow(px, 32f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.4f)
-                        
-                        // 绘制名称：这里简单使用 Compose drawContext 逻辑，如果需要更复杂的文本，建议用独立的 UI 层
-                        // 但为了性能，我们在 Canvas 里尽量绘制简单图形
+                        drawDirectionArrow(px, 28f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.4f)
+                    }
+
+                    // 绘制名称文本 (单独循环以确保文本不被图标遮挡)
+                    uiState.endpoints.forEach { ep ->
+                        val realX = ep.position?.x ?: ep.x
+                        val realY = ep.position?.y ?: ep.y
+                        val px = worldToPixel(realX, realY, config, mapHeightPx)
+                        val pointRadius = 18f / scale
+
+                        val textLayoutResult = textMeasurer.measure(
+                            text = ep.name ?: "",
+                            style = TextStyle(
+                                color = Color.White,
+                                fontSize = 14.sp / scale,
+                                fontWeight = FontWeight.Bold,
+                                shadow = Shadow(
+                                    color = Color.Black,
+                                    offset = Offset(1.5f / scale, 1.5f / scale),
+                                    blurRadius = 3f / scale
+                                )
+                            )
+                        )
+                        drawText(
+                            textLayoutResult = textLayoutResult,
+                            topLeft = Offset(
+                                x = px.x - textLayoutResult.size.width / 2,
+                                y = px.y + pointRadius + 4f / scale
+                            )
+                        )
                     }
 
                     // 3. 绘制临时点
@@ -663,10 +698,14 @@ fun MapBackgroundLayer(
                     // 5. 绘制点云 (置于最顶层)
                     if (uiState.robotPosition != null && uiState.pointCloud.isNotEmpty()) {
                         val worldCloud = mapViewModel.calculatePointCloudWorldCoords(uiState.pointCloud, uiState.robotPosition)
-                        worldCloud.forEach { p ->
-                            val px = worldToPixel(p.x, p.y, config, mapHeightPx)
-                            drawCircle(color = Color.Red.copy(alpha = 0.8f), radius = 3f / scale, center = px)
-                        }
+                        val points = worldCloud.map { worldToPixel(it.x, it.y, config, mapHeightPx) }
+                        drawPoints(
+                            points = points,
+                            pointMode = PointMode.Points,
+                            color = Color.Red.copy(alpha = 0.8f),
+                            strokeWidth = 6f / scale,
+                            cap = StrokeCap.Round
+                        )
                     }
                 } else {
                     drawFallbackGrid()
