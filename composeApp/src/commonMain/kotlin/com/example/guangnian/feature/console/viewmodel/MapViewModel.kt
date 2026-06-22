@@ -3,9 +3,15 @@ package com.example.guangnian.feature.console.viewmodel
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.guangnian.core.utils.KLog
+import com.example.guangnian.core.utils.PgmUtils
 import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
 import com.example.guangnian.feature.console.data.bean.*
 import com.russhwolf.settings.Settings
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +24,7 @@ import kotlin.math.sin
 
 data class MapUiState(
     val mapConfig: MapConfigBean? = null,
-    val mapImage: ImageBitmap? = null, // 需配合 Coil/Glide 将 PGM/URL 转换为 ImageBitmap
+    val mapImage: ImageBitmap? = null,
     val robotPosition: RobotPositionBean? = null,
     val endpoints: List<InspectionPointBean> = emptyList(),
     val globalPath: List<Point2DBean> = emptyList(),
@@ -31,6 +37,7 @@ class MapViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
     private val settings = Settings()
+    private val httpClient = HttpClient()
 
     init {
         startMapDataPolling()
@@ -38,11 +45,24 @@ class MapViewModel : ViewModel() {
 
     private fun startMapDataPolling() {
         viewModelScope.launch {
-            try {
-                val config = robotApi.getMapConfig()
-                val fixedUrl = config.getFixedImageUrl(settings.getString("saved_ip", "192.168.1.100"))
-                _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
-            } catch (e: Exception) {}
+            // 独立启动地图配置获取逻辑，支持失败重试
+            launch {
+                while (isActive && _uiState.value.mapConfig == null) {
+                    try {
+                        KLog.d("MapViewModel", "正在尝试获取地图配置...")
+                        val config = robotApi.getMapConfig()
+                        val savedIp = settings.getString("saved_ip", "192.168.1.100")
+                        val fixedUrl = config.getFixedImageUrl(savedIp)
+                        
+                        _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
+                        KLog.d("MapViewModel", "获取配置成功，开始下载地图图片: $fixedUrl")
+                        loadMapImage(fixedUrl)
+                    } catch (e: Exception) {
+                        KLog.e("MapViewModel", "获取地图配置失败，3秒后重试: ${e.message}")
+                        delay(3000)
+                    }
+                }
+            }
 
             // 10Hz 位置刷新
             launch {
@@ -85,6 +105,33 @@ class MapViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    private fun loadMapImage(url: String) {
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                KLog.d("MapViewModel", "开始下载地图数据: $url")
+                val response = httpClient.get(url)
+                val bytes = response.readBytes()
+                KLog.d("MapViewModel", "下载完成，字节大小: ${bytes.size}，开始解析 PGM...")
+                
+                val bitmap = PgmUtils.decodePgmToBitmap(bytes)
+                if (bitmap != null) {
+                    _uiState.update { it.copy(mapImage = bitmap) }
+                    KLog.d("MapViewModel", "地图图片解析并更新成功")
+                } else {
+                    KLog.e("MapViewModel", "PGM 解析失败，返回 null")
+                }
+            } catch (e: Exception) {
+                KLog.e("MapViewModel", "下载地图图片异常: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        httpClient.close()
     }
 
     // 坐标系转换：计算点云的绝对世界坐标
