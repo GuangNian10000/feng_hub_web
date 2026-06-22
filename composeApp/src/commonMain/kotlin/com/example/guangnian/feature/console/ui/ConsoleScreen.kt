@@ -629,9 +629,15 @@ fun MapBackgroundLayer(
                     }
 
                     uiState.endpoints.forEach { ep ->
-                        val px = worldToPixel(ep.x, ep.y, config, mapHeightPx)
-                        drawCircle(color = Color(0xFF9C27B0), radius = 15f / scale, center = px)
-                        drawDirectionArrow(px, 20f / scale, ep.yaw, Color(0xFF9C27B0))
+                        val realX = ep.position?.x ?: ep.x
+                        val realY = ep.position?.y ?: ep.y
+                        val realYaw = ep.position?.yaw ?: ep.yaw
+                        
+                        val px = worldToPixel(realX, realY, config, mapHeightPx)
+                        
+                        // 增大绘制半径，使其在缩放时更明显
+                        drawCircle(color = Color(0xFF9C27B0), radius = 20f / scale, center = px)
+                        drawDirectionArrow(px, 30f / scale, realYaw, Color(0xFF9C27B0))
                     }
 
                     // 绘制临时点
@@ -745,8 +751,12 @@ private fun DrawScope.drawFallbackGrid() {
 }
 
 private fun worldToPixel(worldX: Double, worldY: Double, config: MapConfigBean, mapHeightPx: Float): Offset {
-    val px = (worldX - config.origin[0]) / config.resolution
-    val py = mapHeightPx - (worldY - config.origin[1]) / config.resolution
+    val originX = if (config.origin.size >= 1) config.origin[0] else 0.0
+    val originY = if (config.origin.size >= 2) config.origin[1] else 0.0
+    val res = if (config.resolution > 0) config.resolution else 0.05
+    
+    val px = (worldX - originX) / res
+    val py = mapHeightPx - (worldY - originY) / res
     return Offset(px.toFloat(), py.toFloat())
 }
 

@@ -76,25 +76,25 @@ class MapViewModel : ViewModel() {
                 }
             }
 
-            // 10Hz 位置刷新
+            // 5Hz 位置刷新
             launch {
                 while (isActive) {
                     try {
                         val pos = robotApi.getPosition()
                         _uiState.update { it.copy(robotPosition = pos) }
                     } catch (e: Exception) {}
-                    delay(100)
+                    delay(200)
                 }
             }
 
-            // 3Hz 点云刷新
+            // 1Hz 点云刷新
             launch {
                 while (isActive) {
                     try {
                         val cloud = robotApi.getPointCloud()
                         _uiState.update { it.copy(pointCloud = cloud) }
                     } catch (e: Exception) {}
-                    delay(333)
+                    delay(1000)
                 }
             }
 
@@ -105,6 +105,7 @@ class MapViewModel : ViewModel() {
                         val global = robotApi.getGlobalPath()
                         val local = robotApi.getLocalPath()
                         val points = robotApi.getInspectionPoints()
+                        KLog.d("MapViewModel", "获取到点位数量: ${points.size}")
                         _uiState.update {
                             it.copy(
                                 globalPath = global.points,
@@ -112,7 +113,10 @@ class MapViewModel : ViewModel() {
                                 endpoints = points
                             )
                         }
-                    } catch (e: Exception) {}
+                    } catch (e: Exception) {
+                        KLog.e("MapViewModel", "刷新路径或点位失败: ${e.message}")
+                        e.printStackTrace()
+                    }
                     delay(1000)
                 }
             }

@@ -9,17 +9,18 @@ actual object PgmUtils {
     actual fun decodePgmToBitmap(data: ByteArray): ImageBitmap? {
         try {
             var i = 0
-            
+
             fun skipWhitespaceAndComments() {
                 while (i < data.size) {
-                    val c = data[i].toInt().toChar()
-                    if (c.isWhitespace()) {
+                    val b = data[i].toInt() and 0xFF
+                    if (b <= 32) { // Whitespace: space, \n, \r, \t, etc.
                         i++
-                    } else if (c == '#') {
-                        // Skip comment line
-                        while (i < data.size && data[i].toInt().toChar() != '\n') {
+                    } else if (b == '#'.code) {
+                        while (i < data.size && (data[i].toInt() and 0xFF) != '\n'.code) {
                             i++
                         }
+                        // Skip the newline as well if we are not at end of data
+                        if (i < data.size) i++
                     } else {
                         break
                     }
@@ -29,23 +30,38 @@ actual object PgmUtils {
             fun readNextWord(): String {
                 skipWhitespaceAndComments()
                 val start = i
-                while (i < data.size && !data[i].toInt().toChar().isWhitespace()) i++
-                return data.decodeToString(start, i)
+                while (i < data.size) {
+                    val b = data[i].toInt() and 0xFF
+                    if (b <= 32 || b == '#'.code) break
+                    i++
+                }
+                val word = data.decodeToString(start, i)
+                // KLog.d("PgmUtils", "readNextWord: '$word'")
+                return word
             }
 
             val magic = readNextWord()
             if (magic != "P5") {
-                KLog.e("PgmUtils", "Invalid PGM magic: $magic")
+                KLog.e("PgmUtils", "Invalid PGM magic: '$magic'")
                 return null
             }
 
-            val width = readNextWord().toInt()
-            val height = readNextWord().toInt()
-            val maxVal = readNextWord().toInt()
-            
-            // P5 format says there's exactly one whitespace character after maxVal
-            // But skipWhitespaceAndComments is safer.
-            i++ 
+            val widthStr = readNextWord()
+            val heightStr = readNextWord()
+            val maxValStr = readNextWord()
+
+            if (widthStr.isEmpty() || heightStr.isEmpty() || maxValStr.isEmpty()) {
+                KLog.e("PgmUtils", "Failed to read PGM header: w='$widthStr', h='$heightStr', max='$maxValStr'")
+                return null
+            }
+
+            val width = widthStr.toInt()
+            val height = heightStr.toInt()
+            val maxVal = maxValStr.toInt()
+
+            // After maxVal, there is exactly one whitespace character (usually \n)
+            // But skipWhitespaceAndComments is safer, though PGM spec says "a single whitespace character".
+            if (i < data.size) i++
 
             KLog.d("PgmUtils", "Decoding PGM: ${width}x${height}, maxVal: $maxVal")
 
