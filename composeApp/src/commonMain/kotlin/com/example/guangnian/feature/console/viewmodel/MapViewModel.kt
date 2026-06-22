@@ -29,8 +29,20 @@ data class MapUiState(
     val endpoints: List<InspectionPointBean> = emptyList(),
     val globalPath: List<Point2DBean> = emptyList(),
     val localPath: List<Point2DBean> = emptyList(),
-    val pointCloud: List<Point2DBean> = emptyList()
+    val pointCloud: List<Point2DBean> = emptyList(),
+    // 交互相关状态
+    val interactionMode: MapInteractionMode = MapInteractionMode.NONE,
+    val menuPosition: androidx.compose.ui.geometry.Offset? = null, // 屏幕坐标
+    val tempPoint: Point2DBean? = null, // 地图坐标
+    val tempYaw: Float = 0f
 )
+
+enum class MapInteractionMode {
+    NONE,
+    SHOW_MENU,
+    PICK_ORIENTATION,
+    CONFIRM_POINT
+}
 
 class MapViewModel : ViewModel() {
     private val robotApi = RobotTcpApiImpl()
@@ -145,6 +157,74 @@ class MapViewModel : ViewModel() {
             Point2DBean(
                 x = p.x * cosA - p.y * sinA + robot.x,
                 y = p.x * sinA + p.y * cosA + robot.y
+            )
+        }
+    }
+
+    // --- 交互逻辑 ---
+
+    fun onMapLongClick(screenOffset: androidx.compose.ui.geometry.Offset, mapPos: Point2DBean) {
+        _uiState.update {
+            it.copy(
+                interactionMode = MapInteractionMode.SHOW_MENU,
+                menuPosition = screenOffset,
+                tempPoint = mapPos
+            )
+        }
+    }
+
+    fun onSelectCreatePoint() {
+        _uiState.update {
+            it.copy(interactionMode = MapInteractionMode.PICK_ORIENTATION)
+        }
+    }
+
+    fun onMapClickForOrientation(screenOffset: androidx.compose.ui.geometry.Offset, clickMapPos: Point2DBean) {
+        val origin = _uiState.value.tempPoint ?: return
+        val dx = clickMapPos.x - origin.x
+        val dy = clickMapPos.y - origin.y
+        val yaw = kotlin.math.atan2(dy, dx)
+        
+        _uiState.update {
+            it.copy(
+                tempYaw = yaw.toFloat(),
+                interactionMode = MapInteractionMode.CONFIRM_POINT,
+                menuPosition = screenOffset // 复用 menuPosition 来定位确认框
+            )
+        }
+    }
+
+    fun onConfirmCreatePoint() {
+        val uiState = _uiState.value
+        val origin = uiState.tempPoint ?: return
+        val yaw = uiState.tempYaw.toDouble()
+        
+        // 触发 UI 显示添加弹窗
+        val newPoint = InspectionPointBean(
+            name = "新点位",
+            x = origin.x,
+            y = origin.y,
+            yaw = yaw,
+            position = PointPosition(origin.x, origin.y, yaw)
+        )
+        _pendingPoint.value = newPoint
+        clearInteraction()
+    }
+
+    private val _pendingPoint = MutableStateFlow<InspectionPointBean?>(null)
+    val pendingPoint: StateFlow<InspectionPointBean?> = _pendingPoint.asStateFlow()
+
+    fun clearPendingPoint() {
+        _pendingPoint.value = null
+    }
+
+    fun clearInteraction() {
+        _uiState.update {
+            it.copy(
+                interactionMode = MapInteractionMode.NONE,
+                menuPosition = null,
+                tempPoint = null,
+                tempYaw = 0f
             )
         }
     }

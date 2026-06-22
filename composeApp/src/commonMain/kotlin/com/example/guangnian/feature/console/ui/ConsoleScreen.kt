@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -32,15 +33,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.data.bean.MapConfigBean
 import com.example.guangnian.feature.console.data.bean.Point2DBean
 import com.example.guangnian.feature.console.ui.panel.*
-import com.example.guangnian.feature.console.viewmodel.ActionViewModel
-import com.example.guangnian.feature.console.viewmodel.MapViewModel
-import com.example.guangnian.feature.console.viewmodel.MapUiState
+import com.example.guangnian.feature.console.viewmodel.*
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -61,6 +61,7 @@ fun InteractionScreen(
     // 引入地图 ViewModel
     val mapViewModel: MapViewModel = viewModel { MapViewModel() }
     val mapUiState by mapViewModel.uiState.collectAsState()
+    val pendingPoint by mapViewModel.pendingPoint.collectAsState()
 
     var isMenuOpen by remember { mutableStateOf(false) }
     var isPosturesExpanded by remember { mutableStateOf(true) }
@@ -89,6 +90,14 @@ fun InteractionScreen(
             "姿态动作" -> actionViewModel.fetchPostureList()
             "动作" -> actionViewModel.fetchArmList()
             "导览管理" -> actionViewModel.fetchInspectionPoints()
+        }
+    }
+
+    // 当从地图交互产生待处理点位时，确保导览管理面板已打开，以便触发编辑弹窗
+    LaunchedEffect(pendingPoint) {
+        if (pendingPoint != null && activeFragment != "导览管理") {
+            KLog.d("ConsoleScreen", "检测到待处理点位，自动切换到导览管理面板")
+            activeFragment = "导览管理"
         }
     }
 
@@ -462,7 +471,9 @@ fun InteractionScreen(
                                 onSetAddAction = { text, action ->
                                     addActionText = text
                                     onAddClickAction = action
-                                }
+                                },
+                                pendingPoint = pendingPoint,
+                                onClearPendingPoint = { mapViewModel.clearPendingPoint() }
                             )
                             "语音合成" -> SpeechSynthesisPanel(
                                 onSetAddAction = { text, action ->
@@ -508,7 +519,7 @@ fun InteractionScreen(
 }
 
 // ==============================================================================
-// 辅助渲染组件与工具方法（统一放在该文件下解决引用丢失问题）
+// 辅助渲染组件与工具方法
 // ==============================================================================
 
 @Composable
@@ -517,109 +528,207 @@ fun MapBackgroundLayer(
     mapViewModel: MapViewModel,
     modifier: Modifier = Modifier
 ) {
-    // 使用 mapConfig 作为 key，确保切换地图时重置位置状态
     val config = uiState.mapConfig
     var scale by remember(config) { mutableFloatStateOf(1f) }
     var offset by remember(config) { mutableStateOf(Offset.Zero) }
     var isInitialized by remember(config) { mutableStateOf(false) }
 
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFF121212))
-            .pointerInput(Unit) {
-                detectTransformGestures { centroid, pan, zoom, _ ->
-                    val oldScale = scale
-                    val newScale = (scale * zoom).coerceIn(0.1f, 10f)
-                    
-                    // 以手势中心点为基准计算偏移补偿
-                    // 公式：新偏移 = 中心点 + 平移量 - (中心点 - 旧偏移) * (新缩放 / 旧缩放)
-                    offset = centroid + pan - (centroid - offset) * (newScale / oldScale)
-                    scale = newScale
+    val mapBitmap = uiState.mapImage
+
+    fun pixelToWorld(pixel: Offset, config: MapConfigBean, mapHeightPx: Float): Point2DBean {
+        val worldX = pixel.x * config.resolution + config.origin[0]
+        val worldY = (mapHeightPx - pixel.y) * config.resolution + config.origin[1]
+        return Point2DBean(worldX, worldY)
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF121212))
+                .pointerInput(config) {
+                    if (config == null) return@pointerInput
+                    detectTransformGestures { centroid, pan, zoom, _ ->
+                        val oldScale = scale
+                        val newScale = (scale * zoom).coerceIn(0.1f, 10f)
+                        offset = centroid + pan - (centroid - offset) * (newScale / oldScale)
+                        scale = newScale
+                    }
+                }
+                .pointerInput(config, uiState.interactionMode) {
+                    if (config == null) return@pointerInput
+                    detectTapGestures(
+                        onLongPress = { screenOffset ->
+                            val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
+                            val mapPixelOffset = (screenOffset - offset) / scale
+                            val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                            mapViewModel.onMapLongClick(screenOffset, worldPos)
+                        },
+                        onTap = { screenOffset ->
+                            when (uiState.interactionMode) {
+                                MapInteractionMode.PICK_ORIENTATION -> {
+                                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
+                                    val mapPixelOffset = (screenOffset - offset) / scale
+                                    val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                                    mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
+                                }
+                                MapInteractionMode.CONFIRM_POINT -> {
+                                    // 处于确认模式时，点击地图空白处不自动关闭，防止误触
+                                }
+                                else -> {
+                                    mapViewModel.clearInteraction()
+                                }
+                            }
+                        }
+                    )
+                }
+        ) {
+            val containerWidth = constraints.maxWidth.toFloat()
+            val containerHeight = constraints.maxHeight.toFloat()
+
+            LaunchedEffect(mapBitmap, containerWidth, containerHeight) {
+                if (mapBitmap != null && !isInitialized && containerWidth > 0 && containerHeight > 0) {
+                    val bmpW = mapBitmap.width.toFloat()
+                    val bmpH = mapBitmap.height.toFloat()
+                    val scaleW = containerWidth / bmpW
+                    val scaleH = containerHeight / bmpH
+                    val targetScale = (if (scaleW < scaleH) scaleW else scaleH) * 0.9f
+                    val finalScale = if (targetScale < 1.0f) targetScale else 1.0f
+                    scale = finalScale
+                    offset = Offset((containerWidth - bmpW * finalScale) / 2f, (containerHeight - bmpH * finalScale) / 2f)
+                    isInitialized = true
                 }
             }
-    ) {
-        val mapBitmap = uiState.mapImage
-        val containerWidth = constraints.maxWidth.toFloat()
-        val containerHeight = constraints.maxHeight.toFloat()
 
-        // 自动居中逻辑：在图片和容器尺寸都准备好后执行
-        LaunchedEffect(mapBitmap, containerWidth, containerHeight) {
-            if (mapBitmap != null && !isInitialized && containerWidth > 0 && containerHeight > 0) {
-                val bmpW = mapBitmap.width.toFloat()
-                val bmpH = mapBitmap.height.toFloat()
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = offset.x
+                        translationY = offset.y
+                        transformOrigin = TransformOrigin(0f, 0f)
+                    }
+            ) {
+                if (config != null) {
+                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
+                    if (mapBitmap != null) {
+                        drawImage(image = mapBitmap, topLeft = Offset.Zero)
+                    }
 
-                // 1. 计算适配比例（最大占屏幕 90%）
-                val scaleW = containerWidth / bmpW
-                val scaleH = containerHeight / bmpH
-                val targetScale = (if (scaleW < scaleH) scaleW else scaleH) * 0.9f
-                
-                // 默认不放大图片，只在图片比屏幕大时进行缩小
-                val finalScale = if (targetScale < 1.0f) targetScale else 1.0f
-                scale = finalScale
-                
-                // 2. 计算居中偏移量：(容器尺寸 - 地图显示尺寸) / 2
-                offset = Offset(
-                    (containerWidth - bmpW * finalScale) / 2f,
-                    (containerHeight - bmpH * finalScale) / 2f
-                )
-                
-                isInitialized = true
-                KLog.d("MapBackgroundLayer", "地图已初始化居中: ${bmpW}x${bmpH}, scale=$finalScale")
+                    drawPathLine(uiState.globalPath, config, mapHeightPx, Color(0xFF03DC6B), 5f)
+                    drawPathLine(uiState.localPath, config, mapHeightPx, Color(0xFFF3D65A), 6f)
+
+                    if (uiState.robotPosition != null && uiState.pointCloud.isNotEmpty()) {
+                        val worldCloud = mapViewModel.calculatePointCloudWorldCoords(uiState.pointCloud, uiState.robotPosition)
+                        worldCloud.forEach { p ->
+                            val px = worldToPixel(p.x, p.y, config, mapHeightPx)
+                            drawCircle(color = Color.Red.copy(alpha = 0.8f), radius = 3f / scale, center = px)
+                        }
+                    }
+
+                    uiState.endpoints.forEach { ep ->
+                        val px = worldToPixel(ep.x, ep.y, config, mapHeightPx)
+                        drawCircle(color = Color(0xFF9C27B0), radius = 15f / scale, center = px)
+                        drawDirectionArrow(px, 20f / scale, ep.yaw, Color(0xFF9C27B0))
+                    }
+
+                    // 绘制临时点
+                    if ((uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION || uiState.interactionMode == MapInteractionMode.CONFIRM_POINT) && uiState.tempPoint != null) {
+                        val px = worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
+                        drawCircle(color = Color(0xFF007AFF), radius = 20f / scale, center = px)
+                        drawDirectionArrow(px, 30f / scale, uiState.tempYaw.toDouble(), Color(0xFF007AFF))
+                    }
+
+                    uiState.robotPosition?.let { robot ->
+                        val px = worldToPixel(robot.x, robot.y, config, mapHeightPx)
+                        drawCircle(color = Color(0xFFFFA500), radius = 18f / scale, center = px)
+                        drawDirectionArrow(px, 25f / scale, robot.yaw, Color.Red)
+                    }
+                } else {
+                    drawFallbackGrid()
+                }
             }
         }
 
-        val currentConfig = uiState.mapConfig
-
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    translationX = offset.x
-                    translationY = offset.y
-                    // 指定原点为左上角 (0,0)，配合上面的公式实现精准中心缩放
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
-                }
-        ) {
-            if (currentConfig != null) {
-                val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
-
-                // 1. 绘制栅格地图底图
-                if (mapBitmap != null) {
-                    drawImage(image = mapBitmap, topLeft = Offset.Zero)
-                }
-
-                // 2. 绘制路径
-                drawPathLine(uiState.globalPath, currentConfig, mapHeightPx, Color(0xFF03DC6B), 3f)
-                drawPathLine(uiState.localPath, currentConfig, mapHeightPx, Color(0xFFF3D65A), 4f)
-
-                // 3. 绘制点云
-                if (uiState.robotPosition != null && uiState.pointCloud.isNotEmpty()) {
-                    val worldCloud = mapViewModel.calculatePointCloudWorldCoords(uiState.pointCloud, uiState.robotPosition)
-                    worldCloud.forEach { p ->
-                        val px = worldToPixel(p.x, p.y, currentConfig, mapHeightPx)
-                        drawCircle(color = Color.Red.copy(alpha = 0.8f), radius = 2f / scale, center = px)
+        // 交互菜单
+        if (uiState.interactionMode == MapInteractionMode.SHOW_MENU && uiState.menuPosition != null) {
+            Popup(
+                alignment = Alignment.TopStart,
+                offset = androidx.compose.ui.unit.IntOffset(uiState.menuPosition.x.toInt(), uiState.menuPosition.y.toInt()),
+                onDismissRequest = { mapViewModel.clearInteraction() }
+            ) {
+                GlassBox(modifier = Modifier.width(120.dp), bgColor = Color(0xEE2C2C2C)) {
+                    Column {
+                        Text(
+                            "创建导览点",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onSelectCreatePoint() }.padding(12.dp)
+                        )
+                        Divider(color = Color.White.copy(alpha = 0.1f))
+                        Text(
+                            "去此处",
+                            color = Color.LightGray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.fillMaxWidth().clickable { /* TODO */ }.padding(12.dp)
+                        )
                     }
                 }
+            }
+        }
+        
+        // 确认点位小窗
+        if (uiState.interactionMode == MapInteractionMode.CONFIRM_POINT && uiState.tempPoint != null && config != null) {
+            val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
+            // 计算点位在 Canvas 内部的像素坐标
+            val px = worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
+            // 转换为相对于容器的绝对像素坐标
+            val screenX = px.x * scale + offset.x
+            val screenY = px.y * scale + offset.y
 
-                // 4. 绘制导览点
-                uiState.endpoints.forEach { ep ->
-                    val px = worldToPixel(ep.x, ep.y, currentConfig, mapHeightPx)
-                    drawCircle(color = Color(0xFF9C27B0), radius = 8f / scale, center = px)
-                    drawDirectionArrow(px, 12f / scale, ep.yaw, Color(0xFF9C27B0))
+            Popup(
+                // 使用 TopStart 对齐，坐标完全由 offset 决定
+                alignment = Alignment.TopStart,
+                offset = androidx.compose.ui.unit.IntOffset(
+                    (screenX - 180).toInt(), // X轴：减去弹窗预估宽度的一半（120dp约180-360px，这里取中间值）使之居中
+                    (screenY + 40 * scale).toInt() // Y轴：向下偏移，避开圆点
+                ),
+                onDismissRequest = { mapViewModel.clearInteraction() }
+            ) {
+                GlassBox(modifier = Modifier.width(120.dp), bgColor = Color(0xEE2C2C2C)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "取消",
+                            color = Color(0xFFFF5252),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { mapViewModel.clearInteraction() }.padding(vertical = 12.dp, horizontal = 8.dp)
+                        )
+                        Divider(modifier = Modifier.height(20.dp).width(1.dp), color = Color.White.copy(alpha = 0.2f))
+                        Text(
+                            "确认",
+                            color = Color(0xFF4CAF50),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { mapViewModel.onConfirmCreatePoint() }.padding(vertical = 12.dp, horizontal = 8.dp)
+                        )
+                    }
                 }
-
-                // 5. 绘制机器狗本体
-                uiState.robotPosition?.let { robot ->
-                    val px = worldToPixel(robot.x, robot.y, currentConfig, mapHeightPx)
-                    drawCircle(color = Color(0xFFFFA500), radius = 10f / scale, center = px)
-                    drawDirectionArrow(px, 14f / scale, robot.yaw, Color.Red)
-                }
-            } else {
-                // 地图未加载时的备用网格线
-                drawFallbackGrid()
+            }
+        }
+        
+        if (uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION) {
+            Box(
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
+                    .clip(RoundedCornerShape(8.dp)).background(Color(0xAA000000)).padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text("请在地图上点击一个位置以确定方向", color = Color.White, fontSize = 14.sp)
             }
         }
     }
@@ -655,11 +764,9 @@ private fun DrawScope.drawDirectionArrow(center: Offset, length: Float, yaw: Dou
     val canvasYaw = -yaw // Canvas Y轴向下，需取反
     val tipX = center.x + length * cos(canvasYaw).toFloat()
     val tipY = center.y + length * sin(canvasYaw).toFloat()
-
     val baseWidth = length * 0.6f
     val baseAngle1 = canvasYaw + PI / 2
     val baseAngle2 = canvasYaw - PI / 2
-
     val path = Path().apply {
         moveTo(tipX, tipY)
         lineTo(center.x + baseWidth * cos(baseAngle1).toFloat(), center.y + baseWidth * sin(baseAngle1).toFloat())

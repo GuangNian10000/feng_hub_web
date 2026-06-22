@@ -41,10 +41,20 @@ fun InspectionPointPanel(
     onUpdatePoint: (InspectionPointBean) -> Unit,
     onRetryClick: () -> Unit,
     onSetAddAction: (String, () -> Unit) -> Unit,
+    pendingPoint: InspectionPointBean? = null,
+    onClearPendingPoint: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showDeleteConfirm by remember { mutableStateOf<InspectionPointBean?>(null) }
     var showEditDialog by remember { mutableStateOf<InspectionPointBean?>(null) }
+
+    // 监听外部传入的待添加点位
+    LaunchedEffect(pendingPoint) {
+        if (pendingPoint != null) {
+            showEditDialog = pendingPoint
+            onClearPendingPoint()
+        }
+    }
 
     LaunchedEffect(endpoints.size, robotPosition) {
         onSetAddAction("添加导览点") {
