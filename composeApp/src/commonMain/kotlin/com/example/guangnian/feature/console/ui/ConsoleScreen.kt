@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.data.bean.MapConfigBean
 import com.example.guangnian.feature.console.data.bean.Point2DBean
@@ -516,10 +517,13 @@ fun MapBackgroundLayer(
     mapViewModel: MapViewModel,
     modifier: Modifier = Modifier
 ) {
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    // 使用 mapConfig 作为 key，确保切换地图时重置位置状态
+    val config = uiState.mapConfig
+    var scale by remember(config) { mutableFloatStateOf(1f) }
+    var offset by remember(config) { mutableStateOf(Offset.Zero) }
+    var isInitialized by remember(config) { mutableStateOf(false) }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF121212))
@@ -535,8 +539,37 @@ fun MapBackgroundLayer(
                 }
             }
     ) {
-        val config = uiState.mapConfig
         val mapBitmap = uiState.mapImage
+        val containerWidth = constraints.maxWidth.toFloat()
+        val containerHeight = constraints.maxHeight.toFloat()
+
+        // 自动居中逻辑：在图片和容器尺寸都准备好后执行
+        LaunchedEffect(mapBitmap, containerWidth, containerHeight) {
+            if (mapBitmap != null && !isInitialized && containerWidth > 0 && containerHeight > 0) {
+                val bmpW = mapBitmap.width.toFloat()
+                val bmpH = mapBitmap.height.toFloat()
+
+                // 1. 计算适配比例（最大占屏幕 90%）
+                val scaleW = containerWidth / bmpW
+                val scaleH = containerHeight / bmpH
+                val targetScale = (if (scaleW < scaleH) scaleW else scaleH) * 0.9f
+                
+                // 默认不放大图片，只在图片比屏幕大时进行缩小
+                val finalScale = if (targetScale < 1.0f) targetScale else 1.0f
+                scale = finalScale
+                
+                // 2. 计算居中偏移量：(容器尺寸 - 地图显示尺寸) / 2
+                offset = Offset(
+                    (containerWidth - bmpW * finalScale) / 2f,
+                    (containerHeight - bmpH * finalScale) / 2f
+                )
+                
+                isInitialized = true
+                KLog.d("MapBackgroundLayer", "地图已初始化居中: ${bmpW}x${bmpH}, scale=$finalScale")
+            }
+        }
+
+        val currentConfig = uiState.mapConfig
 
         Canvas(
             modifier = Modifier
@@ -550,7 +583,7 @@ fun MapBackgroundLayer(
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
                 }
         ) {
-            if (config != null) {
+            if (currentConfig != null) {
                 val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
 
                 // 1. 绘制栅格地图底图
@@ -559,28 +592,28 @@ fun MapBackgroundLayer(
                 }
 
                 // 2. 绘制路径
-                drawPathLine(uiState.globalPath, config, mapHeightPx, Color(0xFF03DC6B), 3f)
-                drawPathLine(uiState.localPath, config, mapHeightPx, Color(0xFFF3D65A), 4f)
+                drawPathLine(uiState.globalPath, currentConfig, mapHeightPx, Color(0xFF03DC6B), 3f)
+                drawPathLine(uiState.localPath, currentConfig, mapHeightPx, Color(0xFFF3D65A), 4f)
 
                 // 3. 绘制点云
                 if (uiState.robotPosition != null && uiState.pointCloud.isNotEmpty()) {
                     val worldCloud = mapViewModel.calculatePointCloudWorldCoords(uiState.pointCloud, uiState.robotPosition)
                     worldCloud.forEach { p ->
-                        val px = worldToPixel(p.x, p.y, config, mapHeightPx)
+                        val px = worldToPixel(p.x, p.y, currentConfig, mapHeightPx)
                         drawCircle(color = Color.Red.copy(alpha = 0.8f), radius = 2f / scale, center = px)
                     }
                 }
 
                 // 4. 绘制导览点
                 uiState.endpoints.forEach { ep ->
-                    val px = worldToPixel(ep.x, ep.y, config, mapHeightPx)
+                    val px = worldToPixel(ep.x, ep.y, currentConfig, mapHeightPx)
                     drawCircle(color = Color(0xFF9C27B0), radius = 8f / scale, center = px)
                     drawDirectionArrow(px, 12f / scale, ep.yaw, Color(0xFF9C27B0))
                 }
 
                 // 5. 绘制机器狗本体
                 uiState.robotPosition?.let { robot ->
-                    val px = worldToPixel(robot.x, robot.y, config, mapHeightPx)
+                    val px = worldToPixel(robot.x, robot.y, currentConfig, mapHeightPx)
                     drawCircle(color = Color(0xFFFFA500), radius = 10f / scale, center = px)
                     drawDirectionArrow(px, 14f / scale, robot.yaw, Color.Red)
                 }
