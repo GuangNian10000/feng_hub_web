@@ -634,12 +634,12 @@ fun MapBackgroundLayer(
                         val px = worldToPixel(realX, realY, config, mapHeightPx)
                         
                         // 导览点：深紫色，半径增大并添加外圈
-                        val pointRadius = 10f / scale
+                        val pointRadius = 20f / scale
                         drawCircle(color = Color(0xFF9C27B0), radius = pointRadius, center = px)
-                        drawCircle(color = Color.White, radius = pointRadius + 2f / scale, center = px, style = Stroke(width = 2f / scale))
+                        drawCircle(color = Color.White, radius = pointRadius + 4f / scale, center = px, style = Stroke(width = 4f / scale))
                         
                         // 绘制方向箭头
-                        drawDirectionArrow(px, 16f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.5f)
+                        drawDirectionArrow(px, 32f / scale, realYaw, Color(0xFF9C27B0), offset = pointRadius * 1.4f)
                         
                         // 绘制名称：这里简单使用 Compose drawContext 逻辑，如果需要更复杂的文本，建议用独立的 UI 层
                         // 但为了性能，我们在 Canvas 里尽量绘制简单图形
