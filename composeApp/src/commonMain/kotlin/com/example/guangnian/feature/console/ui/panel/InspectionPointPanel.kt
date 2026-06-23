@@ -35,6 +35,7 @@ import com.example.guangnian.feature.console.data.bean.InspectionPointBean
 fun InspectionPointPanel(
     endpoints: List<InspectionPointBean>,
     robotPosition: com.example.guangnian.feature.console.data.bean.RobotPositionBean?,
+    selectedTab: String,
     onPointClick: (String) -> Unit,
     onAddCurrentPosition: (InspectionPointBean) -> Unit,
     onDeletePoint: (String) -> Unit,
@@ -56,20 +57,26 @@ fun InspectionPointPanel(
         }
     }
 
-    LaunchedEffect(endpoints.size, robotPosition) {
-        onSetAddAction("添加导览点") {
-            val newPoint = InspectionPointBean(
-                name = "点位_${endpoints.size + 1}",
-                position = com.example.guangnian.feature.console.data.bean.PointPosition(
+    LaunchedEffect(endpoints.size, robotPosition, selectedTab) {
+        if (selectedTab == "导览点") {
+            onSetAddAction("添加导览点") {
+                val newPoint = InspectionPointBean(
+                    name = "点位_${endpoints.size + 1}",
+                    position = com.example.guangnian.feature.console.data.bean.PointPosition(
+                        x = robotPosition?.x ?: 0.0,
+                        y = robotPosition?.y ?: 0.0,
+                        yaw = robotPosition?.yaw ?: 0.0
+                    ),
                     x = robotPosition?.x ?: 0.0,
                     y = robotPosition?.y ?: 0.0,
                     yaw = robotPosition?.yaw ?: 0.0
-                ),
-                x = robotPosition?.x ?: 0.0,
-                y = robotPosition?.y ?: 0.0,
-                yaw = robotPosition?.yaw ?: 0.0
-            )
-            showEditDialog = newPoint
+                )
+                showEditDialog = newPoint
+            }
+        } else {
+            onSetAddAction("添加路线") {
+                // TODO: 添加路线逻辑
+            }
         }
     }
 
@@ -111,36 +118,43 @@ fun InspectionPointPanel(
     }
 
     Column(modifier = modifier.fillMaxSize().padding(4.dp)) {
-        if (endpoints.isEmpty()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("暂无导览数据", color = Color.Gray, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0x33FFFFFF))
-                            .clickable { onRetryClick() }
-                            .padding(horizontal = 24.dp, vertical = 8.dp)
-                    ) {
-                        Text("点击重试", color = Color.White, fontSize = 14.sp)
+        if (selectedTab == "导览点") {
+            if (endpoints.isEmpty()) {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("暂无导览点数据", color = Color.Gray, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0x33FFFFFF))
+                                .clickable { onRetryClick() }
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                        ) {
+                            Text("点击重试", color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(endpoints) { point ->
+                        InspectionPointLinearItem(
+                            point = point,
+                            onClick = { onPointClick(point.pointId) },
+                            onEditClick = { showEditDialog = point },
+                            onDeleteClick = { showDeleteConfirm = point }
+                        )
                     }
                 }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                items(endpoints) { point ->
-                    InspectionPointLinearItem(
-                        point = point,
-                        onClick = { onPointClick(point.pointId) },
-                        onEditClick = { showEditDialog = point },
-                        onDeleteClick = { showDeleteConfirm = point }
-                    )
-                }
+            // 路线列表暂时不写
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("路线列表暂未开放", color = Color.Gray, fontSize = 14.sp)
             }
         }
     }

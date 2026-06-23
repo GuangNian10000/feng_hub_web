@@ -84,6 +84,7 @@ fun InteractionScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
     var isPosturesExpanded by remember { mutableStateOf(true) }
     var activeFragment by remember { mutableStateOf<String?>(null) }
+    var inspectionTab by remember { mutableStateOf("导览点") }
     var onAddClickAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var addActionText by remember { mutableStateOf("") }
 
@@ -455,16 +456,54 @@ fun InteractionScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "《 ${activeFragment ?: ""}",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .clickable { activeFragment = null }
-                                .padding(4.dp)
-                        )
+                        if (activeFragment == "导览管理") {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "《 ",
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .clickable { activeFragment = null }
+                                        .padding(4.dp)
+                                )
+                                Text(
+                                    text = "导览点",
+                                    color = if (inspectionTab == "导览点") Color.White else Color.Gray,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (inspectionTab == "导览点") FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .clickable { inspectionTab = "导览点" }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .then(if (inspectionTab == "导览点") Modifier.background(Color.White.copy(alpha = 0.1f)) else Modifier)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "路线",
+                                    color = if (inspectionTab == "路线") Color.White else Color.Gray,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (inspectionTab == "路线") FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .clickable { inspectionTab = "路线" }
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .then(if (inspectionTab == "路线") Modifier.background(Color.White.copy(alpha = 0.1f)) else Modifier)
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "《 ${activeFragment ?: ""}",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable { activeFragment = null }
+                                    .padding(4.dp)
+                            )
+                        }
                         Spacer(Modifier.weight(1f))
                         if (onAddClickAction != null) {
                             Button(
@@ -504,6 +543,7 @@ fun InteractionScreen(
                             "导览管理" -> InspectionPointPanel(
                                 endpoints = uiState.endpoints,
                                 robotPosition = mapUiState.robotPosition,
+                                selectedTab = inspectionTab,
                                 onPointClick = { actionViewModel.startInspectionPoint(it) },
                                 onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
                                 onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
