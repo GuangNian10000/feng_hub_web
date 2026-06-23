@@ -32,6 +32,7 @@ data class MapUiState(
     val pointCloud: List<Point2DBean> = emptyList(),
     // 交互相关状态
     val interactionMode: MapInteractionMode = MapInteractionMode.NONE,
+    val selectedPoint: InspectionPointBean? = null, // 当前选中的导览点
     val menuPosition: androidx.compose.ui.geometry.Offset? = null, // 屏幕坐标
     val tempPoint: Point2DBean? = null, // 地图坐标
     val tempYaw: Float = 0f
@@ -40,8 +41,10 @@ data class MapUiState(
 enum class MapInteractionMode {
     NONE,
     SHOW_MENU,
+    PICK_POSITION,
     PICK_ORIENTATION,
-    CONFIRM_POINT
+    CONFIRM_POINT,
+    POINT_MENU
 }
 
 class MapViewModel : ViewModel() {
@@ -83,7 +86,7 @@ class MapViewModel : ViewModel() {
                         val pos = robotApi.getPosition()
                         _uiState.update { it.copy(robotPosition = pos) }
                     } catch (e: Exception) {}
-                    delay(2000)
+                    delay(200)
                 }
             }
 
@@ -94,7 +97,7 @@ class MapViewModel : ViewModel() {
                         val cloud = robotApi.getPointCloud()
                         _uiState.update { it.copy(pointCloud = cloud) }
                     } catch (e: Exception) {}
-                    delay(5000)
+                    delay(1000)
                 }
             }
 
@@ -113,7 +116,7 @@ class MapViewModel : ViewModel() {
                     } catch (e: Exception) {
                         // 路径不存在时通常会报错，静默处理
                     }
-                    delay(5000)
+                    delay(1000)
                 }
             }
 
@@ -129,7 +132,7 @@ class MapViewModel : ViewModel() {
                     } catch (e: Exception) {
                         KLog.e("MapViewModel", "刷新导览点失败: ${e.message}")
                     }
-                    delay(5000)
+                    delay(1000)
                 }
             }
         }
@@ -184,7 +187,8 @@ class MapViewModel : ViewModel() {
             it.copy(
                 interactionMode = MapInteractionMode.SHOW_MENU,
                 menuPosition = screenOffset,
-                tempPoint = mapPos
+                tempPoint = mapPos,
+                selectedPoint = null // 长按创建新点位时，确保清除之前选中的点位状态
             )
         }
     }
@@ -192,6 +196,15 @@ class MapViewModel : ViewModel() {
     fun onSelectCreatePoint() {
         _uiState.update {
             it.copy(interactionMode = MapInteractionMode.PICK_ORIENTATION)
+        }
+    }
+
+    fun onMapClickForPosition(mapPos: Point2DBean) {
+        _uiState.update {
+            it.copy(
+                tempPoint = mapPos,
+                interactionMode = MapInteractionMode.PICK_ORIENTATION
+            )
         }
     }
 
@@ -215,15 +228,24 @@ class MapViewModel : ViewModel() {
         val origin = uiState.tempPoint ?: return
         val yaw = uiState.tempYaw.toDouble()
         
-        // 触发 UI 显示添加弹窗
-        val newPoint = InspectionPointBean(
-            name = "新点位",
-            x = origin.x,
-            y = origin.y,
-            yaw = yaw,
-            position = PointPosition(origin.x, origin.y, yaw)
-        )
-        _pendingPoint.value = newPoint
+        val selectedPoint = uiState.selectedPoint
+        val finalPoint = if (selectedPoint != null) {
+            selectedPoint.copy(
+                x = origin.x,
+                y = origin.y,
+                yaw = yaw,
+                position = PointPosition(origin.x, origin.y, yaw)
+            )
+        } else {
+            InspectionPointBean(
+                name = "新点位",
+                x = origin.x,
+                y = origin.y,
+                yaw = yaw,
+                position = PointPosition(origin.x, origin.y, yaw)
+            )
+        }
+        _pendingPoint.value = finalPoint
         clearInteraction()
     }
 
@@ -239,9 +261,52 @@ class MapViewModel : ViewModel() {
             it.copy(
                 interactionMode = MapInteractionMode.NONE,
                 menuPosition = null,
+                selectedPoint = null,
                 tempPoint = null,
                 tempYaw = 0f
             )
         }
+    }
+
+    // 点击导览点
+    fun onPointClick(screenOffset: androidx.compose.ui.geometry.Offset, point: InspectionPointBean) {
+        _uiState.update {
+            it.copy(
+                interactionMode = MapInteractionMode.POINT_MENU,
+                menuPosition = screenOffset,
+                selectedPoint = point
+            )
+        }
+    }
+
+    // 导览点操作：修改
+    fun onEditPoint() {
+        val point = _uiState.value.selectedPoint ?: return
+        _pendingPoint.value = point
+        clearInteraction()
+    }
+
+    // 导览点操作：重设位置
+    fun onResetPointPosition() {
+        _uiState.update {
+            it.copy(
+                interactionMode = MapInteractionMode.PICK_POSITION,
+                tempPoint = null
+            )
+        }
+    }
+
+    // 导览点操作：删除
+    private val _deletePointEvent = MutableStateFlow<InspectionPointBean?>(null)
+    val deletePointEvent: StateFlow<InspectionPointBean?> = _deletePointEvent.asStateFlow()
+
+    fun onDeletePoint() {
+        val point = _uiState.value.selectedPoint ?: return
+        _deletePointEvent.value = point
+        clearInteraction()
+    }
+
+    fun clearDeletePointEvent() {
+        _deletePointEvent.value = null
     }
 }

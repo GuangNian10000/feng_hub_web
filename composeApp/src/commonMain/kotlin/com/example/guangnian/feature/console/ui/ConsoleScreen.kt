@@ -71,6 +71,16 @@ fun InteractionScreen(
     val mapUiState by mapViewModel.uiState.collectAsState()
     val pendingPoint by mapViewModel.pendingPoint.collectAsState()
 
+    // 监听地图触发的删除事件
+    var mapDeleteConfirmPoint by remember { mutableStateOf<com.example.guangnian.feature.console.data.bean.InspectionPointBean?>(null) }
+    val deletePointEvent by mapViewModel.deletePointEvent.collectAsState()
+    LaunchedEffect(deletePointEvent) {
+        deletePointEvent?.let { point ->
+            mapDeleteConfirmPoint = point
+            mapViewModel.clearDeletePointEvent()
+        }
+    }
+
     var isMenuOpen by remember { mutableStateOf(false) }
     var isPosturesExpanded by remember { mutableStateOf(true) }
     var activeFragment by remember { mutableStateOf<String?>(null) }
@@ -144,6 +154,29 @@ fun InteractionScreen(
             mapViewModel = mapViewModel,
             modifier = Modifier.fillMaxSize()
         )
+
+        // 删除确认弹窗 (来自地图交互)
+        if (mapDeleteConfirmPoint != null) {
+            AlertDialog(
+                onDismissRequest = { mapDeleteConfirmPoint = null },
+                title = { Text("确认删除", color = Color.White) },
+                text = { Text("确定要删除导览点 “${mapDeleteConfirmPoint?.name}” 吗？", color = Color.LightGray) },
+                containerColor = Color(0xFF2C2C2C),
+                confirmButton = {
+                    TextButton(onClick = {
+                        mapDeleteConfirmPoint?.let { actionViewModel.deleteInspectionPoint(it.pointId) }
+                        mapDeleteConfirmPoint = null
+                    }) {
+                        Text("删除", color = Color(0xFFFF5252))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mapDeleteConfirmPoint = null }) {
+                        Text("取消", color = Color.White)
+                    }
+                }
+            )
+        }
 
         // --- 2. 悬浮 UI 控件层 ---
         // 顶部状态栏
@@ -585,11 +618,39 @@ fun MapBackgroundLayer(
                                     val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
                                     mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
                                 }
+                                MapInteractionMode.PICK_POSITION -> {
+                                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
+                                    val mapPixelOffset = (screenOffset - offset) / scale
+                                    val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                                    mapViewModel.onMapClickForPosition(worldPos)
+                                }
                                 MapInteractionMode.CONFIRM_POINT -> {
                                     // 处于确认模式时，点击地图空白处不自动关闭，防止误触
                                 }
                                 else -> {
-                                    mapViewModel.clearInteraction()
+                                    // 检测是否点击了导览点
+                                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
+                                    val adaptiveFactor = 1f / sqrt(scale)
+                                    // 判定半径：取图标屏幕显示大小的 2.5 倍和最小触摸范围(100px)的最大值
+                                    // 这样即使在地图缩小到很小时，也能保证一个较大的点击区域
+                                    val screenPointRadius = (12f * adaptiveFactor) * scale
+                                    val clickRadius = (screenPointRadius * 2.5f).coerceAtLeast(100f)
+                                    
+                                    val clickedPoint = uiState.endpoints.find { ep ->
+                                        val realX = ep.position?.x ?: ep.x
+                                        val realY = ep.position?.y ?: ep.y
+                                        val px = worldToPixel(realX, realY, config, mapHeightPx)
+                                        // 将世界像素坐标转为屏幕像素坐标
+                                        val spx = px.x * scale + offset.x
+                                        val spy = px.y * scale + offset.y
+                                        hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
+                                    }
+                                    
+                                    if (clickedPoint != null) {
+                                        mapViewModel.onPointClick(screenOffset, clickedPoint)
+                                    } else {
+                                        mapViewModel.clearInteraction()
+                                    }
                                 }
                             }
                         }
@@ -650,14 +711,16 @@ fun MapBackgroundLayer(
                         
                         // 使用平方根补偿，让图标随缩放适度变化，而不是绝对静止
                         val adaptiveFactor = 1f / sqrt(scale)
-                        val pointRadius = 12f * adaptiveFactor
+                        // 保证图标在屏幕上的半径至少为 10 像素，使其在缩小地图时依然可见
+                        val pointRadius = (12f * adaptiveFactor).coerceAtLeast(10f / scale)
                         
                         // 导览点图标渲染
                         drawCircle(color = pointColor, radius = pointRadius, center = px)
                         drawCircle(color = Color.White, radius = pointRadius + 2f * adaptiveFactor, center = px, style = Stroke(width = 2f * adaptiveFactor))
                         
                         // 绘制方向箭头
-                        drawDirectionArrow(px, 18f * adaptiveFactor, realYaw, pointColor, offset = pointRadius * 1.4f)
+                        val arrowLength = (18f * adaptiveFactor).coerceAtLeast(15f / scale)
+                        drawDirectionArrow(px, arrowLength, realYaw, pointColor, offset = pointRadius * 1.4f)
                     }
 
                     // 绘制名称文本 (单独循环以确保文本不被图标遮挡)
@@ -702,9 +765,10 @@ fun MapBackgroundLayer(
                     uiState.robotPosition?.let { robot ->
                         val px = worldToPixel(robot.x, robot.y, config, mapHeightPx)
                         val adaptiveFactor = 1f / sqrt(scale)
-                        val robotRadius = 12f * adaptiveFactor
+                        val robotRadius = (12f * adaptiveFactor).coerceAtLeast(10f / scale)
                         drawCircle(color = Color(0xFFFFA500), radius = robotRadius, center = px)
-                        drawDirectionArrow(px, 16f * adaptiveFactor, robot.yaw, Color.Red, offset = robotRadius * 0.5f)
+                        val arrowLength = (16f * adaptiveFactor).coerceAtLeast(14f / scale)
+                        drawDirectionArrow(px, arrowLength, robot.yaw, Color.Red, offset = robotRadius * 0.5f)
                     }
 
                     // 5. 绘制点云 (置于最顶层)
@@ -803,7 +867,70 @@ fun MapBackgroundLayer(
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
                     .clip(RoundedCornerShape(8.dp)).background(Color(0xAA000000)).padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Text("请在地图上点击一个位置以确定方向", color = Color.White, fontSize = 14.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("请在地图上点击一个位置以确定方向", color = Color.White, fontSize = 14.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "取消",
+                        color = Color(0xFFFF5252),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { mapViewModel.clearInteraction() }
+                    )
+                }
+            }
+        }
+
+        if (uiState.interactionMode == MapInteractionMode.PICK_POSITION) {
+            Box(
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
+                    .clip(RoundedCornerShape(8.dp)).background(Color(0xAA000000)).padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("请在地图上点击新位置", color = Color.White, fontSize = 14.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "取消",
+                        color = Color(0xFFFF5252),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { mapViewModel.clearInteraction() }
+                    )
+                }
+            }
+        }
+
+        // 导览点操作小窗
+        if (uiState.interactionMode == MapInteractionMode.POINT_MENU && uiState.menuPosition != null && uiState.selectedPoint != null) {
+            Popup(
+                alignment = Alignment.TopStart,
+                offset = androidx.compose.ui.unit.IntOffset(uiState.menuPosition.x.toInt(), uiState.menuPosition.y.toInt()),
+                onDismissRequest = { mapViewModel.clearInteraction() }
+            ) {
+                GlassBox(modifier = Modifier.width(110.dp), bgColor = Color(0xEE2C2C2C)) {
+                    Column {
+                        Text(
+                            "修改信息",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onEditPoint() }.padding(10.dp)
+                        )
+                        Divider(color = Color.White.copy(alpha = 0.1f))
+                        Text(
+                            "重设位置",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onResetPointPosition() }.padding(10.dp)
+                        )
+                        Divider(color = Color.White.copy(alpha = 0.1f))
+                        Text(
+                            "删除点位",
+                            color = Color(0xFFFF5252),
+                            fontSize = 13.sp,
+                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onDeletePoint() }.padding(10.dp)
+                        )
+                    }
+                }
             }
         }
     }
