@@ -83,7 +83,7 @@ class MapViewModel : ViewModel() {
                         val pos = robotApi.getPosition()
                         _uiState.update { it.copy(robotPosition = pos) }
                     } catch (e: Exception) {}
-                    delay(200)
+                    delay(2000)
                 }
             }
 
@@ -94,7 +94,7 @@ class MapViewModel : ViewModel() {
                         val cloud = robotApi.getPointCloud()
                         _uiState.update { it.copy(pointCloud = cloud) }
                     } catch (e: Exception) {}
-                    delay(1000)
+                    delay(5000)
                 }
             }
 
@@ -113,7 +113,7 @@ class MapViewModel : ViewModel() {
                     } catch (e: Exception) {
                         // 路径不存在时通常会报错，静默处理
                     }
-                    delay(1000)
+                    delay(5000)
                 }
             }
 
@@ -129,7 +129,7 @@ class MapViewModel : ViewModel() {
                     } catch (e: Exception) {
                         KLog.e("MapViewModel", "刷新导览点失败: ${e.message}")
                     }
-                    delay(1000)
+                    delay(5000)
                 }
             }
         }
