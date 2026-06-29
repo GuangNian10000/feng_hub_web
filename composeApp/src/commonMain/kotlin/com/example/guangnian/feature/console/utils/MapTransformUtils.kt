@@ -1,5 +1,6 @@
 package com.example.guangnian.feature.console.utils
 
+import androidx.compose.ui.geometry.Offset
 import com.example.guangnian.feature.console.data.bean.MapConfigBean
 import com.example.guangnian.feature.console.data.bean.Point2DBean
 import com.example.guangnian.feature.console.data.bean.RobotPositionBean
@@ -10,7 +11,6 @@ object MapTransformUtils {
 
     /**
      * 计算点云的世界坐标
-     * 将点云（相对于机器人的局部坐标）转换为相对于地图原点的世界坐标
      */
     fun calculatePointCloudWorldCoords(
         cloud: List<Point2DBean>,
@@ -27,40 +27,38 @@ object MapTransformUtils {
     }
 
     /**
-     * 世界坐标转地图像素坐标
-     * @param worldX 世界坐标 X (meters)
-     * @param worldY 世界坐标 Y (meters)
-     * @param config 地图配置（包含分辨率和原点）
+     * 世界坐标转地图像素坐标 (处理 Y 轴翻转)
+     * ROS: Y向上为正 | Image: Y向下为正
      */
     fun worldToPixel(
         worldX: Double,
         worldY: Double,
-        config: MapConfigBean
-    ): Pair<Float, Float> {
+        config: MapConfigBean,
+        mapHeightPx: Float
+    ): Offset {
         val originX = config.origin.getOrNull(0) ?: 0.0
         val originY = config.origin.getOrNull(1) ?: 0.0
+        val res = if (config.resolution > 0) config.resolution else 0.05
         
-        val pixelX = (worldX - originX) / config.resolution
-        // 注意：通常 ROS 地图 Y 轴是向上的，而图片坐标系 Y 轴是向下的。
-        // 但这里我们先提供基础数学转换，UI 层的翻转在绘图逻辑中处理。
-        val pixelY = (worldY - originY) / config.resolution
-        return pixelX.toFloat() to pixelY.toFloat()
+        val px = (worldX - originX) / res
+        val py = mapHeightPx - (worldY - originY) / res
+        return Offset(px.toFloat(), py.toFloat())
     }
 
     /**
      * 地图像素坐标转世界坐标
      */
     fun pixelToWorld(
-        pixelX: Float,
-        pixelY: Float,
-        config: MapConfigBean
+        pixel: Offset,
+        config: MapConfigBean,
+        mapHeightPx: Float
     ): Point2DBean {
         val originX = config.origin.getOrNull(0) ?: 0.0
         val originY = config.origin.getOrNull(1) ?: 0.0
+        val res = if (config.resolution > 0) config.resolution else 0.05
         
-        return Point2DBean(
-            x = pixelX.toDouble() * config.resolution + originX,
-            y = pixelY.toDouble() * config.resolution + originY
-        )
+        val worldX = pixel.x.toDouble() * res + originX
+        val worldY = (mapHeightPx - pixel.y).toDouble() * res + originY
+        return Point2DBean(worldX, worldY)
     }
 }

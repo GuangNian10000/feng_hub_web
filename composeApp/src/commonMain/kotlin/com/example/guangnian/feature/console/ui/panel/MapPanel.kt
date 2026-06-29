@@ -38,8 +38,6 @@ import com.example.guangnian.feature.console.viewmodel.MapViewModel
 import com.example.guangnian.feature.console.ui.panel.MapUtils.drawDirectionArrow
 import com.example.guangnian.feature.console.ui.panel.MapUtils.drawFallbackGrid
 import com.example.guangnian.feature.console.ui.panel.MapUtils.drawPathLine
-import com.example.guangnian.feature.console.ui.panel.MapUtils.pixelToWorld
-import com.example.guangnian.feature.console.ui.panel.MapUtils.worldToPixel
 import kotlin.math.*
 
 @Composable
@@ -76,7 +74,7 @@ fun MapBackgroundLayer(
                     detectTapGestures(
                         onLongPress = { screenOffset ->
                             val mapPixelOffset = (screenOffset - offset) / scale
-                            val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                            val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
                             KLog.d("MapDebug", "长按创建点位: 屏幕=$screenOffset, 像素=$mapPixelOffset, 世界=$worldPos")
                             mapViewModel.onMapLongClick(screenOffset, worldPos)
                         },
@@ -84,12 +82,12 @@ fun MapBackgroundLayer(
                             when (uiState.interactionMode) {
                                 MapInteractionMode.PICK_ORIENTATION -> {
                                     val mapPixelOffset = (screenOffset - offset) / scale
-                                    val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                                    val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
                                     mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
                                 }
                                 MapInteractionMode.PICK_POSITION -> {
                                     val mapPixelOffset = (screenOffset - offset) / scale
-                                    val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                                    val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
                                     mapViewModel.onMapClickForPosition(worldPos)
                                 }
                                 MapInteractionMode.CONFIRM_POINT -> {
@@ -102,7 +100,7 @@ fun MapBackgroundLayer(
                                     val clickedPoint = uiState.endpoints.find { ep ->
                                         val realX = ep.position?.x ?: ep.x
                                         val realY = ep.position?.y ?: ep.y
-                                        val px = worldToPixel(realX, realY, config, mapHeightPx)
+                                        val px = MapTransformUtils.worldToPixel(realX, realY, config, mapHeightPx)
                                         val spx = px.x * scale + offset.x
                                         val spy = px.y * scale + offset.y
                                         hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
@@ -202,7 +200,7 @@ private fun MarkerLayer(
             val realX = ep.position?.x ?: ep.x
             val realY = ep.position?.y ?: ep.y
             val realYaw = ep.position?.yaw ?: ep.yaw
-            val px = worldToPixel(realX, realY, config, mapHeightPx)
+            val px = MapTransformUtils.worldToPixel(realX, realY, config, mapHeightPx)
             val pointColor = when (ep.pointType) {
                 1 -> Color(0xFFFFD600)
                 2 -> Color(0xFF4CAF50)
@@ -257,7 +255,7 @@ private fun RobotLayer(
     }
 
     Canvas(modifier = modifier) {
-        val px = worldToPixel(robotPosition.x, robotPosition.y, config, mapHeightPx)
+        val px = MapTransformUtils.worldToPixel(robotPosition.x, robotPosition.y, config, mapHeightPx)
         val adaptiveFactor = 1f / sqrt(scale)
         val robotRadius = (12f * adaptiveFactor).coerceAtLeast(10f / scale)
         drawCircle(color = Color(0xFFFFA500), radius = robotRadius, center = px)
@@ -265,7 +263,7 @@ private fun RobotLayer(
         drawDirectionArrow(px, arrowLength, robotPosition.yaw, Color.Red, offset = robotRadius * 0.5f)
 
         if (worldCloud.isNotEmpty()) {
-            val points = worldCloud.map { worldToPixel(it.x, it.y, config, mapHeightPx) }
+            val points = worldCloud.map { MapTransformUtils.worldToPixel(it.x, it.y, config, mapHeightPx) }
             drawPoints(
                 points = points,
                 pointMode = PointMode.Points,
@@ -290,7 +288,7 @@ private fun InteractionLayer(
     if (config == null) return
     if ((interactionMode == MapInteractionMode.PICK_ORIENTATION || interactionMode == MapInteractionMode.CONFIRM_POINT) && tempPoint != null) {
         Canvas(modifier = modifier) {
-            val px = worldToPixel(tempPoint.x, tempPoint.y, config, mapHeightPx)
+            val px = MapTransformUtils.worldToPixel(tempPoint.x, tempPoint.y, config, mapHeightPx)
             val adaptiveFactor = 1f / sqrt(scale)
             drawCircle(color = Color(0xFF007AFF), radius = 14f * adaptiveFactor, center = px)
             drawDirectionArrow(px, 20f * adaptiveFactor, tempYaw.toDouble(), Color(0xFF007AFF), offset = 16f * adaptiveFactor)
@@ -334,7 +332,7 @@ private fun MapControlOverlays(
     }
     
     if (uiState.interactionMode == MapInteractionMode.CONFIRM_POINT && uiState.tempPoint != null && config != null) {
-        val px = worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
+        val px = MapTransformUtils.worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
         val screenX = px.x * scale + offset.x
         val screenY = px.y * scale + offset.y
         val density = androidx.compose.ui.platform.LocalDensity.current
