@@ -570,7 +570,6 @@ private fun RouteEditDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .wrapContentHeight()
-                .fillMaxHeight(0.9f)
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
             color = Color(0xFF2C2C2C)
