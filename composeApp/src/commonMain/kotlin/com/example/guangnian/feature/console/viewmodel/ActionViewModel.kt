@@ -18,6 +18,7 @@ data class ActionUiState(
     val teachActions: List<TeachActionBean> = emptyList(),
     val favoriteActions: List<FavoriteActionBean> = emptyList(),
     val endpoints: List<InspectionPointBean> = emptyList(),
+    val routes: List<RouteBean> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -125,6 +126,72 @@ class ActionViewModel : ViewModel() {
                 robotApi.startInspectionPoint(pointId)
             } catch (e: Exception) {
                 KLog.e(TAG, "前往巡检点失败", e)
+            }
+        }
+    }
+
+    // --- 路线管理业务逻辑 ---
+
+    fun fetchRoutes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                KLog.d(TAG, "开始请求路线列表...")
+                val list = robotApi.getRoutes()
+                _uiState.update { it.copy(routes = list, isLoading = false) }
+                KLog.d(TAG, "成功获取路线: ${list.size}个")
+            } catch (e: Exception) {
+                KLog.e(TAG, "获取路线列表失败", e)
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    fun addRoute(route: RouteBean) {
+        viewModelScope.launch {
+            try {
+                val result = robotApi.addRoute(route)
+                if (result.st == 0) {
+                    fetchRoutes()
+                }
+            } catch (e: Exception) {
+                KLog.e(TAG, "添加路线失败", e)
+            }
+        }
+    }
+
+    fun deleteRoute(routeId: String) {
+        viewModelScope.launch {
+            try {
+                val result = robotApi.deleteRoute(routeId)
+                if (result.st == 0) {
+                    fetchRoutes()
+                }
+            } catch (e: Exception) {
+                KLog.e(TAG, "删除路线失败", e)
+            }
+        }
+    }
+
+    fun updateRoute(route: RouteBean) {
+        viewModelScope.launch {
+            try {
+                val result = robotApi.updateRoute(route)
+                if (result.st == 0) {
+                    fetchRoutes()
+                }
+            } catch (e: Exception) {
+                KLog.e(TAG, "更新路线失败", e)
+            }
+        }
+    }
+
+    fun startRoute(routeId: String) {
+        viewModelScope.launch {
+            try {
+                robotApi.startRoute(routeId)
+            } catch (e: Exception) {
+                KLog.e(TAG, "开始路线巡检失败", e)
             }
         }
     }

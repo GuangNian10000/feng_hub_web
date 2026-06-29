@@ -1,12 +1,15 @@
 package com.example.guangnian.feature.console.ui.panel
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,17 +32,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.guangnian.feature.console.data.bean.InspectionPointBean
+import com.example.guangnian.feature.console.data.bean.RouteBean
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun InspectionPointPanel(
     endpoints: List<InspectionPointBean>,
+    routes: List<RouteBean>,
     robotPosition: com.example.guangnian.feature.console.data.bean.RobotPositionBean?,
     selectedTab: String,
     onPointClick: (String) -> Unit,
     onAddCurrentPosition: (InspectionPointBean) -> Unit,
     onDeletePoint: (String) -> Unit,
     onUpdatePoint: (InspectionPointBean) -> Unit,
+    onRouteClick: (String) -> Unit,
+    onAddRoute: (RouteBean) -> Unit,
+    onDeleteRoute: (String) -> Unit,
+    onUpdateRoute: (RouteBean) -> Unit,
     onRetryClick: () -> Unit,
     onSetAddAction: (String, () -> Unit) -> Unit,
     pendingPoint: InspectionPointBean? = null,
@@ -49,6 +58,9 @@ fun InspectionPointPanel(
     var showDeleteConfirm by remember { mutableStateOf<InspectionPointBean?>(null) }
     var showEditDialog by remember { mutableStateOf<InspectionPointBean?>(null) }
 
+    var showRouteDeleteConfirm by remember { mutableStateOf<RouteBean?>(null) }
+    var showRouteEditDialog by remember { mutableStateOf<RouteBean?>(null) }
+
     // 监听外部传入的待添加点位
     LaunchedEffect(pendingPoint) {
         if (pendingPoint != null) {
@@ -57,7 +69,7 @@ fun InspectionPointPanel(
         }
     }
 
-    LaunchedEffect(endpoints.size, robotPosition, selectedTab) {
+    LaunchedEffect(endpoints.size, routes.size, robotPosition, selectedTab) {
         if (selectedTab == "导览点") {
             onSetAddAction("添加导览点") {
                 val newPoint = InspectionPointBean(
@@ -75,7 +87,9 @@ fun InspectionPointPanel(
             }
         } else {
             onSetAddAction("添加路线") {
-
+                showRouteEditDialog = RouteBean(
+                    name = "路线_${routes.size + 1}"
+                )
             }
         }
     }
@@ -95,6 +109,22 @@ fun InspectionPointPanel(
         )
     }
 
+    if (showRouteEditDialog != null) {
+        RouteEditDialog(
+            initialRoute = showRouteEditDialog,
+            availablePoints = endpoints,
+            onConfirm = { route ->
+                if (route.routeId.isNullOrEmpty()) {
+                    onAddRoute(route)
+                } else {
+                    onUpdateRoute(route)
+                }
+                showRouteEditDialog = null
+            },
+            onDismiss = { showRouteEditDialog = null }
+        )
+    }
+
     if (showDeleteConfirm != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
@@ -111,6 +141,28 @@ fun InspectionPointPanel(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = null }) {
+                    Text("取消", color = Color.White)
+                }
+            }
+        )
+    }
+
+    if (showRouteDeleteConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showRouteDeleteConfirm = null },
+            title = { Text("确认删除路线", color = Color.White) },
+            text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.name}” 吗？", color = Color.LightGray) },
+            containerColor = Color(0xFF2C2C2C),
+            confirmButton = {
+                TextButton(onClick = {
+                    showRouteDeleteConfirm?.routeId?.let { onDeleteRoute(it) }
+                    showRouteDeleteConfirm = null
+                }) {
+                    Text("删除", color = Color(0xFFFF5252))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRouteDeleteConfirm = null }) {
                     Text("取消", color = Color.White)
                 }
             }
@@ -152,9 +204,37 @@ fun InspectionPointPanel(
                 }
             }
         } else {
-            // 路线列表暂时不写
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("路线列表暂未开放", color = Color.Gray, fontSize = 14.sp)
+            if (routes.isEmpty()) {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("暂无路线数据", color = Color.Gray, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0x33FFFFFF))
+                                .clickable { onRetryClick() }
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                        ) {
+                            Text("点击重试", color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(routes) { route ->
+                        RouteLinearItem(
+                            route = route,
+                            onClick = { route.routeId?.let { onRouteClick(it) } },
+                            onEditClick = { showRouteEditDialog = route },
+                            onDeleteClick = { showRouteDeleteConfirm = route }
+                        )
+                    }
+                }
             }
         }
     }
@@ -340,7 +420,7 @@ private fun InspectionPointEditDialog(
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                     )
-                    
+
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = needRotate, onCheckedChange = { needRotate = it }, colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)))
@@ -401,6 +481,283 @@ private fun InspectionPointEditDialog(
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text("保存配置", color = Color.White)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RouteLinearItem(
+    route: RouteBean,
+    onClick: () -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0x1AFFFFFF))
+            .border(1.dp, Color(0x12FFFFFF), RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = route.name.ifEmpty { "未命名路线" },
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "点位数: ${route.pointCount ?: 0} | 循环: ${route.loopCount}次",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                maxLines = 1
+            )
+        }
+
+        IconButton(onClick = onEditClick) {
+            Icon(Icons.Default.Edit, contentDescription = "编辑", tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        }
+
+        IconButton(onClick = onDeleteClick) {
+            Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun RouteEditDialog(
+    initialRoute: RouteBean?,
+    availablePoints: List<InspectionPointBean>,
+    onConfirm: (RouteBean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember(initialRoute) { mutableStateOf(initialRoute?.name ?: "") }
+    var description by remember(initialRoute) { mutableStateOf(initialRoute?.description ?: "") }
+    var loopCount by remember(initialRoute) { mutableStateOf(initialRoute?.loopCount?.toString() ?: "1") }
+    
+    // 解析已有的点位
+    val initialPointIds = remember(initialRoute) {
+        initialRoute?.pointIds?.split(",")?.filter { it.isNotEmpty() } ?: initialRoute?.points ?: emptyList()
+    }
+    var selectedPointIds by remember { mutableStateOf(initialPointIds) }
+    var showPointSelector by remember { mutableStateOf(false) }
+
+    if (showPointSelector) {
+        PointSelectionDialog(
+            availablePoints = availablePoints,
+            onConfirm = { ids ->
+                selectedPointIds = selectedPointIds + ids
+                showPointSelector = false
+            },
+            onDismiss = { showPointSelector = false }
+        )
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .wrapContentHeight()
+                .fillMaxHeight(0.9f)
+                .padding(vertical = 20.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFF2C2C2C)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val isEdit = initialRoute?.routeId?.isNotEmpty() == true
+                Text(
+                    text = "《 ${if (isEdit) "编辑路线" else "添加路线"}",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable { onDismiss() }
+                        .padding(vertical = 2.dp)
+                )
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("路线名称") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                )
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = loopCount,
+                        onValueChange = { loopCount = it },
+                        label = { Text("循环次数") },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    )
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("路线描述") },
+                        modifier = Modifier.weight(2f),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("路线点位序列", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = { showPointSelector = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text("+ 添加点位", fontSize = 12.sp)
+                    }
+                }
+
+                // 已选点位垂直列表
+                Box(modifier = Modifier.fillMaxWidth().border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp)).padding(8.dp)) {
+                    if (selectedPointIds.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                            Text("尚未选择点位，请点击右上方按钮添加", color = Color.Gray, fontSize = 13.sp)
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            selectedPointIds.forEachIndexed { index, id ->
+                                val point = availablePoints.find { it.pointId == id }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0x1AFFFFFF))
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("${index + 1}.", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        text = point?.name ?: "未知点位 ($id)",
+                                        color = Color.White,
+                                        fontSize = 15.sp,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(onClick = {
+                                        selectedPointIds = selectedPointIds.toMutableList().apply { removeAt(index) }
+                                    }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 底部按钮
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Button(
+                        onClick = {
+                            val updated = (initialRoute ?: RouteBean()).copy(
+                                name = name,
+                                description = description,
+                                loopCount = loopCount.toIntOrNull() ?: 1,
+                                points = selectedPointIds
+                            )
+                            onConfirm(updated)
+                        },
+                        enabled = name.isNotEmpty() && selectedPointIds.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text("保存路线", color = Color.White)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PointSelectionDialog(
+    availablePoints: List<InspectionPointBean>,
+    onConfirm: (List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val selectedIds = remember { mutableStateListOf<String>() }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .fillMaxHeight(0.85f)
+                .padding(vertical = 20.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFF1E1E1E),
+            border = BorderStroke(1.dp, Color(0x33FFFFFF))
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("选择导览点 (可多选)", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(availablePoints) { point ->
+                        val isSelected = selectedIds.contains(point.pointId)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) Color(0x33007AFF) else Color(0x1AFFFFFF))
+                                .clickable {
+                                    if (isSelected) selectedIds.remove(point.pointId) else selectedIds.add(point.pointId)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    if (it == true) selectedIds.add(point.pointId) else selectedIds.remove(point.pointId)
+                                },
+                                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(point.name, color = Color.White, fontSize = 15.sp)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Button(
+                        onClick = { onConfirm(selectedIds.toList()) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        enabled = selectedIds.isNotEmpty()
+                    ) {
+                        Text("添加选定 (${selectedIds.size})")
                     }
                 }
             }

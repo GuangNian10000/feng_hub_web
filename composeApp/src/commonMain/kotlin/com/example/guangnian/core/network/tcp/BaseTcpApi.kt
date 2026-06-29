@@ -2,9 +2,12 @@ package com.example.guangnian.core.network.tcp
 
 import com.benasher44.uuid.uuid4
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.encodeToJsonElement
 
 abstract class BaseTcpApi {
     val json = Json {
@@ -44,7 +47,21 @@ abstract class BaseTcpApi {
                                         is String -> put(sk, subV)
                                         is Number -> put(sk, subV)
                                         is Boolean -> put(sk, subV)
+                                        is Map<*, *> -> put(sk, Json.encodeToJsonElement(subV))
+                                        is Iterable<*> -> put(sk, Json.encodeToJsonElement(subV))
                                         else -> put(sk, subV.toString())
+                                    }
+                                }
+                            })
+                            is Iterable<*> -> put(k, buildJsonArray {
+                                v.forEach { item ->
+                                    when (item) {
+                                        is String -> add(item)
+                                        is Number -> add(item)
+                                        is Boolean -> add(item)
+                                        is Map<*, *> -> add(Json.encodeToJsonElement(item))
+                                        is Iterable<*> -> add(Json.encodeToJsonElement(item))
+                                        else -> add(item.toString())
                                     }
                                 }
                             })

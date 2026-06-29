@@ -104,11 +104,17 @@ fun InteractionScreen(
     var isRightJoyActive by remember { mutableStateOf(false) }
 
     // 控制菜单切换时自动加载数据
-    LaunchedEffect(activeFragment) {
+    LaunchedEffect(activeFragment, inspectionTab) {
         when (activeFragment) {
             "姿态动作" -> actionViewModel.fetchPostureList()
             "动作" -> actionViewModel.fetchArmList()
-            "导览管理" -> actionViewModel.fetchInspectionPoints()
+            "导览管理" -> {
+                if (inspectionTab == "导览点") {
+                    actionViewModel.fetchInspectionPoints()
+                } else {
+                    actionViewModel.fetchRoutes()
+                }
+            }
         }
     }
 
@@ -542,13 +548,21 @@ fun InteractionScreen(
                             )
                             "导览管理" -> InspectionPointPanel(
                                 endpoints = uiState.endpoints,
+                                routes = uiState.routes,
                                 robotPosition = mapUiState.robotPosition,
                                 selectedTab = inspectionTab,
                                 onPointClick = { actionViewModel.startInspectionPoint(it) },
                                 onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
                                 onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
                                 onUpdatePoint = { actionViewModel.updateInspectionPoint(it) },
-                                onRetryClick = { actionViewModel.fetchInspectionPoints() },
+                                onRouteClick = { actionViewModel.startRoute(it) },
+                                onAddRoute = { actionViewModel.addRoute(it) },
+                                onDeleteRoute = { actionViewModel.deleteRoute(it) },
+                                onUpdateRoute = { actionViewModel.updateRoute(it) },
+                                onRetryClick = { 
+                                    if (inspectionTab == "导览点") actionViewModel.fetchInspectionPoints()
+                                    else actionViewModel.fetchRoutes()
+                                },
                                 onSetAddAction = { text, action ->
                                     addActionText = text
                                     onAddClickAction = action

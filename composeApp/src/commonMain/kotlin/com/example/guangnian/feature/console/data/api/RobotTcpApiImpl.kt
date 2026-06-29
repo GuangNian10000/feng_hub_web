@@ -22,9 +22,41 @@ import com.example.guangnian.feature.console.data.bean.TeachActionBean
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+import com.example.guangnian.feature.console.data.bean.RouteBean
+import com.example.guangnian.feature.console.data.bean.RouteStatusBean
+
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun executeSynthesis(bean: SpeechSynthesisBean) =
         request<BaseBean>("/voice/tts_synthesis/", mapOf("ttsBean" to Json.encodeToString(bean)),targetNode= TcpNode.TABLET)
+
+    override suspend fun getRoutes() = request<List<RouteBean>>("2dpath/get_routes")
+
+    override suspend fun addRoute(route: RouteBean) = request<BaseBean>("2dpath/add_route", mapOf(
+        "name" to route.name,
+        "description" to route.description,
+        "isActive" to route.isActive,
+        "points" to (route.points ?: emptyList()),
+        "loopCount" to route.loopCount
+    ))
+
+    override suspend fun updateRoute(route: RouteBean) = request<BaseBean>("2dpath/update_route", mapOf(
+        "routeId" to (route.routeId ?: ""),
+        "name" to route.name,
+        "description" to route.description,
+        "isActive" to route.isActive,
+        "points" to (route.points ?: emptyList()),
+        "loopCount" to route.loopCount
+    ))
+
+    override suspend fun deleteRoute(routeId: String) = request<BaseBean>("2dpath/delete_route", mapOf(
+        "routeId" to routeId
+    ))
+
+    override suspend fun startRoute(routeId: String) = request<BaseBean>("navigation/start_route", mapOf(
+        "routeId" to routeId
+    ))
+
+    override suspend fun getRouteStatus() = request<RouteStatusBean>("navigation/get_status")
 
     override suspend fun selectAgent(agent: AgentEntity) =
         request<BaseBean>("agent/select_agent", mapOf("agent" to Json.encodeToString(agent)),targetNode= TcpNode.TABLET)

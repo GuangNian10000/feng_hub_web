@@ -18,10 +18,21 @@ import com.example.guangnian.feature.console.data.bean.BaseBean
 import com.example.guangnian.feature.console.data.bean.SpeechSynthesisBean
 import com.example.guangnian.feature.console.data.bean.TeachActionBean
 
+import com.example.guangnian.feature.console.data.bean.RouteBean
+import com.example.guangnian.feature.console.data.bean.RouteStatusBean
+
 interface RobotTcpApi {
 
     // 语音合成
     suspend fun executeSynthesis(bean: SpeechSynthesisBean): BaseBean
+
+    // 路线管理
+    suspend fun getRoutes(): List<RouteBean>
+    suspend fun addRoute(route: RouteBean): BaseBean
+    suspend fun updateRoute(route: RouteBean): BaseBean
+    suspend fun deleteRoute(routeId: String): BaseBean
+    suspend fun startRoute(routeId: String): BaseBean
+    suspend fun getRouteStatus(): RouteStatusBean
 
     // 选中智能体
     suspend fun selectAgent(agent: AgentEntity): BaseBean
