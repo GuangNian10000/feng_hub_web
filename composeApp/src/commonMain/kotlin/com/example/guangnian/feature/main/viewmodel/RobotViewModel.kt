@@ -18,14 +18,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
-class RobotViewModel : ViewModel() {
+class RobotViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
 
     private companion object {
         const val TAG = "RobotViewModel"
     }
 
     private val settings = Settings()
-    private val robotApi = RobotTcpApiImpl()
     private var heartbeatJob: Job? = null
 
     private val _ip = MutableStateFlow(settings.getString("saved_ip", "192.168.1.100"))

@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.ui.panel.*
@@ -25,14 +25,14 @@ import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 fun InteractionScreen(
     onBackClick: () -> Unit = {}
 ) {
-    val actionViewModel: ActionViewModel = viewModel { ActionViewModel() }
+    val actionViewModel: ActionViewModel = koinViewModel()
     val uiState by actionViewModel.uiState.collectAsState()
 
-    val robotViewModel: RobotViewModel = viewModel { RobotViewModel() }
+    val robotViewModel: RobotViewModel = koinViewModel()
     val connectionState by robotViewModel.connectionState.collectAsState()
     val connectionError by robotViewModel.connectionError.collectAsState()
 
-    val mapViewModel: MapViewModel = viewModel { MapViewModel() }
+    val mapViewModel: MapViewModel = koinViewModel()
     val mapUiState by mapViewModel.uiState.collectAsState()
     val pendingPoint by mapViewModel.pendingPoint.collectAsState()
 
@@ -197,12 +197,14 @@ fun InteractionScreen(
             exit = fadeOut(tween(200)) + slideOutVertically(targetOffsetY = { -40 })
         ) {
             MainControlPanel(
-                activeFragment = activeFragment,
-                inspectionTab = inspectionTab,
+                title = activeFragment ?: "",
                 onClose = { activeFragment = null },
+                tabs = if (activeFragment == "导览管理") listOf("导览点", "路线") else emptyList(),
+                selectedTab = inspectionTab,
                 onTabChange = { inspectionTab = it },
-                onAddClickAction = onAddClickAction,
-                addActionText = addActionText,
+                actionButton = if (onAddClickAction != null) {
+                    { PanelAddButton(text = addActionText, onClick = { onAddClickAction?.invoke() }) }
+                } else null,
                 content = {
                     when (activeFragment) {
                         "姿态动作" -> ActionPosturePanel(

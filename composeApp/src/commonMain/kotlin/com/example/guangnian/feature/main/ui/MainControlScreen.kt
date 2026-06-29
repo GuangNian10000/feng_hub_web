@@ -12,8 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-
+import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 
@@ -21,7 +20,7 @@ import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 fun MainControlScreen(
     onNavigateToInteraction: () -> Unit = {}
 ) {
-    val viewModel: RobotViewModel = viewModel { RobotViewModel() }
+    val viewModel: RobotViewModel = koinViewModel()
     val ip by viewModel.ip.collectAsState()
     val port by viewModel.port.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()

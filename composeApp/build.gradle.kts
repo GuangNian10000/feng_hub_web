@@ -45,6 +45,11 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
+            // Koin
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+
             // 👇 新增：KMP 网络、序列化和 UUID 依赖
             implementation("io.ktor:ktor-network:2.3.8")
             implementation("io.ktor:ktor-client-core:2.3.8")

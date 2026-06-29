@@ -26,13 +26,11 @@ data class ActionUiState(
     val isLoading: Boolean = false
 )
 
-class ActionViewModel : ViewModel() {
-
+class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     private companion object {
         const val TAG = "ActionViewModel"
     }
 
-    private val robotApi = RobotTcpApiImpl()
     private val _uiState = MutableStateFlow(ActionUiState())
     val uiState: StateFlow<ActionUiState> = _uiState.asStateFlow()
 

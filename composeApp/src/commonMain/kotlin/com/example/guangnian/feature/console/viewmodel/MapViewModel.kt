@@ -47,8 +47,7 @@ enum class MapInteractionMode {
     POINT_MENU
 }
 
-class MapViewModel : ViewModel() {
-    private val robotApi = RobotTcpApiImpl()
+class MapViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
     private val settings = Settings()
