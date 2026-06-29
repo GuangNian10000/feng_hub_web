@@ -80,7 +80,7 @@ fun MapBackgroundLayer(
                         },
                         onTap = { screenOffset ->
                             when (uiState.interactionMode) {
-                                MapInteractionMode.PICK_ORIENTATION -> {
+                                MapInteractionMode.PICK_ORIENTATION, MapInteractionMode.PICK_ROBOT_ORIENTATION -> {
                                     val mapPixelOffset = (screenOffset - offset) / scale
                                     val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
                                     mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
@@ -90,7 +90,7 @@ fun MapBackgroundLayer(
                                     val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
                                     mapViewModel.onMapClickForPosition(worldPos)
                                 }
-                                MapInteractionMode.CONFIRM_POINT -> {
+                                MapInteractionMode.CONFIRM_POINT, MapInteractionMode.CONFIRM_ROBOT_POSITION -> {
                                 }
                                 else -> {
                                     val adaptiveFactor = 1f / sqrt(scale)
@@ -286,12 +286,17 @@ private fun InteractionLayer(
     modifier: Modifier
 ) {
     if (config == null) return
-    if ((interactionMode == MapInteractionMode.PICK_ORIENTATION || interactionMode == MapInteractionMode.CONFIRM_POINT) && tempPoint != null) {
+    if ((interactionMode == MapInteractionMode.PICK_ORIENTATION || 
+        interactionMode == MapInteractionMode.CONFIRM_POINT ||
+        interactionMode == MapInteractionMode.PICK_ROBOT_ORIENTATION ||
+        interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION) && tempPoint != null) {
         Canvas(modifier = modifier) {
             val px = MapTransformUtils.worldToPixel(tempPoint.x, tempPoint.y, config, mapHeightPx)
             val adaptiveFactor = 1f / sqrt(scale)
-            drawCircle(color = Color(0xFF007AFF), radius = 14f * adaptiveFactor, center = px)
-            drawDirectionArrow(px, 20f * adaptiveFactor, tempYaw.toDouble(), Color(0xFF007AFF), offset = 16f * adaptiveFactor)
+            val color = if (interactionMode == MapInteractionMode.PICK_ROBOT_ORIENTATION || 
+                           interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION) Color(0xFFFFA500) else Color(0xFF007AFF)
+            drawCircle(color = color, radius = 14f * adaptiveFactor, center = px)
+            drawDirectionArrow(px, 20f * adaptiveFactor, tempYaw.toDouble(), color, offset = 16f * adaptiveFactor)
         }
     }
 }
@@ -321,6 +326,13 @@ private fun MapControlOverlays(
                     )
                     HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
                     Text(
+                        "设置机器人位置",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onSelectSetRobotPosition() }.padding(12.dp)
+                    )
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Text(
                         "去此处",
                         color = Color.LightGray,
                         fontSize = 14.sp,
@@ -331,7 +343,8 @@ private fun MapControlOverlays(
         }
     }
     
-    if (uiState.interactionMode == MapInteractionMode.CONFIRM_POINT && uiState.tempPoint != null && config != null) {
+    if ((uiState.interactionMode == MapInteractionMode.CONFIRM_POINT || uiState.interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION) 
+        && uiState.tempPoint != null && config != null) {
         val px = MapTransformUtils.worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
         val screenX = px.x * scale + offset.x
         val screenY = px.y * scale + offset.y
@@ -342,7 +355,7 @@ private fun MapControlOverlays(
             alignment = Alignment.TopStart,
             offset = androidx.compose.ui.unit.IntOffset(
                 (screenX - popupWidthPx / 2).toInt(),
-                (screenY + 30).toInt()
+                (screenY + 60).toInt()
             ),
             onDismissRequest = { mapViewModel.clearInteraction() }
         ) {
@@ -365,14 +378,20 @@ private fun MapControlOverlays(
                         color = Color(0xFF4CAF50),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { mapViewModel.onConfirmCreatePoint() }.padding(vertical = 12.dp, horizontal = 8.dp)
+                        modifier = Modifier.clickable { 
+                            if (uiState.interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION) {
+                                mapViewModel.onConfirmSetRobotPosition()
+                            } else {
+                                mapViewModel.onConfirmCreatePoint()
+                            }
+                        }.padding(vertical = 12.dp, horizontal = 8.dp)
                     )
                 }
             }
         }
     }
     
-    if (uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION) {
+    if (uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION || uiState.interactionMode == MapInteractionMode.PICK_ROBOT_ORIENTATION) {
         Box(
             modifier = Modifier.fillMaxSize().padding(top = 100.dp),
             contentAlignment = Alignment.TopCenter

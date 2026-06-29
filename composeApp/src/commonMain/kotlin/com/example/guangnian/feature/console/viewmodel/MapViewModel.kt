@@ -42,7 +42,8 @@ data class MapUiState(
 )
 
 enum class MapInteractionMode {
-    NONE, SHOW_MENU, PICK_POSITION, PICK_ORIENTATION, CONFIRM_POINT, POINT_MENU
+    NONE, SHOW_MENU, PICK_POSITION, PICK_ORIENTATION, CONFIRM_POINT, POINT_MENU,
+    PICK_ROBOT_ORIENTATION, CONFIRM_ROBOT_POSITION
 }
 
 class MapViewModel(
@@ -176,6 +177,10 @@ class MapViewModel(
         _uiState.update { it.copy(interactionMode = MapInteractionMode.PICK_ORIENTATION) }
     }
 
+    fun onSelectSetRobotPosition() {
+        _uiState.update { it.copy(interactionMode = MapInteractionMode.PICK_ROBOT_ORIENTATION) }
+    }
+
     fun onMapClickForPosition(mapPos: Point2DBean) {
         _uiState.update { it.copy(tempPoint = mapPos, interactionMode = MapInteractionMode.PICK_ORIENTATION) }
     }
@@ -183,7 +188,12 @@ class MapViewModel(
     fun onMapClickForOrientation(screenOffset: androidx.compose.ui.geometry.Offset, clickMapPos: Point2DBean) {
         val origin = _uiState.value.tempPoint ?: return
         val yaw = atan2(clickMapPos.y - origin.y, clickMapPos.x - origin.x)
-        _uiState.update { it.copy(tempYaw = yaw.toFloat(), interactionMode = MapInteractionMode.CONFIRM_POINT, menuPosition = screenOffset) }
+        val nextMode = if (_uiState.value.interactionMode == MapInteractionMode.PICK_ROBOT_ORIENTATION) {
+            MapInteractionMode.CONFIRM_ROBOT_POSITION
+        } else {
+            MapInteractionMode.CONFIRM_POINT
+        }
+        _uiState.update { it.copy(tempYaw = yaw.toFloat(), interactionMode = nextMode, menuPosition = screenOffset) }
     }
 
     fun onConfirmCreatePoint() {
@@ -197,6 +207,21 @@ class MapViewModel(
             position = PointPosition(origin.x, origin.y, state.tempYaw.toDouble())
         )
         eventBus.tryEmit(RobotEvent.RequestEditPoint(finalPoint))
+        clearInteraction()
+    }
+
+    fun onConfirmSetRobotPosition() {
+        val state = _uiState.value
+        val origin = state.tempPoint ?: return
+        val yaw = state.tempYaw.toDouble()
+        viewModelScope.launch {
+            try {
+                navigationApi.setPosition(origin.x, origin.y, yaw)
+                KLog.d("MapViewModel", "设置机器人位置成功: x=${origin.x}, y=${origin.y}, yaw=$yaw")
+            } catch (e: Exception) {
+                KLog.e("MapViewModel", "设置机器人位置失败: ${e.message}")
+            }
+        }
         clearInteraction()
     }
 
