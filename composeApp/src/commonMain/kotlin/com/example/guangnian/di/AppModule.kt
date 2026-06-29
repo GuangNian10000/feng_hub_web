@@ -1,6 +1,7 @@
 package com.example.guangnian.di
 
 import com.example.guangnian.feature.console.data.api.*
+import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
 import com.example.guangnian.feature.console.viewmodel.*
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import com.russhwolf.settings.Settings
@@ -12,7 +13,7 @@ val appModule = module {
     // Data Sources
     single<RobotTcpApi> { RobotTcpApiImpl() }
     
-    // Scoped API Interfaces for better isolation
+    // Scoped API Interfaces for better isolation (ISP)
     single<RobotStatusApi> { get<RobotTcpApi>() }
     single<MotionControlApi> { get<RobotTcpApi>() }
     single<NavigationApi> { get<RobotTcpApi>() }
@@ -34,9 +35,22 @@ val appModule = module {
     }
     
     // ViewModels
+    single { RobotConnectionManager(get(), get()) }
     factory { RobotViewModel(get()) }
-    factory { ActionViewModel(get(), get(), get()) }
-    factory { MapViewModel(get(), get(), get()) }
+    factory { 
+        ActionViewModel(
+            motionControlApi = get(),
+            navigationApi = get(),
+            routeApi = get()
+        ) 
+    }
+    factory { 
+        MapViewModel(
+            navigationApi = get(),
+            settings = get(),
+            httpClient = get()
+        ) 
+    }
     factory { AgentViewModel(get()) }
     factory { KnowledgeViewModel(get()) }
 }

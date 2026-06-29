@@ -62,7 +62,7 @@ class MapViewModel(
     }
 
     private fun startMapDataPolling() {
-        // 1. 地图配置与图片加载 (仅执行一次或直到成功)
+        // 1. 地图配置与图片加载
         viewModelScope.launch {
             while (isActive && _uiState.value.mapConfig == null) {
                 try {
@@ -84,20 +84,20 @@ class MapViewModel(
                     val pos = navigationApi.getPosition()
                     _uiState.update { it.copy(robotPosition = pos) }
                 } catch (e: Exception) {
-                    delay(500) // 失败则放慢频率
+                    delay(500)
                 }
                 delay(200)
             }
         }
 
-        // 3. 动效数据刷新 (1Hz: 点云、路径) - 并行请求提升响应速度
+        // 3. 动效数据刷新 (1Hz: 点云、路径)
         viewModelScope.launch {
             while (isActive) {
                 try {
                     coroutineScope {
-                        val cloudDef = async { runCatching { navigationApi.getPointCloud() }.getOrDefault(emptyList()) }
-                        val globalDef = async { runCatching { navigationApi.getGlobalPath().points }.getOrDefault(emptyList()) }
-                        val localDef = async { runCatching { navigationApi.getLocalPath().points }.getOrDefault(emptyList()) }
+                        val cloudDef = async { try { navigationApi.getPointCloud() } catch(e: Exception) { emptyList<Point2DBean>() } }
+                        val globalDef = async { try { navigationApi.getGlobalPath().points } catch(e: Exception) { emptyList<Point2DBean>() } }
+                        val localDef = async { try { navigationApi.getLocalPath().points } catch(e: Exception) { emptyList<Point2DBean>() } }
                         
                         _uiState.update { it.copy(
                             pointCloud = cloudDef.await(),
@@ -112,31 +112,31 @@ class MapViewModel(
             }
         }
 
-        // 4. 导览点数据轮询 (1Hz) - 独立协程防止被阻塞
+        // 4. 导览点数据轮询 (1Hz)
         viewModelScope.launch {
             while (isActive) {
                 try {
                     val points = navigationApi.getInspectionPoints()
                     _uiState.update { it.copy(endpoints = points) }
                 } catch (e: Exception) {
-                    KLog.e("MapViewModel", "导览点同步异常: ${e.message}")
+                    KLog.e("MapViewModel", "导览点同步异常")
                 }
                 delay(1000)
             }
         }
     }
 
-    /**
-     * 直接更新点位数据 (用于 UI 联动，实现秒级同步)
-     */
     fun updateEndpoints(points: List<InspectionPointBean>) {
         _uiState.update { it.copy(endpoints = points) }
     }
 
     fun refreshMapData() {
         viewModelScope.launch {
-            runCatching { navigationApi.getInspectionPoints() }.onSuccess { points ->
+            try {
+                val points = navigationApi.getInspectionPoints()
                 _uiState.update { it.copy(endpoints = points) }
+            } catch (e: Exception) {
+                KLog.e("MapViewModel", "刷新导览点失败")
             }
         }
     }
@@ -214,8 +214,4 @@ class MapViewModel(
     }
 
     fun clearDeletePointEvent() { _deletePointEvent.value = null }
-
-    override fun onCleared() {
-        super.onCleared()
-    }
 }
