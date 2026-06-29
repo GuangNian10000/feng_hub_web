@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.guangnian.core.designsystem.components.GlassBox
 import com.example.guangnian.core.network.tcp.TcpState
 
 @Composable

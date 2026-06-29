@@ -67,6 +67,12 @@ fun InteractionScreen(
     var rightJoyX by remember { mutableFloatStateOf(0f) }
     var isRightJoyActive by remember { mutableStateOf(false) }
 
+    // 联动优化：当 ActionViewModel 获取到最新点位时，直接同步给 MapViewModel 的 UI 状态
+    // 这样添加/删除点位后，地图会瞬间响应，无需等待下一次网络轮询
+    LaunchedEffect(uiState.endpoints) {
+        mapViewModel.updateEndpoints(uiState.endpoints)
+    }
+
     LaunchedEffect(activeFragment, inspectionTab) {
         when (activeFragment) {
             "姿态动作" -> actionViewModel.fetchPostureList()

@@ -12,6 +12,8 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.atan2
 
 data class MapUiState(
     val mapConfig: MapConfigBean? = null,
@@ -30,109 +31,112 @@ data class MapUiState(
     val globalPath: List<Point2DBean> = emptyList(),
     val localPath: List<Point2DBean> = emptyList(),
     val pointCloud: List<Point2DBean> = emptyList(),
-    // 交互相关状态
+    // 交互状态
     val interactionMode: MapInteractionMode = MapInteractionMode.NONE,
-    val selectedPoint: InspectionPointBean? = null, // 当前选中的导览点
-    val menuPosition: androidx.compose.ui.geometry.Offset? = null, // 屏幕坐标
-    val tempPoint: Point2DBean? = null, // 地图坐标
+    val selectedPoint: InspectionPointBean? = null,
+    val menuPosition: androidx.compose.ui.geometry.Offset? = null,
+    val tempPoint: Point2DBean? = null,
     val tempYaw: Float = 0f
 )
 
 enum class MapInteractionMode {
-    NONE,
-    SHOW_MENU,
-    PICK_POSITION,
-    PICK_ORIENTATION,
-    CONFIRM_POINT,
-    POINT_MENU
+    NONE, SHOW_MENU, PICK_POSITION, PICK_ORIENTATION, CONFIRM_POINT, POINT_MENU
 }
 
-class MapViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
+class MapViewModel(
+    private val robotApi: RobotTcpApiImpl,
+    private val settings: Settings,
+    private val httpClient: HttpClient
+) : ViewModel() {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
-    private val settings = Settings()
-    private val httpClient = HttpClient()
+
+    private val _pendingPoint = MutableStateFlow<InspectionPointBean?>(null)
+    val pendingPoint: StateFlow<InspectionPointBean?> = _pendingPoint.asStateFlow()
+
+    private val _deletePointEvent = MutableStateFlow<InspectionPointBean?>(null)
+    val deletePointEvent: StateFlow<InspectionPointBean?> = _deletePointEvent.asStateFlow()
 
     init {
         startMapDataPolling()
     }
 
     private fun startMapDataPolling() {
+        // 1. 地图配置与图片加载 (仅执行一次或直到成功)
         viewModelScope.launch {
-            // 独立启动地图配置获取逻辑，支持失败重试
-            launch {
-                while (isActive && _uiState.value.mapConfig == null) {
-                    try {
-                        KLog.d("MapViewModel", "正在尝试获取地图配置...")
-                        val config = robotApi.getMapConfig()
-                        val savedIp = settings.getString("saved_ip", "192.168.1.100")
-                        val fixedUrl = config.getFixedImageUrl(savedIp)
+            while (isActive && _uiState.value.mapConfig == null) {
+                try {
+                    val config = robotApi.getMapConfig()
+                    val savedIp = settings.getString("saved_ip", "192.168.1.100")
+                    val fixedUrl = config.getFixedImageUrl(savedIp)
+                    _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
+                    loadMapImage(fixedUrl)
+                } catch (e: Exception) {
+                    delay(3000)
+                }
+            }
+        }
+
+        // 2. 高频位置刷新 (5Hz)
+        viewModelScope.launch {
+            while (isActive) {
+                try {
+                    val pos = robotApi.getPosition()
+                    _uiState.update { it.copy(robotPosition = pos) }
+                } catch (e: Exception) {
+                    delay(500) // 失败则放慢频率
+                }
+                delay(200)
+            }
+        }
+
+        // 3. 动效数据刷新 (1Hz: 点云、路径) - 并行请求提升响应速度
+        viewModelScope.launch {
+            while (isActive) {
+                try {
+                    coroutineScope {
+                        val cloudDef = async { runCatching { robotApi.getPointCloud() }.getOrDefault(emptyList()) }
+                        val globalDef = async { runCatching { robotApi.getGlobalPath().points }.getOrDefault(emptyList()) }
+                        val localDef = async { runCatching { robotApi.getLocalPath().points }.getOrDefault(emptyList()) }
                         
-                        _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
-                        KLog.d("MapViewModel", "获取配置成功，开始下载地图图片: $fixedUrl")
-                        loadMapImage(fixedUrl)
-                    } catch (e: Exception) {
-                        KLog.e("MapViewModel", "获取地图配置失败，3秒后重试: ${e.message}")
-                        delay(3000)
+                        _uiState.update { it.copy(
+                            pointCloud = cloudDef.await(),
+                            globalPath = globalDef.await(),
+                            localPath = localDef.await()
+                        ) }
                     }
+                } catch (e: Exception) {
+                    KLog.e("MapViewModel", "路径数据同步异常: ${e.message}")
                 }
+                delay(1000)
             }
+        }
 
-            // 5Hz 位置刷新
-            launch {
-                while (isActive) {
-                    try {
-                        val pos = robotApi.getPosition()
-                        _uiState.update { it.copy(robotPosition = pos) }
-                    } catch (e: Exception) {}
-                    delay(200)
+        // 4. 导览点数据轮询 (1Hz) - 独立协程防止被阻塞
+        viewModelScope.launch {
+            while (isActive) {
+                try {
+                    val points = robotApi.getInspectionPoints()
+                    _uiState.update { it.copy(endpoints = points) }
+                } catch (e: Exception) {
+                    KLog.e("MapViewModel", "导览点同步异常: ${e.message}")
                 }
+                delay(1000)
             }
+        }
+    }
 
-            // 1Hz 点云刷新
-            launch {
-                while (isActive) {
-                    try {
-                        val cloud = robotApi.getPointCloud()
-                        _uiState.update { it.copy(pointCloud = cloud) }
-                    } catch (e: Exception) {}
-                    delay(1000)
-                }
-            }
+    /**
+     * 直接更新点位数据 (用于 UI 联动，实现秒级同步)
+     */
+    fun updateEndpoints(points: List<InspectionPointBean>) {
+        _uiState.update { it.copy(endpoints = points) }
+    }
 
-            // 1Hz 路径刷新 (独立协程，避免失败影响其他任务)
-            launch {
-                while (isActive) {
-                    try {
-                        val global = robotApi.getGlobalPath()
-                        val local = robotApi.getLocalPath()
-                        _uiState.update {
-                            it.copy(
-                                globalPath = global.points,
-                                localPath = local.points
-                            )
-                        }
-                    } catch (e: Exception) {
-                        // 路径不存在时通常会报错，静默处理
-                    }
-                    delay(1000)
-                }
-            }
-
-            // 1Hz 导览点刷新 (独立协程，确保始终尝试更新)
-            launch {
-                while (isActive) {
-                    try {
-                        val points = robotApi.getInspectionPoints()
-                        if (points.isNotEmpty() || _uiState.value.endpoints.isNotEmpty()) {
-                            KLog.d("MapViewModel", "收到导览点更新: ${points.size}个")
-                            _uiState.update { it.copy(endpoints = points) }
-                        }
-                    } catch (e: Exception) {
-                        KLog.e("MapViewModel", "刷新导览点失败: ${e.message}")
-                    }
-                    delay(1000)
-                }
+    fun refreshMapData() {
+        viewModelScope.launch {
+            runCatching { robotApi.getInspectionPoints() }.onSuccess { points ->
+                _uiState.update { it.copy(endpoints = points) }
             }
         }
     }
@@ -140,172 +144,78 @@ class MapViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     private fun loadMapImage(url: String) {
         viewModelScope.launch(Dispatchers.Default) {
             try {
-                KLog.d("MapViewModel", "开始下载地图数据: $url")
                 val response = httpClient.get(url)
                 val bytes = response.readBytes()
-                KLog.d("MapViewModel", "下载完成，字节大小: ${bytes.size}，开始解析 PGM...")
-                
                 val bitmap = PgmUtils.decodePgmToBitmap(bytes)
                 if (bitmap != null) {
                     _uiState.update { it.copy(mapImage = bitmap) }
-                    KLog.d("MapViewModel", "地图图片解析并更新成功")
-                } else {
-                    KLog.e("MapViewModel", "PGM 解析失败，返回 null")
                 }
             } catch (e: Exception) {
-                KLog.e("MapViewModel", "下载地图图片异常: ${e.message}")
-                e.printStackTrace()
+                KLog.e("MapViewModel", "地图解析失败: ${e.message}")
             }
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        httpClient.close()
-    }
-
-    // 坐标系转换：计算点云的绝对世界坐标
-    fun calculatePointCloudWorldCoords(
-        cloud: List<Point2DBean>,
-        robot: RobotPositionBean
-    ): List<Point2DBean> {
-        val cosA = cos(robot.yaw)
-        val sinA = sin(robot.yaw)
-        return cloud.map { p ->
-            Point2DBean(
-                x = p.x * cosA - p.y * sinA + robot.x,
-                y = p.x * sinA + p.y * cosA + robot.y
-            )
-        }
-    }
-
     // --- 交互逻辑 ---
-
     fun onMapLongClick(screenOffset: androidx.compose.ui.geometry.Offset, mapPos: Point2DBean) {
-        _uiState.update {
-            it.copy(
-                interactionMode = MapInteractionMode.SHOW_MENU,
-                menuPosition = screenOffset,
-                tempPoint = mapPos,
-                selectedPoint = null // 长按创建新点位时，确保清除之前选中的点位状态
-            )
-        }
+        _uiState.update { it.copy(interactionMode = MapInteractionMode.SHOW_MENU, menuPosition = screenOffset, tempPoint = mapPos, selectedPoint = null) }
     }
 
     fun onSelectCreatePoint() {
-        _uiState.update {
-            it.copy(interactionMode = MapInteractionMode.PICK_ORIENTATION)
-        }
+        _uiState.update { it.copy(interactionMode = MapInteractionMode.PICK_ORIENTATION) }
     }
 
     fun onMapClickForPosition(mapPos: Point2DBean) {
-        _uiState.update {
-            it.copy(
-                tempPoint = mapPos,
-                interactionMode = MapInteractionMode.PICK_ORIENTATION
-            )
-        }
+        _uiState.update { it.copy(tempPoint = mapPos, interactionMode = MapInteractionMode.PICK_ORIENTATION) }
     }
 
     fun onMapClickForOrientation(screenOffset: androidx.compose.ui.geometry.Offset, clickMapPos: Point2DBean) {
         val origin = _uiState.value.tempPoint ?: return
-        val dx = clickMapPos.x - origin.x
-        val dy = clickMapPos.y - origin.y
-        val yaw = kotlin.math.atan2(dy, dx)
-        
-        _uiState.update {
-            it.copy(
-                tempYaw = yaw.toFloat(),
-                interactionMode = MapInteractionMode.CONFIRM_POINT,
-                menuPosition = screenOffset // 复用 menuPosition 来定位确认框
-            )
-        }
+        val yaw = atan2(clickMapPos.y - origin.y, clickMapPos.x - origin.x)
+        _uiState.update { it.copy(tempYaw = yaw.toFloat(), interactionMode = MapInteractionMode.CONFIRM_POINT, menuPosition = screenOffset) }
     }
 
     fun onConfirmCreatePoint() {
-        val uiState = _uiState.value
-        val origin = uiState.tempPoint ?: return
-        val yaw = uiState.tempYaw.toDouble()
-        
-        val selectedPoint = uiState.selectedPoint
-        val finalPoint = if (selectedPoint != null) {
-            selectedPoint.copy(
-                x = origin.x,
-                y = origin.y,
-                yaw = yaw,
-                position = PointPosition(origin.x, origin.y, yaw)
-            )
-        } else {
-            InspectionPointBean(
-                name = "新点位",
-                x = origin.x,
-                y = origin.y,
-                yaw = yaw,
-                position = PointPosition(origin.x, origin.y, yaw)
-            )
-        }
+        val state = _uiState.value
+        val origin = state.tempPoint ?: return
+        val finalPoint = state.selectedPoint?.copy(
+            x = origin.x, y = origin.y, yaw = state.tempYaw.toDouble(),
+            position = PointPosition(origin.x, origin.y, state.tempYaw.toDouble())
+        ) ?: InspectionPointBean(
+            name = "新点位", x = origin.x, y = origin.y, yaw = state.tempYaw.toDouble(),
+            position = PointPosition(origin.x, origin.y, state.tempYaw.toDouble())
+        )
         _pendingPoint.value = finalPoint
         clearInteraction()
     }
 
-    private val _pendingPoint = MutableStateFlow<InspectionPointBean?>(null)
-    val pendingPoint: StateFlow<InspectionPointBean?> = _pendingPoint.asStateFlow()
-
-    fun clearPendingPoint() {
-        _pendingPoint.value = null
-    }
+    fun clearPendingPoint() { _pendingPoint.value = null }
 
     fun clearInteraction() {
-        _uiState.update {
-            it.copy(
-                interactionMode = MapInteractionMode.NONE,
-                menuPosition = null,
-                selectedPoint = null,
-                tempPoint = null,
-                tempYaw = 0f
-            )
-        }
+        _uiState.update { it.copy(interactionMode = MapInteractionMode.NONE, menuPosition = null, selectedPoint = null, tempPoint = null, tempYaw = 0f) }
     }
 
-    // 点击导览点
     fun onPointClick(screenOffset: androidx.compose.ui.geometry.Offset, point: InspectionPointBean) {
-        _uiState.update {
-            it.copy(
-                interactionMode = MapInteractionMode.POINT_MENU,
-                menuPosition = screenOffset,
-                selectedPoint = point
-            )
-        }
+        _uiState.update { it.copy(interactionMode = MapInteractionMode.POINT_MENU, menuPosition = screenOffset, selectedPoint = point) }
     }
 
-    // 导览点操作：修改
     fun onEditPoint() {
-        val point = _uiState.value.selectedPoint ?: return
-        _pendingPoint.value = point
+        _uiState.value.selectedPoint?.let { _pendingPoint.value = it }
         clearInteraction()
     }
 
-    // 导览点操作：重设位置
     fun onResetPointPosition() {
-        _uiState.update {
-            it.copy(
-                interactionMode = MapInteractionMode.PICK_POSITION,
-                tempPoint = null
-            )
-        }
+        _uiState.update { it.copy(interactionMode = MapInteractionMode.PICK_POSITION, tempPoint = null) }
     }
-
-    // 导览点操作：删除
-    private val _deletePointEvent = MutableStateFlow<InspectionPointBean?>(null)
-    val deletePointEvent: StateFlow<InspectionPointBean?> = _deletePointEvent.asStateFlow()
 
     fun onDeletePoint() {
-        val point = _uiState.value.selectedPoint ?: return
-        _deletePointEvent.value = point
+        _uiState.value.selectedPoint?.let { _deletePointEvent.value = it }
         clearInteraction()
     }
 
-    fun clearDeletePointEvent() {
-        _deletePointEvent.value = null
+    fun clearDeletePointEvent() { _deletePointEvent.value = null }
+
+    override fun onCleared() {
+        super.onCleared()
     }
 }

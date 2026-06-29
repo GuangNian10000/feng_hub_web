@@ -30,7 +30,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.bean.*
-import com.example.guangnian.feature.console.ui.components.GlassBox
+import com.example.guangnian.core.designsystem.components.GlassBox
+import com.example.guangnian.feature.console.utils.MapTransformUtils
 import com.example.guangnian.feature.console.viewmodel.MapInteractionMode
 import com.example.guangnian.feature.console.viewmodel.MapUiState
 import com.example.guangnian.feature.console.viewmodel.MapViewModel
@@ -148,7 +149,7 @@ fun MapBackgroundLayer(
             StaticMapLayer(mapBitmap, layerModifier)
             PathLayer(uiState.globalPath, uiState.localPath, config, mapHeightPx, scale, layerModifier)
             MarkerLayer(uiState.endpoints, config, mapHeightPx, scale, textMeasurer, layerModifier)
-            RobotLayer(uiState.robotPosition, uiState.pointCloud, config, mapHeightPx, scale, mapViewModel, layerModifier)
+            RobotLayer(uiState.robotPosition, uiState.pointCloud, config, mapHeightPx, scale, layerModifier)
             InteractionLayer(uiState.interactionMode, uiState.tempPoint, uiState.tempYaw, config, mapHeightPx, scale, layerModifier)
 
             if (config == null) {
@@ -247,13 +248,12 @@ private fun RobotLayer(
     config: MapConfigBean?,
     mapHeightPx: Float,
     scale: Float,
-    mapViewModel: MapViewModel,
     modifier: Modifier
 ) {
     if (config == null || robotPosition == null) return
 
     val worldCloud = remember(pointCloud, robotPosition) {
-        mapViewModel.calculatePointCloudWorldCoords(pointCloud, robotPosition)
+        MapTransformUtils.calculatePointCloudWorldCoords(pointCloud, robotPosition)
     }
 
     Canvas(modifier = modifier) {

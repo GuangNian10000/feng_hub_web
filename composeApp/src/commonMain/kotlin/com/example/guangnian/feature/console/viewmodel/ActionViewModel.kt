@@ -5,10 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
 import com.example.guangnian.feature.console.data.bean.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,7 +20,8 @@ data class ActionUiState(
     val favoriteActions: List<FavoriteActionBean> = emptyList(),
     val endpoints: List<InspectionPointBean> = emptyList(),
     val routes: List<RouteBean> = emptyList(),
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
@@ -34,52 +32,69 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     private val _uiState = MutableStateFlow(ActionUiState())
     val uiState: StateFlow<ActionUiState> = _uiState.asStateFlow()
 
+    private val _errorEvents = MutableSharedFlow<String>()
+    val errorEvents = _errorEvents.asSharedFlow()
+
+    private fun handleError(message: String, e: Exception) {
+        KLog.e(TAG, "$message: ${e.message}")
+        viewModelScope.launch {
+            _errorEvents.emit("$message: 请检查网络连接")
+        }
+    }
+
     fun fetchPostureList() {
+        executeWithLoading {
+            val list = robotApi.getPostureList()
+            _uiState.update { it.copy(postures = list) }
+        }
+    }
+
+    private fun executeWithLoading(block: suspend () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val list = robotApi.getPostureList()
-                _uiState.update { it.copy(postures = list, isLoading = false) }
+                block()
             } catch (e: Exception) {
+                handleError("操作失败", e)
+            } finally {
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
     fun sendPostureCommand(postureName: String) {
-        viewModelScope.launch { robotApi.executePosture(postureName) }
-    }
-
-    fun fetchArmList() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch { 
             try {
-                val list = robotApi.getArmList()
-                _uiState.update { it.copy(armActions = list, isLoading = false) }
+                robotApi.executePosture(postureName) 
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
+                handleError("发送姿态指令失败", e)
             }
         }
     }
 
+    fun fetchArmList() {
+        executeWithLoading {
+            val list = robotApi.getArmList()
+            _uiState.update { it.copy(armActions = list) }
+        }
+    }
+
     fun sendArmCommand(armId: Int) {
-        viewModelScope.launch { robotApi.executeArm(armId) }
+        viewModelScope.launch { 
+            try {
+                robotApi.executeArm(armId)
+            } catch (e: Exception) {
+                handleError("发送机械臂指令失败", e)
+            }
+        }
     }
 
     // --- 巡检/导览点位业务逻辑 ---
 
     fun fetchInspectionPoints() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                KLog.d(TAG, "开始请求巡检点列表...")
-                val list = robotApi.getInspectionPoints()
-                _uiState.update { it.copy(endpoints = list, isLoading = false) }
-                KLog.d(TAG, "成功获取巡检点: ${list.size}个")
-            } catch (e: Exception) {
-                KLog.e(TAG, "获取巡检点列表失败", e)
-                _uiState.update { it.copy(isLoading = false) }
-            }
+        executeWithLoading {
+            val list = robotApi.getInspectionPoints()
+            _uiState.update { it.copy(endpoints = list) }
         }
     }
 
@@ -88,10 +103,12 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
             try {
                 val result = robotApi.addInspectionPoint(point)
                 if (result.st == 0) {
-                    fetchInspectionPoints() // 添加成功后刷新列表
+                    fetchInspectionPoints()
+                } else {
+                    _errorEvents.emit("添加失败: ${result.msg}")
                 }
             } catch (e: Exception) {
-                KLog.e(TAG, "添加巡检点失败", e)
+                handleError("添加巡检点失败", e)
             }
         }
     }
