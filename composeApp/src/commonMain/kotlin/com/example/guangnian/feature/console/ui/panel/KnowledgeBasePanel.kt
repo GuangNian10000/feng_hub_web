@@ -31,8 +31,9 @@ fun KnowledgeBasePanel(
     modifier: Modifier = Modifier,
     viewModel: KnowledgeViewModel = viewModel()
 ) {
-    val knowledgeData by viewModel.knowledgeData.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val knowledgeData = uiState.knowledgeData
+    val isLoading = uiState.isLoading
 
     var showDeleteConfirm by remember { mutableStateOf<KnowledgeEntity?>(null) }
     var showEditDialog by remember { mutableStateOf<KnowledgeEntity?>(null) }

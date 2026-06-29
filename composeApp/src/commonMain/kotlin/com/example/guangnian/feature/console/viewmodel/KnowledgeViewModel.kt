@@ -11,75 +11,63 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class KnowledgeUiState(
+    val knowledgeData: KnowledgeListResponse = KnowledgeListResponse(),
+    val isLoading: Boolean = false
+)
 
 class KnowledgeViewModel(private val api: KnowledgeApi) : ViewModel() {
 
-    private val _knowledgeData = MutableStateFlow(KnowledgeListResponse())
-    val knowledgeData: StateFlow<KnowledgeListResponse> = _knowledgeData.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _uiState = MutableStateFlow(KnowledgeUiState())
+    val uiState: StateFlow<KnowledgeUiState> = _uiState.asStateFlow()
 
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
-    fun fetchKnowledgeList() {
+    private fun executeTask(errorPrefix: String, block: suspend () -> Unit) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _uiState.update { it.copy(isLoading = true) }
             try {
-                val response = api.getKnowledgeList()
-                _knowledgeData.value = response
+                block()
             } catch (e: Exception) {
-                _toastEvent.emit("获取知识库异常: ${e.message}")
+                _toastEvent.emit("$errorPrefix: ${e.message}")
             } finally {
-                _isLoading.value = false
+                _uiState.update { it.copy(isLoading = false) }
             }
+        }
+    }
+
+    fun fetchKnowledgeList() {
+        executeTask("获取知识库异常") {
+            val response = api.getKnowledgeList()
+            _uiState.update { it.copy(knowledgeData = response) }
         }
     }
 
     fun addKnowledge(knowledge: KnowledgeEntity) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val res = api.addKnowledge(knowledge)
-                _toastEvent.emit(res.msg)
-                if (res.st == 200) fetchKnowledgeList()
-            } catch (e: Exception) {
-                _toastEvent.emit("添加异常: ${e.message}")
-            } finally {
-                _isLoading.value = false
-            }
+        executeTask("添加异常") {
+            val res = api.addKnowledge(knowledge)
+            _toastEvent.emit(res.msg)
+            if (res.st == 200) fetchKnowledgeList()
         }
     }
 
     fun editKnowledge(knowledge: KnowledgeEntity) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val res = api.editKnowledge(knowledge)
-                _toastEvent.emit(res.msg)
-                if (res.st == 200) fetchKnowledgeList()
-            } catch (e: Exception) {
-                _toastEvent.emit("修改异常: ${e.message}")
-            } finally {
-                _isLoading.value = false
-            }
+        executeTask("修改异常") {
+            val res = api.editKnowledge(knowledge)
+            _toastEvent.emit(res.msg)
+            if (res.st == 200) fetchKnowledgeList()
         }
     }
 
     fun deleteKnowledge(knowledge: KnowledgeEntity) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val res = api.deleteKnowledge(knowledge)
-                _toastEvent.emit(res.msg)
-                if (res.st == 200) fetchKnowledgeList()
-            } catch (e: Exception) {
-                _toastEvent.emit("删除异常: ${e.message}")
-            } finally {
-                _isLoading.value = false
-            }
+        executeTask("删除异常") {
+            val res = api.deleteKnowledge(knowledge)
+            _toastEvent.emit(res.msg)
+            if (res.st == 200) fetchKnowledgeList()
         }
     }
 }

@@ -14,7 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.*
 
-data class ActionUiState(
+data class ConsoleUiState(
     val postures: List<PostureBean> = emptyList(),
     val motions: List<MotionBean> = emptyList(),
     val armActions: List<ArmActionBean> = emptyList(),
@@ -26,17 +26,17 @@ data class ActionUiState(
     val errorMessage: String? = null
 )
 
-class ActionViewModel(
+class ConsoleViewModel(
     private val motionControlApi: MotionControlApi,
     private val navigationApi: NavigationApi,
     private val routeApi: RouteApi
 ) : ViewModel() {
     private companion object {
-        const val TAG = "ActionViewModel"
+        const val TAG = "ConsoleViewModel"
     }
 
-    private val _uiState = MutableStateFlow(ActionUiState())
-    val uiState: StateFlow<ActionUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ConsoleUiState())
+    val uiState: StateFlow<ConsoleUiState> = _uiState.asStateFlow()
 
     private val _errorEvents = MutableSharedFlow<String>()
     val errorEvents = _errorEvents.asSharedFlow()

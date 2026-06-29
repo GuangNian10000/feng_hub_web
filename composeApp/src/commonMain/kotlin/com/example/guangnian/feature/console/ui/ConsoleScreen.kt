@@ -25,8 +25,8 @@ import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 fun InteractionScreen(
     onBackClick: () -> Unit = {}
 ) {
-    val actionViewModel: ActionViewModel = koinViewModel()
-    val uiState by actionViewModel.uiState.collectAsState()
+    val consoleViewModel: ConsoleViewModel = koinViewModel()
+    val uiState by consoleViewModel.uiState.collectAsState()
 
     val robotViewModel: RobotViewModel = koinViewModel()
     val connectionState by robotViewModel.connectionState.collectAsState()
@@ -75,13 +75,13 @@ fun InteractionScreen(
 
     LaunchedEffect(activeFragment, inspectionTab) {
         when (activeFragment) {
-            "姿态动作" -> actionViewModel.fetchPostureList()
-            "动作" -> actionViewModel.fetchArmList()
+            "姿态动作" -> consoleViewModel.fetchPostureList()
+            "动作" -> consoleViewModel.fetchArmList()
             "导览管理" -> {
                 if (inspectionTab == "导览点") {
-                    actionViewModel.fetchInspectionPoints()
+                    consoleViewModel.fetchInspectionPoints()
                 } else {
-                    actionViewModel.fetchRoutes()
+                    consoleViewModel.fetchRoutes()
                 }
             }
         }
@@ -114,7 +114,7 @@ fun InteractionScreen(
                 containerColor = Color(0xFF2C2C2C),
                 confirmButton = {
                     TextButton(onClick = {
-                        mapDeleteConfirmPoint?.let { actionViewModel.deleteInspectionPoint(it.pointId) }
+                        mapDeleteConfirmPoint?.let { consoleViewModel.deleteInspectionPoint(it.pointId) }
                         mapDeleteConfirmPoint = null
                     }) {
                         Text("删除", color = Color(0xFFFF5252))
@@ -159,9 +159,9 @@ fun InteractionScreen(
             favoriteActions = uiState.favoriteActions,
             onActionClick = { fav ->
                 if (fav.isArmAction) {
-                    actionViewModel.sendArmCommand(fav.id.toInt())
+                    consoleViewModel.sendArmCommand(fav.id.toInt())
                 } else {
-                    actionViewModel.sendPostureCommand(fav.id)
+                    consoleViewModel.sendPostureCommand(fav.id)
                 }
             },
             modifier = Modifier
@@ -170,7 +170,7 @@ fun InteractionScreen(
         )
 
         EmergencyStopButton(
-            onClick = { actionViewModel.stopAll() },
+            onClick = { consoleViewModel.stopAll() },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 180.dp, bottom = 24.dp)
@@ -216,33 +216,33 @@ fun InteractionScreen(
                         "姿态动作" -> ActionPosturePanel(
                             postures = uiState.postures,
                             favoriteActions = uiState.favoriteActions,
-                            onActionClick = { actionViewModel.sendPostureCommand(it) },
-                            onActionLongClick = { id, name -> actionViewModel.toggleFavorite(id, name, false) },
-                            onRetryClick = { actionViewModel.fetchPostureList() }
+                            onActionClick = { consoleViewModel.sendPostureCommand(it) },
+                            onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id, name, false) },
+                            onRetryClick = { consoleViewModel.fetchPostureList() }
                         )
                         "动作" -> ActionPanel(
                             armActions = uiState.armActions,
                             favoriteActions = uiState.favoriteActions,
-                            onActionClick = { actionViewModel.sendArmCommand(it) },
-                            onActionLongClick = { id, name -> actionViewModel.toggleFavorite(id.toString(), name, true) },
-                            onRetryClick = { actionViewModel.fetchArmList() }
+                            onActionClick = { consoleViewModel.sendArmCommand(it) },
+                            onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id.toString(), name, true) },
+                            onRetryClick = { consoleViewModel.fetchArmList() }
                         )
                         "导览管理" -> InspectionPointPanel(
                             endpoints = uiState.endpoints,
                             routes = uiState.routes,
                             robotPosition = mapUiState.robotPosition,
                             selectedTab = inspectionTab,
-                            onPointClick = { actionViewModel.startInspectionPoint(it) },
-                            onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
-                            onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
-                            onUpdatePoint = { actionViewModel.updateInspectionPoint(it) },
-                            onRouteClick = { actionViewModel.startRoute(it) },
-                            onAddRoute = { actionViewModel.addRoute(it) },
-                            onDeleteRoute = { actionViewModel.deleteRoute(it) },
-                            onUpdateRoute = { actionViewModel.updateRoute(it) },
+                            onPointClick = { consoleViewModel.startInspectionPoint(it) },
+                            onAddCurrentPosition = { consoleViewModel.addInspectionPoint(it) },
+                            onDeletePoint = { consoleViewModel.deleteInspectionPoint(it) },
+                            onUpdatePoint = { consoleViewModel.updateInspectionPoint(it) },
+                            onRouteClick = { consoleViewModel.startRoute(it) },
+                            onAddRoute = { consoleViewModel.addRoute(it) },
+                            onDeleteRoute = { consoleViewModel.deleteRoute(it) },
+                            onUpdateRoute = { consoleViewModel.updateRoute(it) },
                             onRetryClick = {
-                                if (inspectionTab == "导览点") actionViewModel.fetchInspectionPoints()
-                                else actionViewModel.fetchRoutes()
+                                if (inspectionTab == "导览点") consoleViewModel.fetchInspectionPoints()
+                                else consoleViewModel.fetchRoutes()
                             },
                             onSetAddAction = { text, action ->
                                 addActionText = text
@@ -274,7 +274,7 @@ fun InteractionScreen(
                 leftJoyX = x
                 leftJoyY = y
                 isLeftJoyActive = isDragging
-                actionViewModel.updateJoystickInput(leftJoyX, leftJoyY, rightJoyX, isLeftJoyActive || isRightJoyActive)
+                consoleViewModel.updateJoystickInput(leftJoyX, leftJoyY, rightJoyX, isLeftJoyActive || isRightJoyActive)
             }
         )
         ComposeJoystick(
@@ -282,7 +282,7 @@ fun InteractionScreen(
             onMove = { x, _, isDragging ->
                 rightJoyX = x
                 isRightJoyActive = isDragging
-                actionViewModel.updateJoystickInput(leftJoyX, leftJoyY, rightJoyX, isLeftJoyActive || isRightJoyActive)
+                consoleViewModel.updateJoystickInput(leftJoyX, leftJoyY, rightJoyX, isLeftJoyActive || isRightJoyActive)
             }
         )
     }

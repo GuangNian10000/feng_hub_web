@@ -25,12 +25,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
+import com.example.guangnian.feature.console.data.api.VoiceApi
 import com.example.guangnian.feature.console.data.bean.ArmActionBean
 import com.example.guangnian.feature.console.data.bean.SpeechSynthesisBean
 import com.example.guangnian.feature.console.data.bean.VoiceBean
-import com.example.guangnian.feature.console.viewmodel.ActionViewModel
+import com.example.guangnian.feature.console.viewmodel.ConsoleViewModel
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -42,16 +41,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Clock
 
 // ==========================================
 // 1. ViewModel 与本地存储逻辑
 // ==========================================
 
-class SpeechSynthesisViewModel : ViewModel() {
-    private val api = RobotTcpApiImpl()
-
-    private val settings = Settings()
+class SpeechSynthesisViewModel(
+    private val voiceApi: VoiceApi,
+    private val settings: Settings
+) : ViewModel() {
 
     private val _synthesisList = MutableStateFlow<List<SpeechSynthesisBean>>(emptyList())
     val synthesisList: StateFlow<List<SpeechSynthesisBean>> = _synthesisList.asStateFlow()
@@ -119,7 +119,7 @@ class SpeechSynthesisViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                api.executeSynthesis(bean)
+                voiceApi.executeSynthesis(bean)
                 _toastEvent.emit("指令已发送")
             } catch (e: Exception) {
                 _toastEvent.emit("发送异常: ${e.message}")
@@ -138,8 +138,8 @@ class SpeechSynthesisViewModel : ViewModel() {
 fun SpeechSynthesisPanel(
     onSetAddAction: (String, () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SpeechSynthesisViewModel = viewModel(),
-    actionViewModel: ActionViewModel = viewModel() // 传入动作 ViewModel 用于获取动作列表
+    viewModel: SpeechSynthesisViewModel = koinViewModel(),
+    consoleViewModel: ConsoleViewModel = koinViewModel() // 传入动作 ViewModel 用于获取动作列表
 ) {
     val listData by viewModel.synthesisList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -220,7 +220,7 @@ fun SpeechSynthesisPanel(
             SynthesisEditDialog(
                 initialData = bean,
                 title = "编辑语料",
-                actionViewModel = actionViewModel,
+                consoleViewModel = consoleViewModel,
                 onConfirm = {
                     viewModel.addOrUpdateItem(it)
                     showEditDialog = null
@@ -233,7 +233,7 @@ fun SpeechSynthesisPanel(
             SynthesisEditDialog(
                 initialData = null,
                 title = "新增语料",
-                actionViewModel = actionViewModel,
+                consoleViewModel = consoleViewModel,
                 onConfirm = {
                     viewModel.addOrUpdateItem(it)
                     showAddDialog = false
@@ -323,7 +323,7 @@ fun SynthesisItemBox(
 fun SynthesisEditDialog(
     initialData: SpeechSynthesisBean?,
     title: String,
-    actionViewModel: ActionViewModel,
+    consoleViewModel: ConsoleViewModel,
     onConfirm: (SpeechSynthesisBean) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -459,7 +459,7 @@ fun SynthesisEditDialog(
 
     if (showActionSelection) {
         ActionSelectionDialog(
-            actionViewModel = actionViewModel,
+            consoleViewModel = consoleViewModel,
             currentActionId = selectedAction?.arm_id,
             onSelect = { armAction ->
                 selectedAction = armAction
@@ -476,15 +476,15 @@ fun SynthesisEditDialog(
 
 @Composable
 fun ActionSelectionDialog(
-    actionViewModel: ActionViewModel,
+    consoleViewModel: ConsoleViewModel,
     currentActionId: Int?,
     onSelect: (ArmActionBean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val uiState by actionViewModel.uiState.collectAsState()
+    val uiState by consoleViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        if (uiState.armActions.isEmpty()) actionViewModel.fetchArmList()
+        if (uiState.armActions.isEmpty()) consoleViewModel.fetchArmList()
     }
 
     Dialog(

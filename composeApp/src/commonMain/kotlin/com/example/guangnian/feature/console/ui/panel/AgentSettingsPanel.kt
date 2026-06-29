@@ -33,8 +33,9 @@ fun AgentSettingsPanel(
     modifier: Modifier = Modifier,
     agentViewModel: AgentViewModel = viewModel()
 ) {
-    val agentData by agentViewModel.agentData.collectAsState()
-    val isLoading by agentViewModel.isLoading.collectAsState()
+    val uiState by agentViewModel.uiState.collectAsState()
+    val agentData = uiState.agentData
+    val isLoading = uiState.isLoading
 
     var showDeleteConfirm by remember { mutableStateOf<AgentEntity?>(null) }
     var showSelectConfirm by remember { mutableStateOf<AgentEntity?>(null) }

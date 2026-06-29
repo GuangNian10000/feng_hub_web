@@ -2,6 +2,7 @@ package com.example.guangnian.di
 
 import com.example.guangnian.feature.console.data.api.*
 import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
+import com.example.guangnian.feature.console.ui.panel.SpeechSynthesisViewModel
 import com.example.guangnian.feature.console.viewmodel.*
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import com.russhwolf.settings.Settings
@@ -38,7 +39,7 @@ val appModule = module {
     single { RobotConnectionManager(get(), get()) }
     factory { RobotViewModel(get()) }
     factory { 
-        ActionViewModel(
+        ConsoleViewModel(
             motionControlApi = get(),
             navigationApi = get(),
             routeApi = get()
@@ -53,4 +54,5 @@ val appModule = module {
     }
     factory { AgentViewModel(get()) }
     factory { KnowledgeViewModel(get()) }
+    factory { SpeechSynthesisViewModel(get(), get()) }
 }
