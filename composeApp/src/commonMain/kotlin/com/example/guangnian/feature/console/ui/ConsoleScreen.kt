@@ -8,8 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,34 +22,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PointMode
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.network.tcp.TcpState
-import com.example.guangnian.feature.console.data.bean.MapConfigBean
-import com.example.guangnian.feature.console.data.bean.Point2DBean
 import com.example.guangnian.feature.console.ui.panel.*
 import com.example.guangnian.feature.console.viewmodel.*
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlin.math.*
 
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
@@ -66,12 +47,10 @@ fun InteractionScreen(
     val connectionState by robotViewModel.connectionState.collectAsState()
     val connectionError by robotViewModel.connectionError.collectAsState()
 
-    // 引入地图 ViewModel
     val mapViewModel: MapViewModel = viewModel { MapViewModel() }
     val mapUiState by mapViewModel.uiState.collectAsState()
     val pendingPoint by mapViewModel.pendingPoint.collectAsState()
 
-    // 监听地图触发的删除事件
     var mapDeleteConfirmPoint by remember { mutableStateOf<com.example.guangnian.feature.console.data.bean.InspectionPointBean?>(null) }
     val deletePointEvent by mapViewModel.deletePointEvent.collectAsState()
     LaunchedEffect(deletePointEvent) {
@@ -103,7 +82,6 @@ fun InteractionScreen(
     var rightJoyX by remember { mutableFloatStateOf(0f) }
     var isRightJoyActive by remember { mutableStateOf(false) }
 
-    // 控制菜单切换时自动加载数据
     LaunchedEffect(activeFragment, inspectionTab) {
         when (activeFragment) {
             "姿态动作" -> actionViewModel.fetchPostureList()
@@ -118,34 +96,10 @@ fun InteractionScreen(
         }
     }
 
-    // 当从地图交互产生待处理点位时，确保导览管理面板已打开，以便触发编辑弹窗
     LaunchedEffect(pendingPoint) {
         if (pendingPoint != null && activeFragment != "导览管理") {
             KLog.d("ConsoleScreen", "检测到待处理点位，自动切换到导览管理面板")
             activeFragment = "导览管理"
-        }
-    }
-
-    // 摇杆混合发送逻辑
-    LaunchedEffect(isLeftJoyActive, isRightJoyActive) {
-        if (isLeftJoyActive || isRightJoyActive) {
-            while (isActive) {
-                val distance = hypot(leftJoyX, leftJoyY)
-                val translateLevel = (distance * 10).toInt().coerceIn(0, 10)
-                var angle = 0.0
-                if (translateLevel > 0) {
-                    angle = atan2(-leftJoyX.toDouble(), leftJoyY.toDouble()) * 180 / PI
-                    if (angle < 0) angle += 360
-                }
-
-                val rotateLevel = (-rightJoyX * 10).toInt().coerceIn(-10, 10)
-
-                actionViewModel.moveMixed(angle, translateLevel, rotateLevel)
-                delay(100)
-            }
-        } else {
-            actionViewModel.stopTranslate()
-            actionViewModel.stopRotate()
         }
     }
 
@@ -155,14 +109,12 @@ fun InteractionScreen(
             .background(Color.Black)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
-        // --- 1. 最底层：交互式 SLAM 地图 ---
         MapBackgroundLayer(
             uiState = mapUiState,
             mapViewModel = mapViewModel,
             modifier = Modifier.fillMaxSize()
         )
 
-        // 删除确认弹窗 (来自地图交互)
         if (mapDeleteConfirmPoint != null) {
             AlertDialog(
                 onDismissRequest = { mapDeleteConfirmPoint = null },
@@ -185,244 +137,54 @@ fun InteractionScreen(
             )
         }
 
-        // --- 2. 悬浮 UI 控件层 ---
-        // 顶部状态栏
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            GlassBox(modifier = Modifier.height(36.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "〈 返回",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        modifier = Modifier.clickable { onBackClick() }.padding(end = 4.dp)
-                    )
-                    Divider(modifier = Modifier.fillMaxHeight(0.5f).width(1.dp), color = Color.Gray)
-                    Text("BAT 85%", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("TEMP 42°C", color = Color.White, fontSize = 12.sp)
+        TopStatusBar(
+            connectionState = connectionState,
+            connectionError = connectionError,
+            onBackClick = onBackClick,
+            onConnectClick = {
+                if (connectionState == TcpState.DISCONNECTED) {
+                    robotViewModel.connect()
                 }
             }
+        )
 
-            GlassBox(
-                modifier = Modifier
-                    .height(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        if (connectionState == TcpState.DISCONNECTED) {
-                            robotViewModel.connect()
-                        }
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val statusColor = when (connectionState) {
-                        TcpState.CONNECTED -> Color(0xFF4CAF50)
-                        TcpState.CONNECTING -> Color(0xFFFFC107)
-                        TcpState.DISCONNECTED -> Color(0xFFE53935)
-                    }
-                    val statusText = when (connectionState) {
-                        TcpState.CONNECTED -> "已连接"
-                        TcpState.CONNECTING -> "连接中..."
-                        TcpState.DISCONNECTED -> "未连接"
-                    }
-
-                    Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-
-                    if (connectionState == TcpState.DISCONNECTED && !connectionError.isNullOrEmpty()) {
-                        Text(
-                            text = connectionError ?: "",
-                            color = Color(0xFFE53935),
-                            fontSize = 10.sp,
-                            maxLines = 1,
-                            softWrap = false,
-                            modifier = Modifier
-                                .widthIn(max = 240.dp)
-                                .horizontalScroll(rememberScrollState())
-                        )
-                    } else if (connectionState == TcpState.CONNECTED) {
-                        Text("197 KB/s", color = Color.LightGray, fontSize = 10.sp)
-                    } else if (connectionState == TcpState.CONNECTING) {
-                        Text("请稍候", color = Color.LightGray, fontSize = 10.sp)
-                    }
-                }
-            }
-        }
-
-        // 右上角巡检控制
-        GlassBox(
+        InspectionControlPanel(
+            isPaused = isInspectionPaused,
+            onPauseToggle = { isInspectionPaused = !isInspectionPaused },
+            onCancelClick = { /* TODO: Implement cancel logic */ },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 64.dp, end = 24.dp)
-                .width(120.dp)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(6.dp)
-            ) {
-                val pauseBtnText = if (isInspectionPaused) "继续巡检" else "暂停巡检"
-                val pauseBtnColor = if (isInspectionPaused) Color(0xFF388E3C) else Color(0xFFC2185B)
+        )
 
-                ControlButton(
-                    text = pauseBtnText,
-                    bgColor = pauseBtnColor,
-                    modifier = Modifier.fillMaxWidth().height(36.dp),
-                    onClick = { isInspectionPaused = !isInspectionPaused }
-                )
-
-                ControlButton(
-                    text = "取消巡检",
-                    bgColor = Color(0xFF616161),
-                    modifier = Modifier.fillMaxWidth().height(36.dp)
-                )
-            }
-        }
-
-        // 底部动作收藏栏
-        Box(
+        BottomActionBar(
+            isMenuOpen = isMenuOpen,
+            onMenuToggle = {
+                isMenuOpen = !isMenuOpen
+                if (isMenuOpen) activeFragment = null
+            },
+            isPosturesExpanded = isPosturesExpanded,
+            onExpandToggle = { isPosturesExpanded = !isPosturesExpanded },
+            favoriteActions = uiState.favoriteActions,
+            onActionClick = { fav ->
+                if (fav.isArmAction) {
+                    actionViewModel.sendArmCommand(fav.id.toInt())
+                } else {
+                    actionViewModel.sendPostureCommand(fav.id)
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 180.dp, end = 252.dp, bottom = 24.dp)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            GlassBox(
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .height(56.dp)
-                    .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val bgColor by animateColorAsState(
-                        targetValue = if (isMenuOpen) Color(0x66007AFF) else Color(0x33FFFFFF),
-                        animationSpec = tween(300),
-                        label = "MenuBgColor"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(bgColor)
-                            .border(0.5.dp, Color(0x33FFFFFF), CircleShape)
-                            .clickable {
-                                isMenuOpen = !isMenuOpen
-                                if (isMenuOpen) {
-                                    activeFragment = null
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AnimatedContent(
-                            targetState = isMenuOpen,
-                            transitionSpec = {
-                                (scaleIn(tween(200)) + fadeIn(tween(200))).togetherWith(scaleOut(tween(200)) + fadeOut(tween(200)))
-                            },
-                            label = "MenuIconAnim"
-                        ) { open ->
-                            Text(
-                                text = if (open) "✕" else "⊞",
-                                color = Color.White,
-                                fontSize = if (open) 16.sp else 18.sp
-                            )
-                        }
-                    }
+        )
 
-                    Box(
-                        modifier = Modifier.weight(1f, fill = false),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isPosturesExpanded,
-                            enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
-                            exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (uiState.favoriteActions.isEmpty()) {
-                                    Text(
-                                        text = "暂无收藏动作，请在菜单中长按添加",
-                                        color = Color.LightGray,
-                                        fontSize = 13.sp,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
-                                } else {
-                                    uiState.favoriteActions.forEach { fav ->
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .clickable {
-                                                    if (fav.isArmAction) {
-                                                        actionViewModel.sendArmCommand(fav.id.toInt())
-                                                    } else {
-                                                        actionViewModel.sendPostureCommand(fav.id)
-                                                    }
-                                                }
-                                                .padding(horizontal = 10.dp, vertical = 2.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(text = fav.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x33FFFFFF))
-                            .border(0.5.dp, Color(0x33FFFFFF), CircleShape)
-                            .clickable { isPosturesExpanded = !isPosturesExpanded },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AnimatedContent(targetState = isPosturesExpanded, label = "ExpandIconAnim") { expanded ->
-                            Text(text = if (expanded) "❯" else "❮", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        // 急停按钮
-        Box(
+        EmergencyStopButton(
+            onClick = { actionViewModel.stopAll() },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 180.dp, bottom = 24.dp)
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE53935).copy(alpha = 0.95f))
-                .border(2.dp, Color(0x44FFFFFF), CircleShape)
-                .clickable { actionViewModel.stopAll() },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("急停", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
-        }
+        )
 
-        // 弹出菜单
         AnimatedVisibility(
             visible = isMenuOpen,
             modifier = Modifier
@@ -431,624 +193,477 @@ fun InteractionScreen(
             enter = fadeIn(tween(250)) + slideInVertically(initialOffsetY = { 40 }) + scaleIn(initialScale = 0.8f, transformOrigin = TransformOrigin(0f, 1f)),
             exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.8f, transformOrigin = TransformOrigin(0f, 1f)) + slideOutVertically(targetOffsetY = { 20 })
         ) {
-            GlassBox(modifier = Modifier.width(130.dp).heightIn(max = 240.dp), bgColor = Color(0xAA000000)) {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(4.dp)) {
-                    items(menus) { menu ->
-                        MenuListItem(
-                            text = menu,
-                            isSelected = activeFragment == menu,
-                            onClick = {
-                                activeFragment = if (activeFragment == menu) null else menu
-                                isMenuOpen = false
-                            }
-                        )
-                    }
+            SideMenu(
+                menus = menus,
+                activeFragment = activeFragment,
+                onMenuClick = { menu ->
+                    activeFragment = if (activeFragment == menu) null else menu
+                    isMenuOpen = false
                 }
-            }
+            )
         }
 
-        // 弹出的控制面板
         AnimatedVisibility(
-            visible = activeFragment != null && activeFragment != "地图录制", // 避免遮挡地图层
+            visible = activeFragment != null && activeFragment != "地图录制",
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 16.dp, bottom = 96.dp, start = 180.dp, end = 180.dp),
             enter = fadeIn(tween(300)) + slideInVertically(initialOffsetY = { -60 }),
             exit = fadeOut(tween(200)) + slideOutVertically(targetOffsetY = { -40 })
         ) {
-            GlassBox(modifier = Modifier.fillMaxWidth().fillMaxHeight(), bgColor = Color(0xD9121212)) {
-                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (activeFragment == "导览管理") {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "《 ",
-                                    color = Color.White,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .clickable { activeFragment = null }
-                                        .padding(4.dp)
-                                )
-                                Text(
-                                    text = "导览点",
-                                    color = if (inspectionTab == "导览点") Color.White else Color.Gray,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (inspectionTab == "导览点") FontWeight.Bold else FontWeight.Normal,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .clickable { inspectionTab = "导览点" }
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                        .then(if (inspectionTab == "导览点") Modifier.background(Color.White.copy(alpha = 0.1f)) else Modifier)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "路线",
-                                    color = if (inspectionTab == "路线") Color.White else Color.Gray,
-                                    fontSize = 13.sp,
-                                    fontWeight = if (inspectionTab == "路线") FontWeight.Bold else FontWeight.Normal,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .clickable { inspectionTab = "路线" }
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                        .then(if (inspectionTab == "路线") Modifier.background(Color.White.copy(alpha = 0.1f)) else Modifier)
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = "《 ${activeFragment ?: ""}",
-                                color = Color.White,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { activeFragment = null }
-                                    .padding(4.dp)
-                            )
-                        }
-                        Spacer(Modifier.weight(1f))
-                        if (onAddClickAction != null) {
-                            Button(
-                                onClick = { onAddClickAction?.invoke() },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                                shape = RoundedCornerShape(6.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
-                                modifier = Modifier.height(26.dp).padding(end = 12.dp)
-                            ) {
-                                Text(addActionText, fontSize = 11.sp, color = Color.White)
-                            }
-                        }
-                    }
-
-                    Divider(color = Color.White.copy(alpha = 0.15f), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp))
-
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        when (activeFragment) {
-                            "姿态动作" -> ActionPosturePanel(
-                                postures = uiState.postures,
-                                favoriteActions = uiState.favoriteActions,
-                                onActionClick = { actionViewModel.sendPostureCommand(it) },
-                                onActionLongClick = { id, name ->
-                                    actionViewModel.toggleFavorite(id, name, false)
-                                },
-                                onRetryClick = { actionViewModel.fetchPostureList() }
-                            )
-                            "动作" -> ActionPanel(
-                                armActions = uiState.armActions,
-                                favoriteActions = uiState.favoriteActions,
-                                onActionClick = { actionViewModel.sendArmCommand(it) },
-                                onActionLongClick = { id, name ->
-                                    actionViewModel.toggleFavorite(id.toString(), name, true)
-                                },
-                                onRetryClick = { actionViewModel.fetchArmList() }
-                            )
-                            "导览管理" -> InspectionPointPanel(
-                                endpoints = uiState.endpoints,
-                                routes = uiState.routes,
-                                robotPosition = mapUiState.robotPosition,
-                                selectedTab = inspectionTab,
-                                onPointClick = { actionViewModel.startInspectionPoint(it) },
-                                onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
-                                onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
-                                onUpdatePoint = { actionViewModel.updateInspectionPoint(it) },
-                                onRouteClick = { actionViewModel.startRoute(it) },
-                                onAddRoute = { actionViewModel.addRoute(it) },
-                                onDeleteRoute = { actionViewModel.deleteRoute(it) },
-                                onUpdateRoute = { actionViewModel.updateRoute(it) },
-                                onRetryClick = { 
-                                    if (inspectionTab == "导览点") actionViewModel.fetchInspectionPoints()
-                                    else actionViewModel.fetchRoutes()
-                                },
-                                onSetAddAction = { text, action ->
-                                    addActionText = text
-                                    onAddClickAction = action
-                                },
-                                pendingPoint = pendingPoint,
-                                onClearPendingPoint = { mapViewModel.clearPendingPoint() }
-                            )
-                            "语音合成" -> SpeechSynthesisPanel(
-                                onSetAddAction = { text, action ->
-                                    addActionText = text
-                                    onAddClickAction = action
-                                }
-                            )
-                            "智能体设置" -> AgentSettingsPanel(
-                                onSetAddAction = { text, action ->
-                                    addActionText = text
-                                    onAddClickAction = action
-                                }
-                            )
-                            "知识库" -> KnowledgeBasePanel(
-                                onSetAddAction = { text, action ->
-                                    addActionText = text
-                                    onAddClickAction = action
-                                }
-                            )
-                        }
+            MainControlPanel(
+                activeFragment = activeFragment,
+                inspectionTab = inspectionTab,
+                onClose = { activeFragment = null },
+                onTabChange = { inspectionTab = it },
+                onAddClickAction = onAddClickAction,
+                addActionText = addActionText,
+                content = {
+                    when (activeFragment) {
+                        "姿态动作" -> ActionPosturePanel(
+                            postures = uiState.postures,
+                            favoriteActions = uiState.favoriteActions,
+                            onActionClick = { actionViewModel.sendPostureCommand(it) },
+                            onActionLongClick = { id, name -> actionViewModel.toggleFavorite(id, name, false) },
+                            onRetryClick = { actionViewModel.fetchPostureList() }
+                        )
+                        "动作" -> ActionPanel(
+                            armActions = uiState.armActions,
+                            favoriteActions = uiState.favoriteActions,
+                            onActionClick = { actionViewModel.sendArmCommand(it) },
+                            onActionLongClick = { id, name -> actionViewModel.toggleFavorite(id.toString(), name, true) },
+                            onRetryClick = { actionViewModel.fetchArmList() }
+                        )
+                        "导览管理" -> InspectionPointPanel(
+                            endpoints = uiState.endpoints,
+                            routes = uiState.routes,
+                            robotPosition = mapUiState.robotPosition,
+                            selectedTab = inspectionTab,
+                            onPointClick = { actionViewModel.startInspectionPoint(it) },
+                            onAddCurrentPosition = { actionViewModel.addInspectionPoint(it) },
+                            onDeletePoint = { actionViewModel.deleteInspectionPoint(it) },
+                            onUpdatePoint = { actionViewModel.updateInspectionPoint(it) },
+                            onRouteClick = { actionViewModel.startRoute(it) },
+                            onAddRoute = { actionViewModel.addRoute(it) },
+                            onDeleteRoute = { actionViewModel.deleteRoute(it) },
+                            onUpdateRoute = { actionViewModel.updateRoute(it) },
+                            onRetryClick = {
+                                if (inspectionTab == "导览点") actionViewModel.fetchInspectionPoints()
+                                else actionViewModel.fetchRoutes()
+                            },
+                            onSetAddAction = { text, action ->
+                                addActionText = text
+                                onAddClickAction = action
+                            },
+                            pendingPoint = pendingPoint,
+                            onClearPendingPoint = { mapViewModel.clearPendingPoint() }
+                        )
+                        "语音合成" -> SpeechSynthesisPanel(onSetAddAction = { text, action ->
+                            addActionText = text
+                            onAddClickAction = action
+                        })
+                        "智能体设置" -> AgentSettingsPanel(onSetAddAction = { text, action ->
+                            addActionText = text
+                            onAddClickAction = action
+                        })
+                        "知识库" -> KnowledgeBasePanel(onSetAddAction = { text, action ->
+                            addActionText = text
+                            onAddClickAction = action
+                        })
                     }
                 }
-            }
+            )
         }
 
-        // 左右双摇杆
         ComposeJoystick(
             modifier = Modifier.align(Alignment.BottomStart).padding(start = 32.dp, bottom = 24.dp).size(130.dp),
             onMove = { x, y, isDragging ->
                 leftJoyX = x
                 leftJoyY = y
                 isLeftJoyActive = isDragging
+                actionViewModel.updateJoystickInput(leftJoyX, leftJoyY, rightJoyX, isLeftJoyActive || isRightJoyActive)
             }
         )
         ComposeJoystick(
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 32.dp, bottom = 24.dp).size(130.dp),
-            onMove = { x, y, isDragging ->
+            onMove = { x, _, isDragging ->
                 rightJoyX = x
                 isRightJoyActive = isDragging
+                actionViewModel.updateJoystickInput(leftJoyX, leftJoyY, rightJoyX, isLeftJoyActive || isRightJoyActive)
             }
         )
     }
 }
 
-// ==============================================================================
-// 辅助渲染组件与工具方法
-// ==============================================================================
-
 @Composable
-fun MapBackgroundLayer(
-    uiState: MapUiState,
-    mapViewModel: MapViewModel,
+fun TopStatusBar(
+    connectionState: TcpState,
+    connectionError: String?,
+    onBackClick: () -> Unit,
+    onConnectClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val config = uiState.mapConfig
-    var scale by remember(config) { mutableFloatStateOf(1f) }
-    var offset by remember(config) { mutableStateOf(Offset.Zero) }
-    var isInitialized by remember(config) { mutableStateOf(false) }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        GlassBox(modifier = Modifier.height(36.dp)) {
+            Row(
+                modifier = Modifier.fillMaxHeight().padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "〈 返回",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    modifier = Modifier.clickable { onBackClick() }.padding(end = 4.dp)
+                )
+                HorizontalDivider(modifier = Modifier.fillMaxHeight(0.5f).width(1.dp), color = Color.Gray)
+                Text("BAT 85%", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("TEMP 42°C", color = Color.White, fontSize = 12.sp)
+            }
+        }
 
-    val mapBitmap = uiState.mapImage
-    val textMeasurer = rememberTextMeasurer()
-
-    fun pixelToWorld(pixel: Offset, config: MapConfigBean, mapHeightPx: Float): Point2DBean {
-        val res = config.resolution
-        val originX = if (config.origin.size >= 1) config.origin[0] else 0.0
-        val originY = if (config.origin.size >= 2) config.origin[1] else 0.0
-        val worldX = pixel.x * res + originX
-        val worldY = (mapHeightPx - pixel.y) * res + originY
-        return Point2DBean(worldX, worldY)
-    }
-
-    Box(modifier = modifier.fillMaxSize()) {
-        BoxWithConstraints(
+        GlassBox(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF121212))
-                .pointerInput(config) {
-                    if (config == null) return@pointerInput
-                    detectTransformGestures { centroid, pan, zoom, _ ->
-                        val oldScale = scale
-                        val newScale = (scale * zoom).coerceIn(0.1f, 10f)
-                        offset = centroid + pan - (centroid - offset) * (newScale / oldScale)
-                        scale = newScale
+                .height(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onConnectClick() }
+        ) {
+            Row(
+                modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val statusColor = when (connectionState) {
+                    TcpState.CONNECTED -> Color(0xFF4CAF50)
+                    TcpState.CONNECTING -> Color(0xFFFFC107)
+                    TcpState.DISCONNECTED -> Color(0xFFE53935)
+                }
+                val statusText = when (connectionState) {
+                    TcpState.CONNECTED -> "已连接"
+                    TcpState.CONNECTING -> "连接中..."
+                    TcpState.DISCONNECTED -> "未连接"
+                }
+
+                Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+
+                if (connectionState == TcpState.DISCONNECTED && !connectionError.isNullOrEmpty()) {
+                    Text(
+                        text = connectionError ?: "",
+                        color = Color(0xFFE53935),
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier
+                            .widthIn(max = 240.dp)
+                            .horizontalScroll(rememberScrollState())
+                    )
+                } else if (connectionState == TcpState.CONNECTED) {
+                    Text("197 KB/s", color = Color.LightGray, fontSize = 10.sp)
+                } else if (connectionState == TcpState.CONNECTING) {
+                    Text("请稍候", color = Color.LightGray, fontSize = 10.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InspectionControlPanel(
+    isPaused: Boolean,
+    onPauseToggle: () -> Unit,
+    onCancelClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassBox(
+        modifier = modifier
+            .width(120.dp)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(6.dp)
+        ) {
+            val pauseBtnText = if (isPaused) "继续巡检" else "暂停巡检"
+            val pauseBtnColor = if (isPaused) Color(0xFF388E3C) else Color(0xFFC2185B)
+
+            ControlButton(
+                text = pauseBtnText,
+                bgColor = pauseBtnColor,
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                onClick = onPauseToggle
+            )
+
+            ControlButton(
+                text = "取消巡检",
+                bgColor = Color(0xFF616161),
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                onClick = onCancelClick
+            )
+        }
+    }
+}
+
+@Composable
+fun BottomActionBar(
+    isMenuOpen: Boolean,
+    onMenuToggle: () -> Unit,
+    isPosturesExpanded: Boolean,
+    onExpandToggle: () -> Unit,
+    favoriteActions: List<com.example.guangnian.feature.console.data.bean.FavoriteActionBean>,
+    onActionClick: (com.example.guangnian.feature.console.data.bean.FavoriteActionBean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth(),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        GlassBox(
+            modifier = Modifier
+                .wrapContentWidth()
+                .height(56.dp)
+                .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+        ) {
+            Row(
+                modifier = Modifier.fillMaxHeight().padding(horizontal = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val bgColor by animateColorAsState(
+                    targetValue = if (isMenuOpen) Color(0x66007AFF) else Color(0x33FFFFFF),
+                    animationSpec = tween(300),
+                    label = "MenuBgColor"
+                )
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(bgColor)
+                        .border(0.5.dp, Color(0x33FFFFFF), CircleShape)
+                        .clickable { onMenuToggle() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedContent(
+                        targetState = isMenuOpen,
+                        transitionSpec = {
+                            (scaleIn(tween(200)) + fadeIn(tween(200))).togetherWith(scaleOut(tween(200)) + fadeOut(tween(200)))
+                        },
+                        label = "MenuIconAnim"
+                    ) { open ->
+                        Text(
+                            text = if (open) "✕" else "⊞",
+                            color = Color.White,
+                            fontSize = if (open) 16.sp else 18.sp
+                        )
                     }
                 }
-                .pointerInput(config, uiState.interactionMode, scale, offset, mapBitmap) {
-                    if (config == null) return@pointerInput
-                    detectTapGestures(
-                        onLongPress = { screenOffset ->
-                            val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
-                            val mapPixelOffset = (screenOffset - offset) / scale
-                            val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
-                            KLog.d("MapDebug", "长按创建点位: 屏幕=$screenOffset, 像素=$mapPixelOffset, 世界=$worldPos")
-                            mapViewModel.onMapLongClick(screenOffset, worldPos)
-                        },
-                        onTap = { screenOffset ->
-                            when (uiState.interactionMode) {
-                                MapInteractionMode.PICK_ORIENTATION -> {
-                                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
-                                    val mapPixelOffset = (screenOffset - offset) / scale
-                                    val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
-                                    mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
-                                }
-                                MapInteractionMode.PICK_POSITION -> {
-                                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
-                                    val mapPixelOffset = (screenOffset - offset) / scale
-                                    val worldPos = pixelToWorld(mapPixelOffset, config, mapHeightPx)
-                                    mapViewModel.onMapClickForPosition(worldPos)
-                                }
-                                MapInteractionMode.CONFIRM_POINT -> {
-                                    // 处于确认模式时，点击地图空白处不自动关闭，防止误触
-                                }
-                                else -> {
-                                    // 检测是否点击了导览点
-                                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
-                                    val adaptiveFactor = 1f / sqrt(scale)
-                                    // 判定半径：取图标屏幕显示大小的 2.5 倍和最小触摸范围(100px)的最大值
-                                    // 这样即使在地图缩小到很小时，也能保证一个较大的点击区域
-                                    val screenPointRadius = (12f * adaptiveFactor) * scale
-                                    val clickRadius = (screenPointRadius * 2.5f).coerceAtLeast(100f)
-                                    
-                                    val clickedPoint = uiState.endpoints.find { ep ->
-                                        val realX = ep.position?.x ?: ep.x
-                                        val realY = ep.position?.y ?: ep.y
-                                        val px = worldToPixel(realX, realY, config, mapHeightPx)
-                                        // 将世界像素坐标转为屏幕像素坐标
-                                        val spx = px.x * scale + offset.x
-                                        val spy = px.y * scale + offset.y
-                                        hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
-                                    }
-                                    
-                                    if (clickedPoint != null) {
-                                        mapViewModel.onPointClick(screenOffset, clickedPoint)
-                                    } else {
-                                        mapViewModel.clearInteraction()
+
+                Box(
+                    modifier = Modifier.weight(1f, fill = false),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = isPosturesExpanded,
+                        enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
+                        exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (favoriteActions.isEmpty()) {
+                                Text(
+                                    text = "暂无收藏动作，请在菜单中长按添加",
+                                    color = Color.LightGray,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            } else {
+                                favoriteActions.forEach { fav ->
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable { onActionClick(fav) }
+                                            .padding(horizontal = 10.dp, vertical = 2.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(text = fav.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
                         }
-                    )
+                    }
                 }
-        ) {
-            val containerWidth = constraints.maxWidth.toFloat()
-            val containerHeight = constraints.maxHeight.toFloat()
 
-            LaunchedEffect(mapBitmap, containerWidth, containerHeight) {
-                if (mapBitmap != null && !isInitialized && containerWidth > 0 && containerHeight > 0) {
-                    val bmpW = mapBitmap.width.toFloat()
-                    val bmpH = mapBitmap.height.toFloat()
-                    val scaleW = containerWidth / bmpW
-                    val scaleH = containerHeight / bmpH
-                    val targetScale = (if (scaleW < scaleH) scaleW else scaleH) * 0.9f
-                    val finalScale = if (targetScale < 1.0f) targetScale else 1.0f
-                    scale = finalScale
-                    offset = Offset((containerWidth - bmpW * finalScale) / 2f, (containerHeight - bmpH * finalScale) / 2f)
-                    isInitialized = true
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x33FFFFFF))
+                        .border(0.5.dp, Color(0x33FFFFFF), CircleShape)
+                        .clickable { onExpandToggle() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedContent(targetState = isPosturesExpanded, label = "ExpandIconAnim") { expanded ->
+                        Text(text = if (expanded) "❯" else "❮", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
+        }
+    }
+}
 
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        translationX = offset.x
-                        translationY = offset.y
-                        transformOrigin = TransformOrigin(0f, 0f)
-                    }
+@Composable
+fun EmergencyStopButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(56.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFE53935).copy(alpha = 0.95f))
+            .border(2.dp, Color(0x44FFFFFF), CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text("急停", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+fun SideMenu(
+    menus: List<String>,
+    activeFragment: String?,
+    onMenuClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassBox(modifier = modifier.width(130.dp).heightIn(max = 240.dp), bgColor = Color(0xAA000000)) {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(4.dp)) {
+            items(menus) { menu ->
+                MenuListItem(
+                    text = menu,
+                    isSelected = activeFragment == menu,
+                    onClick = { onMenuClick(menu) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MainControlPanel(
+    activeFragment: String?,
+    inspectionTab: String,
+    onClose: () -> Unit,
+    onTabChange: (String) -> Unit,
+    onAddClickAction: (() -> Unit)?,
+    addActionText: String,
+    content: @Composable BoxScope.() -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassBox(modifier = modifier.fillMaxWidth().fillMaxHeight(), bgColor = Color(0xD9121212)) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (config != null) {
-                    val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
-                    if (mapBitmap != null) {
-                        drawImage(image = mapBitmap, topLeft = Offset.Zero)
-                    }
-
-                    // 1. 绘制路径
-                    drawPathLine(uiState.globalPath, config, mapHeightPx, Color(0xFF03DC6B), 5f / scale)
-                    drawPathLine(uiState.localPath, config, mapHeightPx, Color(0xFFF3D65A), 6f / scale)
-
-                    // 2. 绘制导览点 (背景上层，路径上层)
-                    uiState.endpoints.forEach { ep ->
-                        val realX = ep.position?.x ?: ep.x
-                        val realY = ep.position?.y ?: ep.y
-                        val realYaw = ep.position?.yaw ?: ep.yaw
-                        
-                        val px = worldToPixel(realX, realY, config, mapHeightPx)
-                        
-                        val pointColor = when (ep.pointType) {
-                            1 -> Color(0xFFFFD600) // 迎宾点：黄色
-                            2 -> Color(0xFF4CAF50) // 充电点：绿色
-                            else -> Color(0xFF9C27B0) // 普通点：深紫色
-                        }
-                        
-                        // 使用平方根补偿，让图标随缩放适度变化，而不是绝对静止
-                        val adaptiveFactor = 1f / sqrt(scale)
-                        // 保证图标在屏幕上的半径至少为 10 像素，使其在缩小地图时依然可见
-                        val pointRadius = (12f * adaptiveFactor).coerceAtLeast(10f / scale)
-                        
-                        // 导览点图标渲染
-                        drawCircle(color = pointColor, radius = pointRadius, center = px)
-                        drawCircle(color = Color.White, radius = pointRadius + 2f * adaptiveFactor, center = px, style = Stroke(width = 2f * adaptiveFactor))
-                        
-                        // 绘制方向箭头
-                        val arrowLength = (18f * adaptiveFactor).coerceAtLeast(15f / scale)
-                        drawDirectionArrow(px, arrowLength, realYaw, pointColor, offset = pointRadius * 1.4f)
-                    }
-
-                    // 绘制名称文本 (单独循环以确保文本不被图标遮挡)
-                    uiState.endpoints.forEach { ep ->
-                        val realX = ep.position?.x ?: ep.x
-                        val realY = ep.position?.y ?: ep.y
-                        val px = worldToPixel(realX, realY, config, mapHeightPx)
-                        val adaptiveFactor = 1f / sqrt(scale)
-                        val pointRadius = 12f * adaptiveFactor
-
-                        val textLayoutResult = textMeasurer.measure(
-                            text = ep.name ?: "",
-                            style = TextStyle(
-                                color = Color.White,
-                                fontSize = (6.sp.value * adaptiveFactor).sp,
-                                fontWeight = FontWeight.Bold,
-                                shadow = Shadow(
-                                    color = Color.Black,
-                                    offset = Offset(1.5f * adaptiveFactor, 1.5f * adaptiveFactor),
-                                    blurRadius = 3f * adaptiveFactor
-                                )
-                            )
+                if (activeFragment == "导览管理") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "《 ",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { onClose() }
+                                .padding(4.dp)
                         )
-                        drawText(
-                            textLayoutResult = textLayoutResult,
-                            topLeft = Offset(
-                                x = px.x - textLayoutResult.size.width / 2,
-                                y = px.y + pointRadius + 2.5f * adaptiveFactor
-                            )
+                        Text(
+                            text = "导览点",
+                            color = if (inspectionTab == "导览点") Color.White else Color.Gray,
+                            fontSize = 13.sp,
+                            fontWeight = if (inspectionTab == "导览点") FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { onTabChange("导览点") }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .then(if (inspectionTab == "导览点") Modifier.background(Color.White.copy(alpha = 0.1f)) else Modifier)
                         )
-                    }
-
-                    // 3. 绘制临时点
-                    if ((uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION || uiState.interactionMode == MapInteractionMode.CONFIRM_POINT) && uiState.tempPoint != null) {
-                        val px = worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
-                        val adaptiveFactor = 1f / sqrt(scale)
-                        drawCircle(color = Color(0xFF007AFF), radius = 14f * adaptiveFactor, center = px)
-                        drawDirectionArrow(px, 20f * adaptiveFactor, uiState.tempYaw.toDouble(), Color(0xFF007AFF), offset = 16f * adaptiveFactor)
-                    }
-
-                    // 4. 绘制机器人位置
-                    uiState.robotPosition?.let { robot ->
-                        val px = worldToPixel(robot.x, robot.y, config, mapHeightPx)
-                        val adaptiveFactor = 1f / sqrt(scale)
-                        val robotRadius = (12f * adaptiveFactor).coerceAtLeast(10f / scale)
-                        drawCircle(color = Color(0xFFFFA500), radius = robotRadius, center = px)
-                        val arrowLength = (16f * adaptiveFactor).coerceAtLeast(14f / scale)
-                        drawDirectionArrow(px, arrowLength, robot.yaw, Color.Red, offset = robotRadius * 0.5f)
-                    }
-
-                    // 5. 绘制点云 (置于最顶层)
-                    if (uiState.robotPosition != null && uiState.pointCloud.isNotEmpty()) {
-                        val worldCloud = mapViewModel.calculatePointCloudWorldCoords(uiState.pointCloud, uiState.robotPosition)
-                        val points = worldCloud.map { worldToPixel(it.x, it.y, config, mapHeightPx) }
-                        drawPoints(
-                            points = points,
-                            pointMode = PointMode.Points,
-                            color = Color.Red.copy(alpha = 0.8f),
-                            strokeWidth = 6f / scale,
-                            cap = StrokeCap.Round
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "路线",
+                            color = if (inspectionTab == "路线") Color.White else Color.Gray,
+                            fontSize = 13.sp,
+                            fontWeight = if (inspectionTab == "路线") FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { onTabChange("路线") }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .then(if (inspectionTab == "路线") Modifier.background(Color.White.copy(alpha = 0.1f)) else Modifier)
                         )
                     }
                 } else {
-                    drawFallbackGrid()
+                    Text(
+                        text = "《 ${activeFragment ?: ""}",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable { onClose() }
+                            .padding(4.dp)
+                    )
                 }
-            }
-        }
-
-        // 交互菜单
-        if (uiState.interactionMode == MapInteractionMode.SHOW_MENU && uiState.menuPosition != null) {
-            Popup(
-                alignment = Alignment.TopStart,
-                offset = androidx.compose.ui.unit.IntOffset(uiState.menuPosition.x.toInt(), uiState.menuPosition.y.toInt()),
-                onDismissRequest = { mapViewModel.clearInteraction() }
-            ) {
-                GlassBox(modifier = Modifier.width(120.dp), bgColor = Color(0xEE2C2C2C)) {
-                    Column {
-                        Text(
-                            "创建导览点",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onSelectCreatePoint() }.padding(12.dp)
-                        )
-                        Divider(color = Color.White.copy(alpha = 0.1f))
-                        Text(
-                            "去此处",
-                            color = Color.LightGray,
-                            fontSize = 14.sp,
-                            modifier = Modifier.fillMaxWidth().clickable { /* TODO */ }.padding(12.dp)
-                        )
-                    }
-                }
-            }
-        }
-        
-        // 确认点位小窗
-        if (uiState.interactionMode == MapInteractionMode.CONFIRM_POINT && uiState.tempPoint != null && config != null) {
-            val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
-            // 计算点位在 Canvas 内部的像素坐标
-            val px = worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
-            // 转换为相对于容器的绝对像素坐标
-            val screenX = px.x * scale + offset.x
-            val screenY = px.y * scale + offset.y
-            
-            val density = androidx.compose.ui.platform.LocalDensity.current
-            val popupWidthPx = with(density) { 140.dp.toPx() }
-
-            Popup(
-                alignment = Alignment.TopStart,
-                offset = androidx.compose.ui.unit.IntOffset(
-                    (screenX - popupWidthPx / 2).toInt(),
-                    (screenY + 30).toInt() // 避开中心点，稍微向下偏移
-                ),
-                onDismissRequest = { mapViewModel.clearInteraction() }
-            ) {
-                GlassBox(modifier = Modifier.width(140.dp), bgColor = Color(0xEE2C2C2C)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                Spacer(Modifier.weight(1f))
+                if (onAddClickAction != null) {
+                    Button(
+                        onClick = { onAddClickAction.invoke() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                        modifier = Modifier.height(26.dp).padding(end = 12.dp)
                     ) {
-                        Text(
-                            "取消",
-                            color = Color(0xFFFF5252),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { mapViewModel.clearInteraction() }.padding(vertical = 12.dp, horizontal = 8.dp)
-                        )
-                        Divider(modifier = Modifier.height(20.dp).width(1.dp), color = Color.White.copy(alpha = 0.2f))
-                        Text(
-                            "确认",
-                            color = Color(0xFF4CAF50),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { mapViewModel.onConfirmCreatePoint() }.padding(vertical = 12.dp, horizontal = 8.dp)
-                        )
+                        Text(addActionText, fontSize = 11.sp, color = Color.White)
                     }
                 }
             }
-        }
-        
-        if (uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION) {
-            Box(
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
-                    .clip(RoundedCornerShape(8.dp)).background(Color(0xAA000000)).padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("请在地图上点击一个位置以确定方向", color = Color.White, fontSize = 14.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        "取消",
-                        color = Color(0xFFFF5252),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { mapViewModel.clearInteraction() }
-                    )
-                }
-            }
-        }
 
-        if (uiState.interactionMode == MapInteractionMode.PICK_POSITION) {
-            Box(
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
-                    .clip(RoundedCornerShape(8.dp)).background(Color(0xAA000000)).padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("请在地图上点击新位置", color = Color.White, fontSize = 14.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        "取消",
-                        color = Color(0xFFFF5252),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { mapViewModel.clearInteraction() }
-                    )
-                }
-            }
-        }
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp))
 
-        // 导览点操作小窗
-        if (uiState.interactionMode == MapInteractionMode.POINT_MENU && uiState.menuPosition != null && uiState.selectedPoint != null) {
-            Popup(
-                alignment = Alignment.TopStart,
-                offset = androidx.compose.ui.unit.IntOffset(uiState.menuPosition.x.toInt(), uiState.menuPosition.y.toInt()),
-                onDismissRequest = { mapViewModel.clearInteraction() }
-            ) {
-                GlassBox(modifier = Modifier.width(110.dp), bgColor = Color(0xEE2C2C2C)) {
-                    Column {
-                        Text(
-                            "修改信息",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onEditPoint() }.padding(10.dp)
-                        )
-                        Divider(color = Color.White.copy(alpha = 0.1f))
-                        Text(
-                            "重设位置",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onResetPointPosition() }.padding(10.dp)
-                        )
-                        Divider(color = Color.White.copy(alpha = 0.1f))
-                        Text(
-                            "删除点位",
-                            color = Color(0xFFFF5252),
-                            fontSize = 13.sp,
-                            modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onDeletePoint() }.padding(10.dp)
-                        )
-                    }
-                }
-            }
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), content = content)
         }
     }
-}
-
-private fun DrawScope.drawFallbackGrid() {
-    val gridSize = 50f
-    for (i in 0..(size.width / gridSize).toInt()) {
-        drawLine(Color(0x22FFFFFF), Offset(i * gridSize, 0f), Offset(i * gridSize, size.height))
-    }
-    for (i in 0..(size.height / gridSize).toInt()) {
-        drawLine(Color(0x22FFFFFF), Offset(0f, i * gridSize), Offset(size.width, i * gridSize))
-    }
-}
-
-private fun worldToPixel(worldX: Double, worldY: Double, config: MapConfigBean, mapHeightPx: Float): Offset {
-    val originX = if (config.origin.size >= 1) config.origin[0] else 0.0
-    val originY = if (config.origin.size >= 2) config.origin[1] else 0.0
-    val res = if (config.resolution > 0) config.resolution else 0.05
-    
-    // px = (真实世界坐标 - 原点坐标) / 分辨率
-    val px = (worldX - originX) / res
-    // py = 总高度 - (真实世界坐标 - 原点坐标) / 分辨率 (因为 Canvas Y轴向下)
-    val py = mapHeightPx - (worldY - originY) / res
-
-    return Offset(px.toFloat(), py.toFloat())
-}
-
-private fun DrawScope.drawPathLine(pathData: List<Point2DBean>, config: MapConfigBean, mapHeightPx: Float, color: Color, strokeWidth: Float) {
-    if (pathData.size < 2) return
-    val path = Path()
-    pathData.forEachIndexed { index, point ->
-        val px = worldToPixel(point.x, point.y, config, mapHeightPx)
-        if (index == 0) path.moveTo(px.x, px.y) else path.lineTo(px.x, px.y)
-    }
-    drawPath(path = path, color = color, style = Stroke(width = strokeWidth))
-}
-
-private fun DrawScope.drawDirectionArrow(center: Offset, length: Float, yaw: Double, color: Color, offset: Float = 0f) {
-    val canvasYaw = -yaw // Canvas Y轴向下，需取反
-    
-    // 计算箭头起点（根据 offset 偏移）
-    val startX = center.x + offset * cos(canvasYaw).toFloat()
-    val startY = center.y + offset * sin(canvasYaw).toFloat()
-    
-    // 计算箭头顶点
-    val tipX = startX + length * cos(canvasYaw).toFloat()
-    val tipY = startY + length * sin(canvasYaw).toFloat()
-    
-    val baseWidth = length * 0.6f
-    val baseAngle1 = canvasYaw + PI / 2
-    val baseAngle2 = canvasYaw - PI / 2
-    
-    val path = Path().apply {
-        moveTo(tipX, tipY)
-        lineTo(startX + baseWidth * cos(baseAngle1).toFloat(), startY + baseWidth * sin(baseAngle1).toFloat())
-        lineTo(startX + baseWidth * cos(baseAngle2).toFloat(), startY + baseWidth * sin(baseAngle2).toFloat())
-        close()
-    }
-    drawPath(path = path, color = color)
 }
 
 @Composable
 fun GlassBox(
+    modifier: Modifier = Modifier,
+    bgColor: Color = Color(0x77000000),
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(bgColor)
+            .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(12.dp))
+            .padding(4.dp),
+        content = content
+    )
+}
+
+@Composable
+fun SideMenuPopup(
     modifier: Modifier = Modifier,
     bgColor: Color = Color(0x77000000),
     content: @Composable BoxScope.() -> Unit

@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.math.*
 
 data class ActionUiState(
     val postures: List<PostureBean> = emptyList(),
@@ -214,6 +218,52 @@ class ActionViewModel : ViewModel() {
             if (existingIndex != -1) currentFavorites.removeAt(existingIndex)
             else currentFavorites.add(FavoriteActionBean(id, name, isArmAction))
             currentState.copy(favoriteActions = currentFavorites)
+        }
+    }
+
+    // --- 摇杆控制逻辑 ---
+
+    private var joystickJob: Job? = null
+    private var lastLeftX = 0f
+    private var lastLeftY = 0f
+    private var lastRightX = 0f
+
+    /**
+     * 更新摇杆输入并自动管理发送循环
+     */
+    fun updateJoystickInput(leftX: Float, leftY: Float, rightX: Float, active: Boolean) {
+        lastLeftX = leftX
+        lastLeftY = leftY
+        lastRightX = rightX
+
+        if (active) {
+            if (joystickJob == null || !joystickJob!!.isActive) {
+                joystickJob = viewModelScope.launch {
+                    while (isActive) {
+                        val distance = hypot(lastLeftX, lastLeftY)
+                        val translateLevel = (distance * 10).toInt().coerceIn(0, 10)
+                        var angle = 0.0
+                        if (translateLevel > 0) {
+                            angle = atan2(-lastLeftX.toDouble(), lastLeftY.toDouble()) * 180 / PI
+                            if (angle < 0) angle += 360
+                        }
+
+                        val rotateLevel = (-lastRightX * 10).toInt().coerceIn(-10, 10)
+
+                        try {
+                            robotApi.moveMixed(angle, translateLevel, rotateLevel)
+                        } catch (e: Exception) {
+                            KLog.e(TAG, "发送摇杆指令失败", e)
+                        }
+                        delay(100)
+                    }
+                }
+            }
+        } else {
+            joystickJob?.cancel()
+            joystickJob = null
+            stopTranslate()
+            stopRotate()
         }
     }
 }
