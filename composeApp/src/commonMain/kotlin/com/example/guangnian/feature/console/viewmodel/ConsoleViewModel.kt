@@ -7,6 +7,8 @@ import com.example.guangnian.feature.console.data.api.MotionControlApi
 import com.example.guangnian.feature.console.data.api.NavigationApi
 import com.example.guangnian.feature.console.data.api.RouteApi
 import com.example.guangnian.feature.console.data.bean.*
+import com.example.guangnian.feature.console.data.event.RobotEvent
+import com.example.guangnian.feature.console.data.event.RobotEventBus
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -23,13 +25,17 @@ data class ConsoleUiState(
     val endpoints: List<InspectionPointBean> = emptyList(),
     val routes: List<RouteBean> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    // 交互状态
+    val pendingPoint: InspectionPointBean? = null,
+    val deleteConfirmPoint: InspectionPointBean? = null
 )
 
 class ConsoleViewModel(
     private val motionControlApi: MotionControlApi,
     private val navigationApi: NavigationApi,
-    private val routeApi: RouteApi
+    private val routeApi: RouteApi,
+    private val eventBus: RobotEventBus
 ) : ViewModel() {
     private companion object {
         const val TAG = "ConsoleViewModel"
@@ -40,6 +46,31 @@ class ConsoleViewModel(
 
     private val _errorEvents = MutableSharedFlow<String>()
     val errorEvents = _errorEvents.asSharedFlow()
+
+    init {
+        // 监听来自 Map 或其他组件的事件
+        viewModelScope.launch {
+            eventBus.events.collect { event ->
+                when (event) {
+                    is RobotEvent.RequestEditPoint -> {
+                        _uiState.update { it.copy(pendingPoint = event.point) }
+                    }
+                    is RobotEvent.RequestDeletePoint -> {
+                        _uiState.update { it.copy(deleteConfirmPoint = event.point) }
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    fun clearPendingPoint() {
+        _uiState.update { it.copy(pendingPoint = null) }
+    }
+
+    fun clearDeleteConfirmPoint() {
+        _uiState.update { it.copy(deleteConfirmPoint = null) }
+    }
 
     private fun handleError(message: String, throwable: Throwable?) {
         KLog.e(TAG, "$message: ${throwable?.message}")
@@ -135,6 +166,7 @@ class ConsoleViewModel(
         executeTask("添加巡检点失败") {
             navigationApi.addInspectionPoint(point)
             fetchInspectionPoints()
+            eventBus.emit(RobotEvent.PointsChanged)
         }
     }
 
@@ -142,6 +174,7 @@ class ConsoleViewModel(
         executeTask("更新巡检点失败") {
             navigationApi.updateInspectionPoint(point)
             fetchInspectionPoints()
+            eventBus.emit(RobotEvent.PointsChanged)
         }
     }
 
@@ -149,6 +182,7 @@ class ConsoleViewModel(
         executeTask("删除巡检点失败") {
             navigationApi.deleteInspectionPoint(pointId)
             fetchInspectionPoints()
+            eventBus.emit(RobotEvent.PointsChanged)
         }
     }
 

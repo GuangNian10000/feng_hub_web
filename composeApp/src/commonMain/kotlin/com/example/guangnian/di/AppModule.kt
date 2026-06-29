@@ -1,6 +1,7 @@
 package com.example.guangnian.di
 
 import com.example.guangnian.feature.console.data.api.*
+import com.example.guangnian.feature.console.data.event.RobotEventBus
 import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
 import com.example.guangnian.feature.console.ui.panel.SpeechSynthesisViewModel
 import com.example.guangnian.feature.console.viewmodel.*
@@ -25,6 +26,7 @@ val appModule = module {
     single<VoiceApi> { get<RobotTcpApi>() }
 
     // Core Utilities
+    single { RobotEventBus() }
     single { Settings() }
     single { 
         HttpClient {
@@ -42,14 +44,16 @@ val appModule = module {
         ConsoleViewModel(
             motionControlApi = get(),
             navigationApi = get(),
-            routeApi = get()
+            routeApi = get(),
+            eventBus = get()
         ) 
     }
     factory { 
         MapViewModel(
             navigationApi = get(),
             settings = get(),
-            httpClient = get()
+            httpClient = get(),
+            eventBus = get()
         ) 
     }
     factory { AgentViewModel(get()) }

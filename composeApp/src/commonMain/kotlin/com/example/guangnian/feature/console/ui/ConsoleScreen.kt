@@ -34,16 +34,9 @@ fun InteractionScreen(
 
     val mapViewModel: MapViewModel = koinViewModel()
     val mapUiState by mapViewModel.uiState.collectAsState()
-    val pendingPoint by mapViewModel.pendingPoint.collectAsState()
 
-    var mapDeleteConfirmPoint by remember { mutableStateOf<com.example.guangnian.feature.console.data.bean.InspectionPointBean?>(null) }
-    val deletePointEvent by mapViewModel.deletePointEvent.collectAsState()
-    LaunchedEffect(deletePointEvent) {
-        deletePointEvent?.let { point ->
-            mapDeleteConfirmPoint = point
-            mapViewModel.clearDeletePointEvent()
-        }
-    }
+    val pendingPoint = uiState.pendingPoint
+    val deleteConfirmPoint = uiState.deleteConfirmPoint
 
     var isMenuOpen by remember { mutableStateOf(false) }
     var isPosturesExpanded by remember { mutableStateOf(true) }
@@ -106,22 +99,22 @@ fun InteractionScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (mapDeleteConfirmPoint != null) {
+        if (deleteConfirmPoint != null) {
             AlertDialog(
-                onDismissRequest = { mapDeleteConfirmPoint = null },
+                onDismissRequest = { consoleViewModel.clearDeleteConfirmPoint() },
                 title = { Text("确认删除", color = Color.White) },
-                text = { Text("确定要删除导览点 “${mapDeleteConfirmPoint?.name}” 吗？", color = Color.LightGray) },
+                text = { Text("确定要删除导览点 “${deleteConfirmPoint.name}” 吗？", color = Color.LightGray) },
                 containerColor = Color(0xFF2C2C2C),
                 confirmButton = {
                     TextButton(onClick = {
-                        mapDeleteConfirmPoint?.let { consoleViewModel.deleteInspectionPoint(it.pointId) }
-                        mapDeleteConfirmPoint = null
+                        consoleViewModel.deleteInspectionPoint(deleteConfirmPoint.pointId)
+                        consoleViewModel.clearDeleteConfirmPoint()
                     }) {
                         Text("删除", color = Color(0xFFFF5252))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { mapDeleteConfirmPoint = null }) {
+                    TextButton(onClick = { consoleViewModel.clearDeleteConfirmPoint() }) {
                         Text("取消", color = Color.White)
                     }
                 }
@@ -249,7 +242,7 @@ fun InteractionScreen(
                                 onAddClickAction = action
                             },
                             pendingPoint = pendingPoint,
-                            onClearPendingPoint = { mapViewModel.clearPendingPoint() }
+                            onClearPendingPoint = { consoleViewModel.clearPendingPoint() }
                         )
                         "语音合成" -> SpeechSynthesisPanel(onSetAddAction = { text, action ->
                             addActionText = text

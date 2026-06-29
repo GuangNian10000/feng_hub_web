@@ -7,6 +7,8 @@ import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.utils.PgmUtils
 import com.example.guangnian.feature.console.data.api.NavigationApi
 import com.example.guangnian.feature.console.data.bean.*
+import com.example.guangnian.feature.console.data.event.RobotEvent
+import com.example.guangnian.feature.console.data.event.RobotEventBus
 import com.russhwolf.settings.Settings
 import io.ktor.client.*
 import io.ktor.client.request.*
@@ -46,19 +48,28 @@ enum class MapInteractionMode {
 class MapViewModel(
     private val navigationApi: NavigationApi,
     private val settings: Settings,
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
+    private val eventBus: RobotEventBus
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
-    private val _pendingPoint = MutableStateFlow<InspectionPointBean?>(null)
-    val pendingPoint: StateFlow<InspectionPointBean?> = _pendingPoint.asStateFlow()
-
-    private val _deletePointEvent = MutableStateFlow<InspectionPointBean?>(null)
-    val deletePointEvent: StateFlow<InspectionPointBean?> = _deletePointEvent.asStateFlow()
-
     init {
         startMapDataPolling()
+        observeEvents()
+    }
+
+    private fun observeEvents() {
+        viewModelScope.launch {
+            eventBus.events.collect { event ->
+                when (event) {
+                    is RobotEvent.PointsChanged -> {
+                        refreshMapData()
+                    }
+                    else -> {}
+                }
+            }
+        }
     }
 
     private fun startMapDataPolling() {
@@ -185,11 +196,9 @@ class MapViewModel(
             name = "新点位", x = origin.x, y = origin.y, yaw = state.tempYaw.toDouble(),
             position = PointPosition(origin.x, origin.y, state.tempYaw.toDouble())
         )
-        _pendingPoint.value = finalPoint
+        eventBus.tryEmit(RobotEvent.RequestEditPoint(finalPoint))
         clearInteraction()
     }
-
-    fun clearPendingPoint() { _pendingPoint.value = null }
 
     fun clearInteraction() {
         _uiState.update { it.copy(interactionMode = MapInteractionMode.NONE, menuPosition = null, selectedPoint = null, tempPoint = null, tempYaw = 0f) }
@@ -200,7 +209,9 @@ class MapViewModel(
     }
 
     fun onEditPoint() {
-        _uiState.value.selectedPoint?.let { _pendingPoint.value = it }
+        _uiState.value.selectedPoint?.let { 
+            eventBus.tryEmit(RobotEvent.RequestEditPoint(it))
+        }
         clearInteraction()
     }
 
@@ -209,9 +220,9 @@ class MapViewModel(
     }
 
     fun onDeletePoint() {
-        _uiState.value.selectedPoint?.let { _deletePointEvent.value = it }
+        _uiState.value.selectedPoint?.let { 
+            eventBus.tryEmit(RobotEvent.RequestDeletePoint(it))
+        }
         clearInteraction()
     }
-
-    fun clearDeletePointEvent() { _deletePointEvent.value = null }
 }
