@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.bean.*
-import com.example.guangnian.feature.console.ui.GlassBox
+import com.example.guangnian.feature.console.ui.components.GlassBox
 import com.example.guangnian.feature.console.viewmodel.MapInteractionMode
 import com.example.guangnian.feature.console.viewmodel.MapUiState
 import com.example.guangnian.feature.console.viewmodel.MapViewModel
