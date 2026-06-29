@@ -31,6 +31,7 @@ fun InteractionScreen(
     val robotViewModel: RobotViewModel = koinViewModel()
     val connectionState by robotViewModel.connectionState.collectAsState()
     val connectionError by robotViewModel.connectionError.collectAsState()
+    val latency by robotViewModel.latency.collectAsState()
 
     val mapViewModel: MapViewModel = koinViewModel()
     val mapUiState by mapViewModel.uiState.collectAsState()
@@ -124,6 +125,7 @@ fun InteractionScreen(
         TopStatusBar(
             connectionState = connectionState,
             connectionError = connectionError,
+            latency = latency,
             onBackClick = onBackClick,
             onConnectClick = {
                 if (connectionState == TcpState.DISCONNECTED) {

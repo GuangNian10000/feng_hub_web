@@ -22,6 +22,7 @@ import com.example.guangnian.core.network.tcp.TcpState
 fun TopStatusBar(
     connectionState: TcpState,
     connectionError: String?,
+    latency: Long?,
     onBackClick: () -> Unit,
     onConnectClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -88,7 +89,7 @@ fun TopStatusBar(
                             .horizontalScroll(rememberScrollState())
                     )
                 } else if (connectionState == TcpState.CONNECTED) {
-                    Text("197 KB/s", color = Color.LightGray, fontSize = 10.sp)
+                    Text("${latency ?: 0} ms", color = Color.LightGray, fontSize = 10.sp)
                 } else if (connectionState == TcpState.CONNECTING) {
                     Text("请稍候", color = Color.LightGray, fontSize = 10.sp)
                 }

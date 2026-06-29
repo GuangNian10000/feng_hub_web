@@ -32,6 +32,10 @@ class RobotConnectionManager(
     private val _port = MutableStateFlow(settings.getString("saved_port", "9002"))
     val port: StateFlow<String> = _port.asStateFlow()
 
+    // 状态流：延迟（ms）
+    private val _latency = MutableStateFlow<Long?>(null)
+    val latency: StateFlow<Long?> = _latency.asStateFlow()
+
     // 状态流：透传 KmpTcpClient 的状态
     val connectionState: StateFlow<TcpState> = KmpTcpClient.connectionState
     val connectionError: StateFlow<String?> = KmpTcpClient.connectionError
@@ -86,16 +90,19 @@ class RobotConnectionManager(
         heartbeatJob = scope.launch {
             KLog.d(TAG, "已连接，启动心跳保活机制")
             while (isActive) {
-                delay(HEARTBEAT_INTERVAL)
                 try {
-                    val timestamp = Clock.System.now().toEpochMilliseconds()
-                    robotApi.sendHeartbeat(timestamp)
+                    val startTime = Clock.System.now().toEpochMilliseconds()
+                    robotApi.sendHeartbeat(startTime)
+                    val endTime = Clock.System.now().toEpochMilliseconds()
+                    _latency.value = endTime - startTime
                 } catch (e: Exception) {
                     KLog.e(TAG, "心跳异常，判定为连接假死，主动断开", e)
+                    _latency.value = null
                     KmpTcpClient.setConnectionError("心跳超时或发送失败")
                     KmpTcpClient.disconnectAndReset()
                     break
                 }
+                delay(HEARTBEAT_INTERVAL)
             }
         }
     }
@@ -105,6 +112,7 @@ class RobotConnectionManager(
             KLog.d(TAG, "停止心跳保活机制")
             heartbeatJob?.cancel()
             heartbeatJob = null
+            _latency.value = null
         }
     }
 }
