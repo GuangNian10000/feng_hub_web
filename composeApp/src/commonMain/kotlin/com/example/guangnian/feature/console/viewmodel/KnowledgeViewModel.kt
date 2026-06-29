@@ -2,7 +2,7 @@ package com.example.guangnian.feature.console.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
+import com.example.guangnian.feature.console.data.api.KnowledgeApi
 import com.example.guangnian.feature.console.data.bean.KnowledgeEntity
 import com.example.guangnian.feature.console.data.bean.KnowledgeListResponse
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -13,8 +13,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class KnowledgeViewModel : ViewModel() {
-    private val api = RobotTcpApiImpl()
+class KnowledgeViewModel(private val api: KnowledgeApi) : ViewModel() {
 
     private val _knowledgeData = MutableStateFlow(KnowledgeListResponse())
     val knowledgeData: StateFlow<KnowledgeListResponse> = _knowledgeData.asStateFlow()

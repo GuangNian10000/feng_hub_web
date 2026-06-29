@@ -1,9 +1,8 @@
-// AgentViewModel.kt 完全替换
 package com.example.guangnian.feature.console.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
+import com.example.guangnian.feature.console.data.api.AgentManagerApi
 import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.data.bean.AgentListResponse
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,17 +13,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AgentViewModel : ViewModel() {
-    private val api = RobotTcpApiImpl()
+class AgentViewModel(private val api: AgentManagerApi) : ViewModel() {
 
     private val _agentData = MutableStateFlow(AgentListResponse())
     val agentData: StateFlow<AgentListResponse> = _agentData.asStateFlow()
 
-    // 全局加载状态
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // Toast 事件流
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 

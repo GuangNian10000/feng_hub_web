@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.network.tcp.KmpTcpClient
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.core.utils.KLog
-import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
+import com.example.guangnian.feature.console.data.api.RobotStatusApi
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -18,7 +18,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
-class RobotViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
+class RobotViewModel(private val robotApi: RobotStatusApi) : ViewModel() {
 
     private companion object {
         const val TAG = "RobotViewModel"

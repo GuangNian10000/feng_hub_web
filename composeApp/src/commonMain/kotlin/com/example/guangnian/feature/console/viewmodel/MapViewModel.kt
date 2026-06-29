@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.utils.PgmUtils
-import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
+import com.example.guangnian.feature.console.data.api.NavigationApi
 import com.example.guangnian.feature.console.data.bean.*
 import com.russhwolf.settings.Settings
 import io.ktor.client.*
@@ -44,7 +44,7 @@ enum class MapInteractionMode {
 }
 
 class MapViewModel(
-    private val robotApi: RobotTcpApiImpl,
+    private val navigationApi: NavigationApi,
     private val settings: Settings,
     private val httpClient: HttpClient
 ) : ViewModel() {
@@ -66,7 +66,7 @@ class MapViewModel(
         viewModelScope.launch {
             while (isActive && _uiState.value.mapConfig == null) {
                 try {
-                    val config = robotApi.getMapConfig()
+                    val config = navigationApi.getMapConfig()
                     val savedIp = settings.getString("saved_ip", "192.168.1.100")
                     val fixedUrl = config.getFixedImageUrl(savedIp)
                     _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
@@ -81,7 +81,7 @@ class MapViewModel(
         viewModelScope.launch {
             while (isActive) {
                 try {
-                    val pos = robotApi.getPosition()
+                    val pos = navigationApi.getPosition()
                     _uiState.update { it.copy(robotPosition = pos) }
                 } catch (e: Exception) {
                     delay(500) // 失败则放慢频率
@@ -95,9 +95,9 @@ class MapViewModel(
             while (isActive) {
                 try {
                     coroutineScope {
-                        val cloudDef = async { runCatching { robotApi.getPointCloud() }.getOrDefault(emptyList()) }
-                        val globalDef = async { runCatching { robotApi.getGlobalPath().points }.getOrDefault(emptyList()) }
-                        val localDef = async { runCatching { robotApi.getLocalPath().points }.getOrDefault(emptyList()) }
+                        val cloudDef = async { runCatching { navigationApi.getPointCloud() }.getOrDefault(emptyList()) }
+                        val globalDef = async { runCatching { navigationApi.getGlobalPath().points }.getOrDefault(emptyList()) }
+                        val localDef = async { runCatching { navigationApi.getLocalPath().points }.getOrDefault(emptyList()) }
                         
                         _uiState.update { it.copy(
                             pointCloud = cloudDef.await(),
@@ -116,7 +116,7 @@ class MapViewModel(
         viewModelScope.launch {
             while (isActive) {
                 try {
-                    val points = robotApi.getInspectionPoints()
+                    val points = navigationApi.getInspectionPoints()
                     _uiState.update { it.copy(endpoints = points) }
                 } catch (e: Exception) {
                     KLog.e("MapViewModel", "导览点同步异常: ${e.message}")
@@ -135,7 +135,7 @@ class MapViewModel(
 
     fun refreshMapData() {
         viewModelScope.launch {
-            runCatching { robotApi.getInspectionPoints() }.onSuccess { points ->
+            runCatching { navigationApi.getInspectionPoints() }.onSuccess { points ->
                 _uiState.update { it.copy(endpoints = points) }
             }
         }

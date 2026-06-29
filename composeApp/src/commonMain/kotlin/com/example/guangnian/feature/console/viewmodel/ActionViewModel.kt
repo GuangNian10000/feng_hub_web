@@ -3,7 +3,9 @@ package com.example.guangnian.feature.console.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.utils.KLog
-import com.example.guangnian.feature.console.data.api.RobotTcpApiImpl
+import com.example.guangnian.feature.console.data.api.MotionControlApi
+import com.example.guangnian.feature.console.data.api.NavigationApi
+import com.example.guangnian.feature.console.data.api.RouteApi
 import com.example.guangnian.feature.console.data.bean.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,7 +26,11 @@ data class ActionUiState(
     val errorMessage: String? = null
 )
 
-class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
+class ActionViewModel(
+    private val motionControlApi: MotionControlApi,
+    private val navigationApi: NavigationApi,
+    private val routeApi: RouteApi
+) : ViewModel() {
     private companion object {
         const val TAG = "ActionViewModel"
     }
@@ -44,7 +50,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
 
     fun fetchPostureList() {
         executeWithLoading {
-            val list = robotApi.getPostureList()
+            val list = motionControlApi.getPostureList()
             _uiState.update { it.copy(postures = list) }
         }
     }
@@ -65,7 +71,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun sendPostureCommand(postureName: String) {
         viewModelScope.launch { 
             try {
-                robotApi.executePosture(postureName) 
+                motionControlApi.executePosture(postureName) 
             } catch (e: Exception) {
                 handleError("发送姿态指令失败", e)
             }
@@ -74,7 +80,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
 
     fun fetchArmList() {
         executeWithLoading {
-            val list = robotApi.getArmList()
+            val list = motionControlApi.getArmList()
             _uiState.update { it.copy(armActions = list) }
         }
     }
@@ -82,7 +88,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun sendArmCommand(armId: Int) {
         viewModelScope.launch { 
             try {
-                robotApi.executeArm(armId)
+                motionControlApi.executeArm(armId)
             } catch (e: Exception) {
                 handleError("发送机械臂指令失败", e)
             }
@@ -93,7 +99,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
 
     fun fetchInspectionPoints() {
         executeWithLoading {
-            val list = robotApi.getInspectionPoints()
+            val list = navigationApi.getInspectionPoints()
             _uiState.update { it.copy(endpoints = list) }
         }
     }
@@ -101,7 +107,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun addInspectionPoint(point: InspectionPointBean) {
         viewModelScope.launch {
             try {
-                val result = robotApi.addInspectionPoint(point)
+                val result = navigationApi.addInspectionPoint(point)
                 if (result.st == 0) {
                     fetchInspectionPoints()
                 } else {
@@ -116,7 +122,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun deleteInspectionPoint(pointId: String) {
         viewModelScope.launch {
             try {
-                val result = robotApi.deleteInspectionPoint(pointId)
+                val result = navigationApi.deleteInspectionPoint(pointId)
                 if (result.st == 0) {
                     fetchInspectionPoints() // 删除成功后刷新列表
                 }
@@ -129,7 +135,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun updateInspectionPoint(point: InspectionPointBean) {
         viewModelScope.launch {
             try {
-                val result = robotApi.updateInspectionPoint(point)
+                val result = navigationApi.updateInspectionPoint(point)
                 if (result.st == 0) {
                     fetchInspectionPoints() // 更新成功后刷新列表
                 }
@@ -142,7 +148,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun startInspectionPoint(pointId: String) {
         viewModelScope.launch {
             try {
-                robotApi.startInspectionPoint(pointId)
+                navigationApi.startInspectionPoint(pointId)
             } catch (e: Exception) {
                 KLog.e(TAG, "前往巡检点失败", e)
             }
@@ -156,7 +162,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 KLog.d(TAG, "开始请求路线列表...")
-                val list = robotApi.getRoutes()
+                val list = routeApi.getRoutes()
                 _uiState.update { it.copy(routes = list, isLoading = false) }
                 KLog.d(TAG, "成功获取路线: ${list.size}个")
             } catch (e: Exception) {
@@ -169,7 +175,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun addRoute(route: RouteBean) {
         viewModelScope.launch {
             try {
-                val result = robotApi.addRoute(route)
+                val result = routeApi.addRoute(route)
                 if (result.st == 0) {
                     fetchRoutes()
                 }
@@ -182,7 +188,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun deleteRoute(routeId: String) {
         viewModelScope.launch {
             try {
-                val result = robotApi.deleteRoute(routeId)
+                val result = routeApi.deleteRoute(routeId)
                 if (result.st == 0) {
                     fetchRoutes()
                 }
@@ -195,7 +201,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun updateRoute(route: RouteBean) {
         viewModelScope.launch {
             try {
-                val result = robotApi.updateRoute(route)
+                val result = routeApi.updateRoute(route)
                 if (result.st == 0) {
                     fetchRoutes()
                 }
@@ -208,7 +214,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     fun startRoute(routeId: String) {
         viewModelScope.launch {
             try {
-                robotApi.startRoute(routeId)
+                routeApi.startRoute(routeId)
             } catch (e: Exception) {
                 KLog.e(TAG, "开始路线巡检失败", e)
             }
@@ -216,15 +222,15 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
     }
 
     fun stopAll() {
-        viewModelScope.launch { robotApi.stopAll() }
+        viewModelScope.launch { motionControlApi.stopAll() }
     }
 
     fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) {
-        viewModelScope.launch { robotApi.moveMixed(angle, translateLevel, rotateLevel) }
+        viewModelScope.launch { motionControlApi.moveMixed(angle, translateLevel, rotateLevel) }
     }
 
-    fun stopTranslate() { viewModelScope.launch { robotApi.stopTranslate() } }
-    fun stopRotate() { viewModelScope.launch { robotApi.stopRotate() } }
+    fun stopTranslate() { viewModelScope.launch { motionControlApi.stopTranslate() } }
+    fun stopRotate() { viewModelScope.launch { motionControlApi.stopRotate() } }
 
     fun toggleFavorite(id: String, name: String, isArmAction: Boolean) {
         _uiState.update { currentState ->
@@ -266,7 +272,7 @@ class ActionViewModel(private val robotApi: RobotTcpApiImpl) : ViewModel() {
                         val rotateLevel = (-lastRightX * 10).toInt().coerceIn(-10, 10)
 
                         try {
-                            robotApi.moveMixed(angle, translateLevel, rotateLevel)
+                            motionControlApi.moveMixed(angle, translateLevel, rotateLevel)
                         } catch (e: Exception) {
                             KLog.e(TAG, "发送摇杆指令失败", e)
                         }
