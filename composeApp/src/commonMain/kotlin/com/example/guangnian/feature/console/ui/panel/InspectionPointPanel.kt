@@ -710,44 +710,43 @@ private fun PointSelectionDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
-                .fillMaxHeight(0.85f)
+                .wrapContentHeight()
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF1E1E1E),
-            border = BorderStroke(1.dp, Color(0x33FFFFFF))
+            color = Color(0xFF2C2C2C)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Text("选择导览点 (可多选)", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
                 
-                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(availablePoints) { point ->
-                        val isSelected = selectedIds.contains(point.pointId)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isSelected) Color(0x33007AFF) else Color(0x1AFFFFFF))
-                                .clickable {
-                                    if (isSelected) selectedIds.remove(point.pointId) else selectedIds.add(point.pointId)
-                                }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = {
-                                    if (it == true) selectedIds.add(point.pointId) else selectedIds.remove(point.pointId)
-                                },
-                                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF))
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(point.name, color = Color.White, fontSize = 15.sp)
-                        }
+                availablePoints.forEach { point ->
+                    val isSelected = selectedIds.contains(point.pointId)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isSelected) Color(0x33007AFF) else Color(0x1AFFFFFF))
+                            .clickable {
+                                if (isSelected) selectedIds.remove(point.pointId) else selectedIds.add(point.pointId)
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = {
+                                if (it == true) selectedIds.add(point.pointId) else selectedIds.remove(point.pointId)
+                            },
+                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(point.name, color = Color.White, fontSize = 15.sp)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
                     Spacer(modifier = Modifier.width(12.dp))
