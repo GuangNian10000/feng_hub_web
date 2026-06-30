@@ -175,9 +175,10 @@ fun InteractionScreen(
             visible = isMenuOpen,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 180.dp, bottom = 88.dp),
-            enter = fadeIn(tween(250)) + slideInVertically(initialOffsetY = { 40 }) + scaleIn(initialScale = 0.8f, transformOrigin = TransformOrigin(0f, 1f)),
-            exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.8f, transformOrigin = TransformOrigin(0f, 1f)) + slideOutVertically(targetOffsetY = { 20 })
+                .padding(start = 180.dp, end = 180.dp, bottom = 88.dp)
+                .fillMaxWidth(),
+            enter = fadeIn(tween(250)) + slideInVertically(initialOffsetY = { 40 }) + scaleIn(initialScale = 0.8f, transformOrigin = TransformOrigin(0.5f, 1f)),
+            exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.8f, transformOrigin = TransformOrigin(0.5f, 1f)) + slideOutVertically(targetOffsetY = { 20 })
         ) {
             SideMenu(
                 menus = menus,
@@ -185,7 +186,8 @@ fun InteractionScreen(
                 onMenuClick = { menu ->
                     activeFragment = if (activeFragment == menu) null else menu
                     isMenuOpen = false
-                }
+                },
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
