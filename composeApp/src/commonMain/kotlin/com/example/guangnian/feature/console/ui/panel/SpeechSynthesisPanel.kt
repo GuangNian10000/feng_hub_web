@@ -260,7 +260,7 @@ fun SynthesisItemBox(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0x33FFFFFF))
-            .padding(12.dp)
+            .padding(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -271,17 +271,17 @@ fun SynthesisItemBox(
                 Text(
                     text = bean.text,
                     color = Color.White,
-                    fontSize = 15.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 3
+                    maxLines = 2
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (bean.voice != null) {
                         Text(
                             text = "音色: ${bean.voice!!.sex.ifEmpty { "自定义" }}",
                             color = Color(0xFFAAAAAA),
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             modifier = Modifier.background(Color(0x22FFFFFF), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp)
                         )
                     }
@@ -289,7 +289,7 @@ fun SynthesisItemBox(
                         Text(
                             text = "动作: ${bean.action!!.arm_name}",
                             color = Color(0xFFAAAAAA),
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             modifier = Modifier.background(Color(0x22FFFFFF), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp)
                         )
                     }
@@ -297,18 +297,18 @@ fun SynthesisItemBox(
             }
 
             // 操作区
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Button(
                     onClick = onExecute,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    modifier = Modifier.height(32.dp)
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                    modifier = Modifier.height(28.dp)
                 ) {
-                    Text("合成", color = Color.White, fontSize = 12.sp)
+                    Text("合成", color = Color.White, fontSize = 11.sp)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("编辑", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.clickable { onEdit() })
-                    Text("删除", color = Color(0xFFE53935), fontSize = 12.sp, modifier = Modifier.clickable { onDelete() })
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("编辑", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.clickable { onEdit() })
+                    Text("删除", color = Color(0xFFE53935), fontSize = 11.sp, modifier = Modifier.clickable { onDelete() })
                 }
             }
         }

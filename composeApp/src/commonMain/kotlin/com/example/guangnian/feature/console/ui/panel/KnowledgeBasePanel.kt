@@ -158,34 +158,40 @@ private fun KnowledgeItemBox(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0x33FFFFFF))
-            .padding(12.dp)
+            .padding(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
-                Text(text = "Q: ${knowledge.question}", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 6.dp)) {
+                Text(
+                    text = "Q: ${knowledge.question}",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "A: ${knowledge.answer}",
                     color = Color(0xBBFFFFFF),
-                    fontSize = 13.sp,
-                    maxLines = 3
+                    fontSize = 11.sp,
+                    maxLines = 2
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "编辑",
                     color = Color(0xFF007AFF),
-                    fontSize = 13.sp,
+                    fontSize = 11.sp,
                     modifier = Modifier.clickable { onEdit() }.padding(4.dp)
                 )
                 Text(
                     text = "删除",
                     color = Color(0xFFE53935),
-                    fontSize = 13.sp,
+                    fontSize = 11.sp,
                     modifier = Modifier.clickable { onDelete() }.padding(4.dp)
                 )
             }

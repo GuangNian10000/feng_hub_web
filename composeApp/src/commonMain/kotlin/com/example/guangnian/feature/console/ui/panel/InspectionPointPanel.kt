@@ -190,8 +190,8 @@ fun InspectionPointPanel(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(bottom = 12.dp)
                 ) {
                     items(endpoints) { point ->
                         InspectionPointLinearItem(
@@ -223,8 +223,8 @@ fun InspectionPointPanel(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    contentPadding = PaddingValues(bottom = 12.dp)
                 ) {
                     items(routes) { route ->
                         RouteLinearItem(
@@ -256,19 +256,19 @@ private fun InspectionPointLinearItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .height(52.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(Color(0x1AFFFFFF))
-            .border(1.dp, Color(0x12FFFFFF), RoundedCornerShape(8.dp))
+            .border(0.5.dp, Color(0x12FFFFFF), RoundedCornerShape(6.dp))
             .clickable { onClick() }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = point.name.ifEmpty { "未命名" },
                 color = Color.White,
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -277,17 +277,17 @@ private fun InspectionPointLinearItem(
             Text(
                 text = "类型: ${getPointTypeLabel(point.pointType)} | X: ${pos.x.format(2)} Y: ${pos.y.format(2)}",
                 color = Color.Gray,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 maxLines = 1
             )
         }
 
-        IconButton(onClick = onEditClick) {
-            Icon(Icons.Default.Edit, contentDescription = "编辑", tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        IconButton(onClick = onEditClick, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Edit, contentDescription = "编辑", tint = Color.LightGray, modifier = Modifier.size(18.dp))
         }
 
-        IconButton(onClick = onDeleteClick) {
-            Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
+        IconButton(onClick = onDeleteClick, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -498,19 +498,19 @@ private fun RouteLinearItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .height(52.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(Color(0x1AFFFFFF))
-            .border(1.dp, Color(0x12FFFFFF), RoundedCornerShape(8.dp))
+            .border(0.5.dp, Color(0x12FFFFFF), RoundedCornerShape(6.dp))
             .clickable { onClick() }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = route.route_name.ifEmpty { "未命名路线" },
                 color = Color.White,
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -518,17 +518,17 @@ private fun RouteLinearItem(
             Text(
                 text = "点位数: ${route.pointCount ?: 0} | 循环: ${route.loopCount}次",
                 color = Color.Gray,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 maxLines = 1
             )
         }
 
-        IconButton(onClick = onEditClick) {
-            Icon(Icons.Default.Edit, contentDescription = "编辑", tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        IconButton(onClick = onEditClick, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Edit, contentDescription = "编辑", tint = Color.LightGray, modifier = Modifier.size(18.dp))
         }
 
-        IconButton(onClick = onDeleteClick) {
-            Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp))
+        IconButton(onClick = onDeleteClick, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -167,6 +168,7 @@ fun AgentSettingsPanel(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AgentItemBox(
     agent: AgentEntity,
@@ -185,50 +187,65 @@ private fun AgentItemBox(
             .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(8.dp))
             .clickable { onSelect() }
-            .padding(12.dp)
+            .padding(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 选中指示器
-            RadioButton(
-                selected = isSelected,
-                onClick = onSelect,
-                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF007AFF), unselectedColor = Color.LightGray)
-            )
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                RadioButton(
+                    selected = isSelected,
+                    onClick = onSelect,
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = Color(0xFF007AFF),
+                        unselectedColor = Color.LightGray
+                    ),
+                    modifier = Modifier.scale(0.8f)
+                )
+            }
 
             // 信息区
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = agent.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "音色: ${agent.voice.sex.ifEmpty { "默认" }}", color = Color(0xFFAAAAAA), fontSize = 11.sp)
+                    Text(
+                        text = agent.name,
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "音色: ${agent.voice.sex.ifEmpty { "默认" }}",
+                        color = Color(0xFFAAAAAA),
+                        fontSize = 10.sp
+                    )
                 }
 
                 if (agent.promptWord.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "提示词: ${agent.promptWord}",
                         color = Color(0xBBFFFFFF),
-                        fontSize = 12.sp,
-                        maxLines = 2
+                        fontSize = 11.sp,
+                        maxLines = 1
                     )
                 }
             }
 
             // 操作按钮区
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "编辑",
                     color = Color(0xFF007AFF),
-                    fontSize = 13.sp,
+                    fontSize = 11.sp,
                     modifier = Modifier.clickable { onEdit() }.padding(4.dp)
                 )
                 Text(
                     text = "删除",
                     color = Color(0xFFE53935),
-                    fontSize = 13.sp,
+                    fontSize = 11.sp,
                     modifier = Modifier.clickable { onDelete() }.padding(4.dp)
                 )
             }

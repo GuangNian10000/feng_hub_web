@@ -51,11 +51,11 @@ fun ActionPosturePanel(
         }
     } else {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
+            columns = GridCells.Fixed(5),
             modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(postures) { posture ->
                 val isFavorited = favoriteActions.any { it.id == posture.posture_name && !it.isArmAction }
@@ -77,10 +77,10 @@ fun ActionPosturePanel(
 private fun ActionItem(text: String, isFavorited: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .height(44.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(Color(0x33FFFFFF))
-            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(8.dp))
+            .border(0.5.dp, Color(0x22FFFFFF), RoundedCornerShape(6.dp))
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -90,8 +90,8 @@ private fun ActionItem(text: String, isFavorited: Boolean, onClick: () -> Unit, 
         Text(
             text = text,
             color = if (isFavorited) Color(0xFFFFD700) else Color.White,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
         )
     }
 }

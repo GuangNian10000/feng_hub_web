@@ -40,18 +40,19 @@ fun MainControlPanel(
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
             // 头部栏
             Row(
-                modifier = Modifier.fillMaxWidth().height(40.dp),
+                modifier = Modifier.fillMaxWidth().height(32.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 返回/关闭按钮
                 IconButton(
                     onClick = onClose,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
                         contentDescription = "Close",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -62,7 +63,7 @@ fun MainControlPanel(
                     Text(
                         text = title,
                         color = Color.White,
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                 } else {
@@ -75,16 +76,16 @@ fun MainControlPanel(
                             Surface(
                                 onClick = { onTabChange(tab) },
                                 color = if (isSelected) Color.White.copy(alpha = 0.15f) else Color.Transparent,
-                                shape = RoundedCornerShape(6.dp),
+                                shape = RoundedCornerShape(4.dp),
                                 modifier = Modifier.padding(horizontal = 2.dp)
                             ) {
                                 Text(
                                     text = tab,
                                     color = if (isSelected) Color.White else Color.Gray,
-                                    fontSize = 14.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     softWrap = false,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
                             if (index < tabs.size - 1) {
@@ -102,7 +103,7 @@ fun MainControlPanel(
 
             HorizontalDivider(
                 color = Color.White.copy(alpha = 0.1f),
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = 4.dp)
             )
 
             // 内容槽位
