@@ -31,7 +31,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun executeSynthesis(bean: SpeechSynthesisBean) =
         request<BaseBean>("/voice/tts_synthesis/", mapOf("ttsBean" to Json.encodeToString(bean)),targetNode= TcpNode.TABLET)
 
-    override suspend fun getRoutes() = request<RouteListResponse>("slam/route_query_all").routes
+    override suspend fun getRoutes() = request<List<RouteBean>>("slam/route_query_all")
 
     override suspend fun addRoute(route: RouteBean) = request<BaseBean>("slam/route_add", mapOf(
         "route_id" to (route.route_id ?: ""),
@@ -259,7 +259,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 获取巡检点列表
     override suspend fun getInspectionPoints() =
-        request<PointListResponse>("slam/point_query_all").points
+        request<List<InspectionPointBean>>("slam/point_query_all")
 
     // 创建巡检点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =

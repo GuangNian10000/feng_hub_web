@@ -17,6 +17,7 @@ class RobotViewModel(private val connectionManager: RobotConnectionManager) : Vi
     val connectionState: StateFlow<TcpState> = connectionManager.connectionState
     val connectionError: StateFlow<String?> = connectionManager.connectionError
     val latency: StateFlow<Long?> = connectionManager.latency
+    val canConnect: StateFlow<Boolean> = connectionManager.canConnect
 
     // 桥接用户交互意图
     fun onIpChanged(newIp: String) {

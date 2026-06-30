@@ -19,6 +19,7 @@ fun AppLandscapePreview() {
             ip = "192.168.3.100",
             port = "8080",
             connectionState = TcpState.DISCONNECTED,
+            canConnect = true,
             onIpChange = {},
             onPortChange = {},
             onConnectClick = {},

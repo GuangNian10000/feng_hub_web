@@ -24,11 +24,13 @@ fun MainControlScreen(
     val ip by viewModel.ip.collectAsState()
     val port by viewModel.port.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
+    val canConnect by viewModel.canConnect.collectAsState()
 
     MainControlContent(
         ip = ip,
         port = port,
         connectionState = connectionState,
+        canConnect = canConnect,
         onIpChange = viewModel::onIpChanged,
         onPortChange = viewModel::onPortChanged,
         onConnectClick = viewModel::connect,
@@ -41,6 +43,7 @@ fun MainControlContent(
     ip: String,
     port: String,
     connectionState: TcpState,
+    canConnect: Boolean,
     onIpChange: (String) -> Unit,
     onPortChange: (String) -> Unit,
     onConnectClick: () -> Unit,
@@ -57,6 +60,7 @@ fun MainControlContent(
             ip = ip,
             port = port,
             connectionState = connectionState,
+            canConnect = canConnect,
             onIpChange = onIpChange,
             onPortChange = onPortChange,
             onConnectClick = onConnectClick
@@ -76,6 +80,7 @@ fun MainControlContent(
 @Composable
 fun TopConnectionBar(
     ip: String, port: String, connectionState: TcpState,
+    canConnect: Boolean,
     onIpChange: (String) -> Unit, onPortChange: (String) -> Unit, onConnectClick: () -> Unit
 ) {
     Row(
@@ -84,7 +89,7 @@ fun TopConnectionBar(
     ) {
         Button(
             onClick = onConnectClick,
-            enabled = connectionState == TcpState.DISCONNECTED,
+            enabled = canConnect,
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (connectionState == TcpState.CONNECTED) Color(0xFF4CAF50) else Color(0xFF007AFF),
                 disabledContainerColor = Color(0xFF555555)
