@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.viewmodel.AgentViewModel
 import kotlinx.coroutines.delay
@@ -31,7 +32,7 @@ import androidx.compose.ui.window.DialogProperties
 fun AgentSettingsPanel(
     onSetAddAction: (String, () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
-    agentViewModel: AgentViewModel = viewModel()
+    agentViewModel: AgentViewModel = koinViewModel()
 ) {
     val uiState by agentViewModel.uiState.collectAsState()
     val agentData = uiState.agentData

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.KnowledgeEntity
 import com.example.guangnian.feature.console.viewmodel.KnowledgeViewModel
 import kotlinx.coroutines.delay
@@ -29,7 +30,7 @@ import androidx.compose.ui.window.DialogProperties
 fun KnowledgeBasePanel(
     onSetAddAction: (String, () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: KnowledgeViewModel = viewModel()
+    viewModel: KnowledgeViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val knowledgeData = uiState.knowledgeData
