@@ -88,7 +88,7 @@ fun InspectionPointPanel(
         } else {
             onSetAddAction("添加路线") {
                 showRouteEditDialog = RouteBean(
-                    name = "路线_${routes.size + 1}"
+                    route_name = "路线_${routes.size + 1}"
                 )
             }
         }
@@ -98,7 +98,7 @@ fun InspectionPointPanel(
         InspectionPointEditDialog(
             initialPoint = showEditDialog,
             onConfirm = { point ->
-                if (point.pointId.isEmpty()) {
+                if (point.point_id.isEmpty()) {
                     onAddCurrentPosition(point)
                 } else {
                     onUpdatePoint(point)
@@ -114,7 +114,7 @@ fun InspectionPointPanel(
             initialRoute = showRouteEditDialog,
             availablePoints = endpoints,
             onConfirm = { route ->
-                if (route.routeId.isNullOrEmpty()) {
+                if (route.route_id.isNullOrEmpty()) {
                     onAddRoute(route)
                 } else {
                     onUpdateRoute(route)
@@ -133,7 +133,7 @@ fun InspectionPointPanel(
             containerColor = Color(0xFF2C2C2C),
             confirmButton = {
                 TextButton(onClick = {
-                    showDeleteConfirm?.let { onDeletePoint(it.pointId) }
+                    showDeleteConfirm?.let { onDeletePoint(it.point_id) }
                     showDeleteConfirm = null
                 }) {
                     Text("删除", color = Color(0xFFFF5252))
@@ -151,11 +151,11 @@ fun InspectionPointPanel(
         AlertDialog(
             onDismissRequest = { showRouteDeleteConfirm = null },
             title = { Text("确认删除路线", color = Color.White) },
-            text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.name}” 吗？", color = Color.LightGray) },
+            text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.route_name}” 吗？", color = Color.LightGray) },
             containerColor = Color(0xFF2C2C2C),
             confirmButton = {
                 TextButton(onClick = {
-                    showRouteDeleteConfirm?.routeId?.let { onDeleteRoute(it) }
+                    showRouteDeleteConfirm?.route_id?.let { onDeleteRoute(it) }
                     showRouteDeleteConfirm = null
                 }) {
                     Text("删除", color = Color(0xFFFF5252))
@@ -196,7 +196,7 @@ fun InspectionPointPanel(
                     items(endpoints) { point ->
                         InspectionPointLinearItem(
                             point = point,
-                            onClick = { onPointClick(point.pointId) },
+                            onClick = { onPointClick(point.point_id) },
                             onEditClick = { showEditDialog = point },
                             onDeleteClick = { showDeleteConfirm = point }
                         )
@@ -229,7 +229,7 @@ fun InspectionPointPanel(
                     items(routes) { route ->
                         RouteLinearItem(
                             route = route,
-                            onClick = { route.routeId?.let { onRouteClick(it) } },
+                            onClick = { route.route_id?.let { onRouteClick(it) } },
                             onEditClick = { showRouteEditDialog = route },
                             onDeleteClick = { showRouteDeleteConfirm = route }
                         )
@@ -335,7 +335,7 @@ private fun InspectionPointEditDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                val isEdit = initialPoint?.pointId?.isNotEmpty() == true
+                val isEdit = initialPoint?.point_id?.isNotEmpty() == true
                 Text(
                     text = "《 ${if (isEdit) "编辑导览点" else "添加导览点"}",
                     color = Color.White,
@@ -508,7 +508,7 @@ private fun RouteLinearItem(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = route.name.ifEmpty { "未命名路线" },
+                text = route.route_name.ifEmpty { "未命名路线" },
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -540,7 +540,7 @@ private fun RouteEditDialog(
     onConfirm: (RouteBean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var name by remember(initialRoute) { mutableStateOf(initialRoute?.name ?: "") }
+    var route_name by remember(initialRoute) { mutableStateOf(initialRoute?.route_name ?: "") }
     var description by remember(initialRoute) { mutableStateOf(initialRoute?.description ?: "") }
     var loopCount by remember(initialRoute) { mutableStateOf(initialRoute?.loopCount?.toString() ?: "1") }
     
@@ -580,7 +580,7 @@ private fun RouteEditDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                val isEdit = initialRoute?.routeId?.isNotEmpty() == true
+                val isEdit = initialRoute?.route_id?.isNotEmpty() == true
                 Text(
                     text = "《 ${if (isEdit) "编辑路线" else "添加路线"}",
                     color = Color.White,
@@ -593,8 +593,8 @@ private fun RouteEditDialog(
                 )
 
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
+                    value = route_name,
+                    onValueChange = { route_name = it },
                     label = { Text("路线名称") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
@@ -641,7 +641,7 @@ private fun RouteEditDialog(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             selectedPointIds.forEachIndexed { index, id ->
-                                val point = availablePoints.find { it.pointId == id }
+                                val point = availablePoints.find { it.point_id == id }
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -676,14 +676,14 @@ private fun RouteEditDialog(
                     Button(
                         onClick = {
                             val updated = (initialRoute ?: RouteBean()).copy(
-                                name = name,
+                                route_name = route_name,
                                 description = description,
                                 loopCount = loopCount.toIntOrNull() ?: 1,
                                 points = selectedPointIds
                             )
                             onConfirm(updated)
                         },
-                        enabled = name.isNotEmpty() && selectedPointIds.isNotEmpty(),
+                        enabled = route_name.isNotEmpty() && selectedPointIds.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -724,14 +724,14 @@ private fun PointSelectionDialog(
                 Text("选择导览点 (可多选)", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 
                 availablePoints.forEach { point ->
-                    val isSelected = selectedIds.contains(point.pointId)
+                    val isSelected = selectedIds.contains(point.point_id)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (isSelected) Color(0x33007AFF) else Color(0x1AFFFFFF))
                             .clickable {
-                                if (isSelected) selectedIds.remove(point.pointId) else selectedIds.add(point.pointId)
+                                if (isSelected) selectedIds.remove(point.point_id) else selectedIds.add(point.point_id)
                             }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -739,7 +739,7 @@ private fun PointSelectionDialog(
                         Checkbox(
                             checked = isSelected,
                             onCheckedChange = {
-                                if (it == true) selectedIds.add(point.pointId) else selectedIds.remove(point.pointId)
+                                if (it == true) selectedIds.add(point.point_id) else selectedIds.remove(point.point_id)
                             },
                             colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF))
                         )

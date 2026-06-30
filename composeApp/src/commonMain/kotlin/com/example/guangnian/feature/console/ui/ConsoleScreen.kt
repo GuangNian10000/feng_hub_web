@@ -108,7 +108,7 @@ fun InteractionScreen(
                 containerColor = Color(0xFF2C2C2C),
                 confirmButton = {
                     TextButton(onClick = {
-                        consoleViewModel.deleteInspectionPoint(deleteConfirmPoint.pointId)
+                        consoleViewModel.deleteInspectionPoint(deleteConfirmPoint.point_id)
                         consoleViewModel.clearDeleteConfirmPoint()
                     }) {
                         Text("删除", color = Color(0xFFFF5252))

@@ -142,20 +142,20 @@ class ConsoleViewModel(
         }
     }
 
-    fun startInspectionPoint(pointId: String) {
+    fun startInspectionPoint(point_id: String) {
         viewModelScope.launch {
             try {
-                navigationApi.startInspectionPoint(pointId)
+                navigationApi.startInspectionPoint(point_id)
             } catch (e: Exception) {
                 KLog.e(TAG, "开始巡检点失败: ${e.message}")
             }
         }
     }
 
-    fun startRoute(routeId: String) {
+    fun startRoute(route_id: String) {
         viewModelScope.launch {
             try {
-                routeApi.startRoute(routeId)
+                routeApi.startRoute(route_id)
             } catch (e: Exception) {
                 KLog.e(TAG, "开始路线失败: ${e.message}")
             }
@@ -178,9 +178,9 @@ class ConsoleViewModel(
         }
     }
 
-    fun deleteInspectionPoint(pointId: String) {
+    fun deleteInspectionPoint(point_id: String) {
         executeTask("删除巡检点失败") {
-            navigationApi.deleteInspectionPoint(pointId)
+            navigationApi.deleteInspectionPoint(point_id)
             fetchInspectionPoints()
             eventBus.emit(RobotEvent.PointsChanged)
         }
@@ -200,9 +200,9 @@ class ConsoleViewModel(
         }
     }
 
-    fun deleteRoute(routeId: String) {
+    fun deleteRoute(route_id: String) {
         executeTask("删除路线失败") {
-            routeApi.deleteRoute(routeId)
+            routeApi.deleteRoute(route_id)
             fetchRoutes()
         }
     }

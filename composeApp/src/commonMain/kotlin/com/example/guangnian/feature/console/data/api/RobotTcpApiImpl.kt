@@ -8,6 +8,7 @@ import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.data.bean.AgentListResponse
 import com.example.guangnian.feature.console.data.bean.HeartbeatStatusBean
 import com.example.guangnian.feature.console.data.bean.InspectionPointBean
+import com.example.guangnian.feature.console.data.bean.PointListResponse
 import com.example.guangnian.feature.console.data.bean.MapConfigBean
 import com.example.guangnian.feature.console.data.bean.MotionBean
 import com.example.guangnian.feature.console.data.bean.OfflineStateBean
@@ -23,37 +24,39 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 import com.example.guangnian.feature.console.data.bean.RouteBean
+import com.example.guangnian.feature.console.data.bean.RouteListResponse
 import com.example.guangnian.feature.console.data.bean.RouteStatusBean
 
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun executeSynthesis(bean: SpeechSynthesisBean) =
         request<BaseBean>("/voice/tts_synthesis/", mapOf("ttsBean" to Json.encodeToString(bean)),targetNode= TcpNode.TABLET)
 
-    override suspend fun getRoutes() = request<List<RouteBean>>("2dpath/get_routes")
+    override suspend fun getRoutes() = request<RouteListResponse>("slam/route_query_all").routes
 
-    override suspend fun addRoute(route: RouteBean) = request<BaseBean>("2dpath/add_route", mapOf(
-        "name" to route.name,
+    override suspend fun addRoute(route: RouteBean) = request<BaseBean>("slam/route_add", mapOf(
+        "route_id" to (route.route_id ?: ""),
+        "route_name" to route.route_name,
         "description" to route.description,
         "isActive" to route.isActive,
         "points" to (route.points ?: emptyList()),
         "loopCount" to route.loopCount
     ))
 
-    override suspend fun updateRoute(route: RouteBean) = request<BaseBean>("2dpath/update_route", mapOf(
-        "routeId" to (route.routeId ?: ""),
-        "name" to route.name,
+    override suspend fun updateRoute(route: RouteBean) = request<BaseBean>("slam/route_add", mapOf(
+        "route_id" to (route.route_id ?: ""),
+        "route_name" to route.route_name,
         "description" to route.description,
         "isActive" to route.isActive,
         "points" to (route.points ?: emptyList()),
         "loopCount" to route.loopCount
     ))
 
-    override suspend fun deleteRoute(routeId: String) = request<BaseBean>("2dpath/delete_route", mapOf(
-        "routeId" to routeId
+    override suspend fun deleteRoute(route_id: String) = request<BaseBean>("slam/route_delete_by_rid", mapOf(
+        "route_id" to route_id
     ))
 
-    override suspend fun startRoute(routeId: String) = request<BaseBean>("navigation/start_route", mapOf(
-        "routeId" to routeId
+    override suspend fun startRoute(route_id: String) = request<BaseBean>("navigation/start_route", mapOf(
+        "route_id" to route_id
     ))
 
     override suspend fun getRouteStatus() = request<RouteStatusBean>("navigation/get_status")
@@ -233,8 +236,8 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         )
 
     // 前往某标记点（坐标参数可选）
-    override suspend fun startPoint(pointId: String, x: Double?, y: Double?, yaw: Double?) {
-        val msg = mutableMapOf("point_id" to pointId)
+    override suspend fun startPoint(point_id: String, x: Double?, y: Double?, yaw: Double?) {
+        val msg = mutableMapOf("point_id" to point_id)
         x?.let { msg["x"] = it.toString() }
         y?.let { msg["y"] = it.toString() }
         yaw?.let { msg["yaw"] = it.toString() }
@@ -242,8 +245,8 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     }
 
     // 前往巡检点
-    override suspend fun startInspectionPoint(pointId: String) =
-        request<BaseBean>("location/start_point", mapOf("pointId" to pointId))
+    override suspend fun startInspectionPoint(point_id: String) =
+        request<BaseBean>("slam/start_point", mapOf("point_id" to point_id))
 
     // 停止当前导航目标
     override suspend fun stopPosition() = request<Unit>("slam/stop_position")
@@ -256,46 +259,43 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 获取巡检点列表
     override suspend fun getInspectionPoints() =
-        request<List<InspectionPointBean>>("location/get_endpoints")
+        request<PointListResponse>("slam/point_query_all").points
 
     // 创建巡检点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =
-        request<BaseBean>("location/add_endpoint", mapOf(
+        request<BaseBean>("slam/point_add", mapOf(
+            "point_id" to point.point_id,
             "name" to point.name,
+            "x" to (point.position?.x ?: point.x),
+            "y" to (point.position?.y ?: point.y),
+            "yaw" to (point.position?.yaw ?: point.yaw),
             "broadcastContent" to point.broadcastContent,
             "playOnArrival" to point.playOnArrival,
             "photoOnArrival" to point.photoOnArrival,
             "pointType" to point.pointType,
             "stayTime" to point.stayTime,
-            "needRotate" to point.needRotate,
-            "position" to mapOf(
-                "x" to (point.position?.x ?: point.x),
-                "y" to (point.position?.y ?: point.y),
-                "yaw" to (point.position?.yaw ?: point.yaw)
-            )
+            "needRotate" to point.needRotate
         ))
 
     // 更新巡检点
     override suspend fun updateInspectionPoint(point: InspectionPointBean) =
-        request<BaseBean>("location/update_endpoint", mapOf(
-            "pointId" to point.pointId,
+        request<BaseBean>("slam/point_add", mapOf(
+            "point_id" to point.point_id,
             "name" to point.name,
+            "x" to (point.position?.x ?: point.x),
+            "y" to (point.position?.y ?: point.y),
+            "yaw" to (point.position?.yaw ?: point.yaw),
             "broadcastContent" to point.broadcastContent,
             "playOnArrival" to point.playOnArrival,
             "photoOnArrival" to point.photoOnArrival,
             "pointType" to point.pointType,
             "stayTime" to point.stayTime,
-            "needRotate" to point.needRotate,
-            "position" to mapOf(
-                "x" to (point.position?.x ?: point.x),
-                "y" to (point.position?.y ?: point.y),
-                "yaw" to (point.position?.yaw ?: point.yaw)
-            )
+            "needRotate" to point.needRotate
         ))
 
     // 删除巡检点
-    override suspend fun deleteInspectionPoint(pointId: String) =
-        request<BaseBean>("location/delete_endpoint", mapOf("pointId" to pointId))
+    override suspend fun deleteInspectionPoint(point_id: String) =
+        request<BaseBean>("slam/point_delete_by_pid", mapOf("point_id" to point_id))
 
     // 获取全局路径规划
     override suspend fun getGlobalPath() = request<PathPointsBean>("slam/get_global_path")

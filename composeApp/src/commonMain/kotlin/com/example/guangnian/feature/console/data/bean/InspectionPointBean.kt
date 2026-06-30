@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class InspectionPointBean(
     val id: Int = 0,
-    val pointId: String = "",
+    val point_id: String = "",
     val name: String = "", // 点位名称
     val x: Double = 0.0, // x 坐标 (保留兼容)
     val y: Double = 0.0,
@@ -19,6 +19,12 @@ data class InspectionPointBean(
     val stayTime: Double = 0.0, // 停留时间
     val needRotate: Boolean = false, // 是否需要旋转
     val position: PointPosition? = null // 点位序列位置
+)
+
+@Serializable
+data class PointListResponse(
+    val receive: String = "",
+    val points: List<InspectionPointBean> = emptyList()
 )
 
 @Serializable

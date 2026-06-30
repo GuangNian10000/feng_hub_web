@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RouteBean(
     val id: Int? = null,
-    val routeId: String? = null,
-    val name: String = "", // 路线名称
+    val route_id: String? = null,
+    val route_name: String = "", // 路线名称
     val description: String = "",
     val pointIds: String? = null, // 查询返回的点位ID字符串
     val points: List<String>? = null, // 新增/更新使用的点位ID列表
@@ -15,6 +15,12 @@ data class RouteBean(
     val createTime: Long? = null,
     val updateTime: Long? = null,
     val loopCount: Int = 1 // 循环次数
+)
+
+@Serializable
+data class RouteListResponse(
+    val receive: String = "",
+    val routes: List<RouteBean> = emptyList()
 )
 
 @Serializable

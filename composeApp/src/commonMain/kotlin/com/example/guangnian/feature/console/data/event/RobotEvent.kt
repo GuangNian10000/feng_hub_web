@@ -14,7 +14,7 @@ sealed class RobotEvent {
     object PointsChanged : RobotEvent() // 提示需要重新拉取列表
     
     // 机器人状态相关
-    data class ReachGoal(val pointId: String) : RobotEvent()
+    data class ReachGoal(val point_id: String) : RobotEvent()
     data class Error(val message: String) : RobotEvent()
 }
 
