@@ -268,7 +268,7 @@ private fun RobotLayer(
                 points = points,
                 pointMode = PointMode.Points,
                 color = Color.Red.copy(alpha = 0.8f),
-                strokeWidth = 6f / scale,
+                strokeWidth = 6.0f,
                 cap = StrokeCap.Round
             )
         }
