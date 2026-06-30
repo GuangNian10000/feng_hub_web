@@ -27,7 +27,7 @@ import com.example.guangnian.feature.console.data.bean.FavoriteActionBean
 fun ActionPanel(
     armActions: List<ArmActionBean>,
     favoriteActions: List<FavoriteActionBean>,
-    onActionClick: (Int) -> Unit,
+    onActionClick: (Int, String) -> Unit,
     onActionLongClick: (Int, String) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -40,11 +40,11 @@ fun ActionPanel(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0x33FFFFFF))
+                        .background(Color(0x0D000000))
                         .clickable { onRetryClick() }
                         .padding(horizontal = 24.dp, vertical = 8.dp)
                 ) {
-                    Text("点击重试", color = Color.White, fontSize = 14.sp)
+                    Text("点击重试", color = Color(0xFF007AFF), fontSize = 14.sp)
                 }
             }
         }
@@ -63,7 +63,7 @@ fun ActionPanel(
                 ActionItem(
                     text = displayName,
                     isFavorited = isFavorited,
-                    onClick = { onActionClick(armAction.arm_id) },
+                    onClick = { onActionClick(armAction.arm_id, armAction.arm_name) },
                     onLongClick = { onActionLongClick(armAction.arm_id, armAction.arm_name) }
                 )
             }

@@ -128,9 +128,9 @@ fun InspectionPointPanel(
     if (showDeleteConfirm != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("确认删除", color = Color.White) },
-            text = { Text("确定要删除导览点 “${showDeleteConfirm?.name}” 吗？", color = Color.LightGray) },
-            containerColor = Color(0xFF2C2C2C),
+            title = { Text("确认删除", color = Color.Black, fontWeight = FontWeight.Bold) },
+            text = { Text("确定要删除导览点 “${showDeleteConfirm?.name}” 吗？", color = Color.DarkGray) },
+            containerColor = Color.White,
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm?.let { onDeletePoint(it.point_id) }
@@ -141,7 +141,7 @@ fun InspectionPointPanel(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = null }) {
-                    Text("取消", color = Color.White)
+                    Text("取消", color = Color.Gray)
                 }
             }
         )
@@ -150,9 +150,9 @@ fun InspectionPointPanel(
     if (showRouteDeleteConfirm != null) {
         AlertDialog(
             onDismissRequest = { showRouteDeleteConfirm = null },
-            title = { Text("确认删除路线", color = Color.White) },
-            text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.route_name}” 吗？", color = Color.LightGray) },
-            containerColor = Color(0xFF2C2C2C),
+            title = { Text("确认删除路线", color = Color.Black, fontWeight = FontWeight.Bold) },
+            text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.route_name}” 吗？", color = Color.DarkGray) },
+            containerColor = Color.White,
             confirmButton = {
                 TextButton(onClick = {
                     showRouteDeleteConfirm?.route_id?.let { onDeleteRoute(it) }
@@ -163,7 +163,7 @@ fun InspectionPointPanel(
             },
             dismissButton = {
                 TextButton(onClick = { showRouteDeleteConfirm = null }) {
-                    Text("取消", color = Color.White)
+                    Text("取消", color = Color.Gray)
                 }
             }
         )
@@ -327,7 +327,7 @@ private fun InspectionPointEditDialog(
                 .wrapContentHeight()
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF2C2C2C)
+            color = Color.White
         ) {
             Column(
                 modifier = Modifier
@@ -338,7 +338,7 @@ private fun InspectionPointEditDialog(
                 val isEdit = initialPoint?.point_id?.isNotEmpty() == true
                 Text(
                     text = "《 ${if (isEdit) "编辑导览点" else "添加导览点"}",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
@@ -354,7 +354,7 @@ private fun InspectionPointEditDialog(
                         onValueChange = { name = it },
                         label = { Text("点位名称") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
 
                     Box(modifier = Modifier.weight(1f)) {
@@ -364,18 +364,18 @@ private fun InspectionPointEditDialog(
                             label = { Text("点位类型") },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Color.White) },
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Color.Black) },
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showTypeMenu = true })
                         DropdownMenu(
                             expanded = showTypeMenu,
                             onDismissRequest = { showTypeMenu = false },
-                            modifier = Modifier.background(Color(0xFF3D3D3D))
+                            modifier = Modifier.background(Color.White)
                         ) {
                             listOf(0, 1, 2).forEach { type ->
                                 DropdownMenuItem(
-                                    text = { Text(getPointTypeLabel(type), color = Color.White) },
+                                    text = { Text(getPointTypeLabel(type), color = Color.Black) },
                                     onClick = {
                                         pointType = type
                                         showTypeMenu = false
@@ -393,21 +393,21 @@ private fun InspectionPointEditDialog(
                         onValueChange = { x = it },
                         label = { Text("X 坐标") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                     OutlinedTextField(
                         value = y,
                         onValueChange = { y = it },
                         label = { Text("Y 坐标") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                     OutlinedTextField(
                         value = yaw,
                         onValueChange = { yaw = it },
                         label = { Text("角度 (Yaw)") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                 }
 
@@ -418,13 +418,13 @@ private fun InspectionPointEditDialog(
                         onValueChange = { stayTime = it },
                         label = { Text("停留时间 (s)") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
 
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = needRotate, onCheckedChange = { needRotate = it }, colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)))
-                            Text("需要旋转", color = Color.White, fontSize = 12.sp)
+                            Text("需要旋转", color = Color.Black, fontSize = 12.sp)
                         }
                     }
                 }
@@ -435,7 +435,7 @@ private fun InspectionPointEditDialog(
                     onValueChange = { broadcastContent = it },
                     label = { Text("广播内容") },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                 )
 
                 // 5. 动作开关
@@ -443,12 +443,12 @@ private fun InspectionPointEditDialog(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Switch(checked = playOnArrival, onCheckedChange = { playOnArrival = it }, colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF007AFF)))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("到达播放", color = Color.White, fontSize = 12.sp)
+                        Text("到达播放", color = Color.Black, fontSize = 12.sp)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Switch(checked = photoOnArrival, onCheckedChange = { photoOnArrival = it }, colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF007AFF)))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("到达拍照", color = Color.White, fontSize = 12.sp)
+                        Text("到达拍照", color = Color.Black, fontSize = 12.sp)
                     }
                 }
 
@@ -572,7 +572,7 @@ private fun RouteEditDialog(
                 .wrapContentHeight()
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF2C2C2C)
+            color = Color.White
         ) {
             Column(
                 modifier = Modifier
@@ -583,7 +583,7 @@ private fun RouteEditDialog(
                 val isEdit = initialRoute?.route_id?.isNotEmpty() == true
                 Text(
                     text = "《 ${if (isEdit) "编辑路线" else "添加路线"}",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
@@ -597,7 +597,7 @@ private fun RouteEditDialog(
                     onValueChange = { route_name = it },
                     label = { Text("路线名称") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                 )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -606,31 +606,33 @@ private fun RouteEditDialog(
                         onValueChange = { loopCount = it },
                         label = { Text("循环次数") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
                         label = { Text("路线描述") },
                         modifier = Modifier.weight(2f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("路线点位序列", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    Button(
+                    Text("路线点位序列", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    OutlinedButton(
                         onClick = { showPointSelector = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF007AFF)),
+                        border = BorderStroke(1.dp, Color(0xFF007AFF)),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
+                        modifier = Modifier.height(32.dp),
+                        shape = RoundedCornerShape(6.dp)
                     ) {
                         Text("+ 添加点位", fontSize = 12.sp)
                     }
                 }
 
                 // 已选点位垂直列表
-                Box(modifier = Modifier.fillMaxWidth().border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp)).padding(8.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().border(1.dp, Color(0x33000000), RoundedCornerShape(8.dp)).padding(8.dp)) {
                     if (selectedPointIds.isEmpty()) {
                         Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
                             Text("尚未选择点位，请点击右上方按钮添加", color = Color.Gray, fontSize = 13.sp)
@@ -646,7 +648,7 @@ private fun RouteEditDialog(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0x1AFFFFFF))
+                                        .background(Color(0x0A000000))
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -654,7 +656,7 @@ private fun RouteEditDialog(
                                     Spacer(Modifier.width(12.dp))
                                     Text(
                                         text = point?.name ?: "未知点位 ($id)",
-                                        color = Color.White,
+                                        color = Color.Black,
                                         fontSize = 15.sp,
                                         modifier = Modifier.weight(1f)
                                     )
@@ -713,7 +715,7 @@ private fun PointSelectionDialog(
                 .wrapContentHeight()
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF2C2C2C)
+            color = Color.White
         ) {
             Column(
                 modifier = Modifier
@@ -721,7 +723,7 @@ private fun PointSelectionDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("选择导览点 (可多选)", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("选择导览点 (可多选)", color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 
                 availablePoints.forEach { point ->
                     val isSelected = selectedIds.contains(point.point_id)
@@ -729,7 +731,7 @@ private fun PointSelectionDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) Color(0x33007AFF) else Color(0x1AFFFFFF))
+                            .background(if (isSelected) Color(0x33007AFF) else Color(0x0A000000))
                             .clickable {
                                 if (isSelected) selectedIds.remove(point.point_id) else selectedIds.add(point.point_id)
                             }
@@ -744,7 +746,7 @@ private fun PointSelectionDialog(
                             colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF))
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(point.name, color = Color.White, fontSize = 15.sp)
+                        Text(point.name, color = Color.Black, fontSize = 15.sp)
                     }
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -755,7 +757,7 @@ private fun PointSelectionDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
                         enabled = selectedIds.isNotEmpty()
                     ) {
-                        Text("添加选定 (${selectedIds.size})")
+                        Text("添加选定 (${selectedIds.size})", color = Color.White)
                     }
                 }
             }

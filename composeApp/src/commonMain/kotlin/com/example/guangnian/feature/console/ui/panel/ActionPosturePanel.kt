@@ -32,7 +32,7 @@ import com.example.guangnian.feature.console.data.bean.PostureBean
 fun ActionPosturePanel(
     postures: List<PostureBean>,
     favoriteActions: List<FavoriteActionBean>,
-    onActionClick: (String) -> Unit,
+    onActionClick: (String, String) -> Unit,
     onActionLongClick: (String, String) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -41,12 +41,13 @@ fun ActionPosturePanel(
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = "暂无动作数据，点击重试",
-                color = Color.Gray,
+                color = Color(0xFF007AFF),
                 fontSize = 14.sp,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0x0D000000))
                     .clickable { onRetryClick() }
-                    .padding(16.dp)
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
             )
         }
     } else {
@@ -64,7 +65,7 @@ fun ActionPosturePanel(
                 ActionItem(
                     text = displayName,
                     isFavorited = isFavorited,
-                    onClick = { onActionClick(posture.posture_name) },
+                    onClick = { onActionClick(posture.posture_name, posture.name) },
                     onLongClick = { onActionLongClick(posture.posture_name, posture.name) }
                 )
             }

@@ -262,9 +262,9 @@ private fun ConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title, color = Color.White, fontSize = 16.sp) },
-        text = { Text(content, color = Color.LightGray, fontSize = 14.sp) },
-        containerColor = Color(0xFF2C2C2C),
+        title = { Text(title, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+        text = { Text(content, color = Color.DarkGray, fontSize = 14.sp) },
+        containerColor = Color.White,
         confirmButton = {
             TextButton(onClick = onConfirm) { Text("确定", color = Color(0xFF007AFF)) }
         },
@@ -301,7 +301,7 @@ private fun AgentEditDialog(
                 .wrapContentHeight()
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF2C2C2C)
+            color = Color.White
         ) {
             Column(
                 modifier = Modifier
@@ -311,7 +311,7 @@ private fun AgentEditDialog(
             ) {
                 Text(
                     text = "《 $title",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
@@ -332,8 +332,10 @@ private fun AgentEditDialog(
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Gray,
+                            unfocusedLabelColor = Color.Gray
                         )
                     )
 
@@ -346,8 +348,10 @@ private fun AgentEditDialog(
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black,
+                                focusedLabelColor = Color.Gray,
+                                unfocusedLabelColor = Color.Gray
                             )
                         )
                         // 拦截点击事件唤起全屏选择器
@@ -369,8 +373,10 @@ private fun AgentEditDialog(
                         .heightIn(min = 150.dp), // 增加提示词输入框高度
                     maxLines = 15,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Gray,
+                        unfocusedLabelColor = Color.Gray
                     )
                 )
 
@@ -484,14 +490,14 @@ private fun VoiceSelectionDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(), // 强制全屏
-            color = Color(0xFF1E1E1E) // 全屏深色背景
+            color = Color.White // 全屏背景改为白色
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
 
                 // 1. 顶部标题
                 Text(
                     text = "《 选择音色",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
@@ -510,11 +516,11 @@ private fun VoiceSelectionDialog(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(if (isSelected) Color(0xFF007AFF) else Color(0x33FFFFFF))
+                                .background(if (isSelected) Color(0xFF007AFF) else Color(0x0A000000))
                                 .clickable { selectedCategory = category }
                                 .padding(horizontal = 16.dp, vertical = 6.dp)
                         ) {
-                            Text(category, color = Color.White, fontSize = 14.sp)
+                            Text(category, color = if (isSelected) Color.White else Color.Black, fontSize = 14.sp)
                         }
                     }
                 }
@@ -538,7 +544,7 @@ private fun VoiceSelectionDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) Color(0x4D007AFF) else Color(0x1AFFFFFF))
+                                    .background(if (isSelected) Color(0x1A007AFF) else Color(0x0A000000))
                                     .border(1.dp, if (isSelected) Color(0xFF007AFF) else Color.Transparent, RoundedCornerShape(8.dp))
                                     .clickable { tempSelectedVoice = voice }
                                     .padding(12.dp),
@@ -552,9 +558,9 @@ private fun VoiceSelectionDialog(
                                 Spacer(modifier = Modifier.width(12.dp))
 
                                 Column {
-                                    Text(text = voice.sex.ifEmpty { "默认" }, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(text = voice.sex.ifEmpty { "默认" }, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = "平台: ${voice.source} | 语言: ${voice.language}", color = Color(0xFFAAAAAA), fontSize = 12.sp)
+                                    Text(text = "平台: ${voice.source} | 语言: ${voice.language}", color = Color.Gray, fontSize = 12.sp)
                                 }
                             }
                         }
@@ -580,7 +586,7 @@ private fun VoiceSelectionDialog(
 
                         Text(
                             text = "${currentPage + 1} / $totalPages",
-                            color = Color.White,
+                            color = Color.Black,
                             modifier = Modifier.padding(horizontal = 12.dp),
                             fontSize = 14.sp
                         )

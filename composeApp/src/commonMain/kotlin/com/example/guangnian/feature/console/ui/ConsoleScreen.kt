@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.utils.KLog
@@ -51,6 +52,9 @@ fun InteractionScreen(
         addActionText = ""
     }
     var isInspectionPaused by remember { mutableStateOf(false) }
+
+    // 动作执行确认弹窗状态
+    var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
 
     val menus = listOf("姿态动作", "动作", "导览管理", "语音合成", "智能体设置", "地图录制", "知识库")
 
@@ -103,9 +107,9 @@ fun InteractionScreen(
         if (deleteConfirmPoint != null) {
             AlertDialog(
                 onDismissRequest = { consoleViewModel.clearDeleteConfirmPoint() },
-                title = { Text("确认删除", color = Color.White) },
-                text = { Text("确定要删除导览点 “${deleteConfirmPoint.name}” 吗？", color = Color.LightGray) },
-                containerColor = Color(0xFF2C2C2C),
+                title = { Text("确认删除", color = Color.Black, fontWeight = FontWeight.Bold) },
+                text = { Text("确定要删除导览点 “${deleteConfirmPoint.name}” 吗？", color = Color.DarkGray) },
+                containerColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         consoleViewModel.deleteInspectionPoint(deleteConfirmPoint.point_id)
@@ -116,7 +120,29 @@ fun InteractionScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { consoleViewModel.clearDeleteConfirmPoint() }) {
-                        Text("取消", color = Color.White)
+                        Text("取消", color = Color.Gray)
+                    }
+                }
+            )
+        }
+
+        if (confirmActionPayload != null) {
+            AlertDialog(
+                onDismissRequest = { confirmActionPayload = null },
+                title = { Text("确认执行", color = Color.Black, fontWeight = FontWeight.Bold) },
+                text = { Text("确定要执行 “${confirmActionPayload?.first}” 吗？", color = Color.DarkGray) },
+                containerColor = Color.White,
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmActionPayload?.second?.invoke()
+                        confirmActionPayload = null
+                    }) {
+                        Text("确定", color = Color(0xFF007AFF))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmActionPayload = null }) {
+                        Text("取消", color = Color.Gray)
                     }
                 }
             )
@@ -153,10 +179,12 @@ fun InteractionScreen(
             onExpandToggle = { isPosturesExpanded = !isPosturesExpanded },
             favoriteActions = uiState.favoriteActions,
             onActionClick = { fav ->
-                if (fav.isArmAction) {
-                    consoleViewModel.sendArmCommand(fav.id.toInt())
-                } else {
-                    consoleViewModel.sendPostureCommand(fav.id)
+                confirmActionPayload = fav.name to {
+                    if (fav.isArmAction) {
+                        consoleViewModel.sendArmCommand(fav.id.toInt())
+                    } else {
+                        consoleViewModel.sendPostureCommand(fav.id)
+                    }
                 }
             },
             modifier = Modifier
@@ -165,7 +193,9 @@ fun InteractionScreen(
         )
 
         EmergencyStopButton(
-            onClick = { consoleViewModel.stopAll() },
+            onClick = {
+                confirmActionPayload = "急停" to { consoleViewModel.stopAll() }
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 180.dp, bottom = 24.dp)
@@ -213,14 +243,18 @@ fun InteractionScreen(
                         "姿态动作" -> ActionPosturePanel(
                             postures = uiState.postures,
                             favoriteActions = uiState.favoriteActions,
-                            onActionClick = { consoleViewModel.sendPostureCommand(it) },
+                            onActionClick = { id, name ->
+                                confirmActionPayload = name to { consoleViewModel.sendPostureCommand(id) }
+                            },
                             onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id, name, false) },
                             onRetryClick = { consoleViewModel.fetchPostureList() }
                         )
                         "动作" -> ActionPanel(
                             armActions = uiState.armActions,
                             favoriteActions = uiState.favoriteActions,
-                            onActionClick = { consoleViewModel.sendArmCommand(it) },
+                            onActionClick = { id, name ->
+                                confirmActionPayload = name to { consoleViewModel.sendArmCommand(id) }
+                            },
                             onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id.toString(), name, true) },
                             onRetryClick = { consoleViewModel.fetchArmList() }
                         )
@@ -229,11 +263,17 @@ fun InteractionScreen(
                             routes = uiState.routes,
                             robotPosition = mapUiState.robotPosition,
                             selectedTab = inspectionTab,
-                            onPointClick = { consoleViewModel.startInspectionPoint(it) },
+                            onPointClick = { id ->
+                                val name = uiState.endpoints.find { it.point_id == id }?.name ?: "该点位"
+                                confirmActionPayload = "前往导览点 $name" to { consoleViewModel.startInspectionPoint(id) }
+                            },
                             onAddCurrentPosition = { consoleViewModel.addInspectionPoint(it) },
                             onDeletePoint = { consoleViewModel.deleteInspectionPoint(it) },
                             onUpdatePoint = { consoleViewModel.updateInspectionPoint(it) },
-                            onRouteClick = { consoleViewModel.startRoute(it) },
+                            onRouteClick = { id ->
+                                val name = uiState.routes.find { it.route_id == id }?.route_name ?: "该路线"
+                                confirmActionPayload = "开始路线 $name" to { consoleViewModel.startRoute(id) }
+                            },
                             onAddRoute = { consoleViewModel.addRoute(it) },
                             onDeleteRoute = { consoleViewModel.deleteRoute(it) },
                             onUpdateRoute = { consoleViewModel.updateRoute(it) },

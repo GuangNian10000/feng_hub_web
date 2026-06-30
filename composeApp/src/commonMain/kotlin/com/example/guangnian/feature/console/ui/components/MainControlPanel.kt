@@ -125,7 +125,7 @@ fun PanelAddButton(
 ) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
         shape = RoundedCornerShape(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
         modifier = Modifier.height(32.dp)

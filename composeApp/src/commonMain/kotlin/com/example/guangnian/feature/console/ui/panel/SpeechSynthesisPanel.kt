@@ -146,6 +146,7 @@ fun SpeechSynthesisPanel(
 
     var showEditDialog by remember { mutableStateOf<SpeechSynthesisBean?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var showConfirmExecute by remember { mutableStateOf<SpeechSynthesisBean?>(null) }
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -182,7 +183,7 @@ fun SpeechSynthesisPanel(
                     items(listData) { item ->
                         SynthesisItemBox(
                             bean = item,
-                            onExecute = { viewModel.executeSynthesis(item) },
+                            onExecute = { showConfirmExecute = item },
                             onEdit = { showEditDialog = item },
                             onDelete = { viewModel.deleteItem(item.id) }
                         )
@@ -239,6 +240,28 @@ fun SpeechSynthesisPanel(
                     showAddDialog = false
                 },
                 onDismiss = { showAddDialog = false }
+            )
+        }
+
+        if (showConfirmExecute != null) {
+            AlertDialog(
+                onDismissRequest = { showConfirmExecute = null },
+                title = { Text("确认合成", color = Color.Black, fontWeight = FontWeight.Bold) },
+                text = { Text("确定要执行语料 “${showConfirmExecute?.text}” 的合成吗？", color = Color.DarkGray) },
+                containerColor = Color.White,
+                confirmButton = {
+                    TextButton(onClick = {
+                        showConfirmExecute?.let { viewModel.executeSynthesis(it) }
+                        showConfirmExecute = null
+                    }) {
+                        Text("确定", color = Color(0xFF007AFF))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmExecute = null }) {
+                        Text("取消", color = Color.Gray)
+                    }
+                }
             )
         }
     }

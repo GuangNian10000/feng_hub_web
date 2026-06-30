@@ -1,6 +1,7 @@
 package com.example.guangnian.feature.console.ui.panel
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -208,9 +209,9 @@ private fun ConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title, color = Color.White, fontSize = 16.sp) },
-        text = { Text(content, color = Color.LightGray, fontSize = 14.sp) },
-        containerColor = Color(0xFF2C2C2C),
+        title = { Text(title, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+        text = { Text(content, color = Color.DarkGray, fontSize = 14.sp) },
+        containerColor = Color.White,
         confirmButton = {
             TextButton(onClick = onConfirm) { Text("确定", color = Color(0xFF007AFF)) }
         },
@@ -240,7 +241,7 @@ private fun KnowledgeEditDialog(
                 .wrapContentHeight()
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF2C2C2C)
+            color = Color.White
         ) {
             Column(
                 modifier = Modifier
@@ -250,7 +251,7 @@ private fun KnowledgeEditDialog(
             ) {
                 Text(
                     text = "《 $title",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
@@ -265,8 +266,10 @@ private fun KnowledgeEditDialog(
                     label = { Text("问题 (Question)") },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Gray,
+                        unfocusedLabelColor = Color.Gray
                     )
                 )
 
@@ -279,8 +282,10 @@ private fun KnowledgeEditDialog(
                         .heightIn(min = 120.dp),
                     maxLines = 10,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Gray,
+                        unfocusedLabelColor = Color.Gray
                     )
                 )
 
