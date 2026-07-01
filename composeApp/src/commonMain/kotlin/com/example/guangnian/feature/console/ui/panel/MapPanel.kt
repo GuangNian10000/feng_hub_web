@@ -81,7 +81,7 @@ fun MapBackgroundLayer(
                         },
                         onTap = { screenOffset ->
                             when (uiState.interactionMode) {
-                                MapInteractionMode.PICK_ORIENTATION, MapInteractionMode.PICK_ROBOT_ORIENTATION -> {
+                                MapInteractionMode.PICK_ORIENTATION, MapInteractionMode.PICK_ROBOT_ORIENTATION, MapInteractionMode.PICK_GO_HERE_ORIENTATION -> {
                                     val mapPixelOffset = (screenOffset - offset) / scale
                                     val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
                                     mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
@@ -355,7 +355,9 @@ private fun InteractionLayer(
     if ((interactionMode == MapInteractionMode.PICK_ORIENTATION || 
         interactionMode == MapInteractionMode.CONFIRM_POINT ||
         interactionMode == MapInteractionMode.PICK_ROBOT_ORIENTATION ||
-        interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION) && tempPoint != null) {
+        interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION ||
+        interactionMode == MapInteractionMode.PICK_GO_HERE_ORIENTATION ||
+        interactionMode == MapInteractionMode.CONFIRM_GO_HERE) && tempPoint != null) {
         Canvas(modifier = modifier) {
             val px = MapTransformUtils.worldToPixel(tempPoint.x, tempPoint.y, config, mapHeightPx)
             val adaptiveFactor = 1f / sqrt(scale)
@@ -400,16 +402,16 @@ private fun MapControlOverlays(
                     HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
                     Text(
                         "去此处",
-                        color = Color.LightGray,
+                        color = Color.White,
                         fontSize = 14.sp,
-                        modifier = Modifier.fillMaxWidth().clickable { /* TODO */ }.padding(12.dp)
+                        modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onSelectGoHere() }.padding(12.dp)
                     )
                 }
             }
         }
     }
     
-    if ((uiState.interactionMode == MapInteractionMode.CONFIRM_POINT || uiState.interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION) 
+    if ((uiState.interactionMode == MapInteractionMode.CONFIRM_POINT || uiState.interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION || uiState.interactionMode == MapInteractionMode.CONFIRM_GO_HERE) 
         && uiState.tempPoint != null && config != null) {
         val px = MapTransformUtils.worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
         val screenX = px.x * scale + offset.x
@@ -445,10 +447,10 @@ private fun MapControlOverlays(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable { 
-                            if (uiState.interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION) {
-                                mapViewModel.onConfirmSetRobotPosition()
-                            } else {
-                                mapViewModel.onConfirmCreatePoint()
+                            when (uiState.interactionMode) {
+                                MapInteractionMode.CONFIRM_ROBOT_POSITION -> mapViewModel.onConfirmSetRobotPosition()
+                                MapInteractionMode.CONFIRM_GO_HERE -> mapViewModel.onConfirmGoHere()
+                                else -> mapViewModel.onConfirmCreatePoint()
                             }
                         }.padding(vertical = 12.dp, horizontal = 8.dp)
                     )
@@ -457,7 +459,9 @@ private fun MapControlOverlays(
         }
     }
     
-    if (uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION || uiState.interactionMode == MapInteractionMode.PICK_ROBOT_ORIENTATION) {
+    if (uiState.interactionMode == MapInteractionMode.PICK_ORIENTATION || 
+        uiState.interactionMode == MapInteractionMode.PICK_ROBOT_ORIENTATION ||
+        uiState.interactionMode == MapInteractionMode.PICK_GO_HERE_ORIENTATION) {
         Box(
             modifier = Modifier.fillMaxSize().padding(top = 100.dp),
             contentAlignment = Alignment.TopCenter
