@@ -97,7 +97,7 @@ fun MapBackgroundLayer(
                                     val adaptiveFactor = 1f / sqrt(scale)
                                     val screenPointRadius = (12f * adaptiveFactor) * scale
                                     val clickRadius = (screenPointRadius * 2.5f).coerceAtLeast(100f)
-                                    
+
                                     val clickedPoint = uiState.endpoints.find { ep ->
                                         val realX = ep.position?.x ?: ep.x
                                         val realY = ep.position?.y ?: ep.y
@@ -108,9 +108,23 @@ fun MapBackgroundLayer(
                                     }
                                     
                                     if (clickedPoint != null) {
+                                        // 如果点击到了导览点，正常响应（即使此处有机器人）
                                         mapViewModel.onPointClick(screenOffset, clickedPoint)
                                     } else {
-                                        mapViewModel.clearInteraction()
+                                        // 如果没点击到导览点，检测是否点击了机器人
+                                        val isClickedRobot = uiState.robotPosition?.let { robot ->
+                                            val px = MapTransformUtils.worldToPixel(robot.x, robot.y, config, mapHeightPx)
+                                            val spx = px.x * scale + offset.x
+                                            val spy = px.y * scale + offset.y
+                                            hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
+                                        } ?: false
+
+                                        if (isClickedRobot) {
+                                            // 机器人位置不可点击，不做任何处理（不触发弹窗，也不清除当前交互）
+                                            // 或者也可以调用 clearInteraction() 取决于交互习惯，这里选择不做操作以符合“点不了”的直觉
+                                        } else {
+                                            mapViewModel.clearInteraction()
+                                        }
                                     }
                                 }
                             }
