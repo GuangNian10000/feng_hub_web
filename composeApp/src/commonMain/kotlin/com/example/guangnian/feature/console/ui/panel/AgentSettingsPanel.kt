@@ -72,24 +72,26 @@ fun AgentSettingsPanel(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 6.dp)) {
-            if (agentData.list.isEmpty()) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("暂无智能体数据", color = Color.LightGray, fontSize = 13.sp)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(agentData.list) { agent ->
-                        val isSelected = agent.id == agentData.agent.id
-                        AgentItemBox(
-                            agent = agent,
-                            isSelected = isSelected,
-                            onSelect = { if (!isSelected) showSelectConfirm = agent },
-                            onEdit = { showEditDialog = agent },
-                            onDelete = { showDeleteConfirm = agent }
-                        )
+            if (!isLoading) {
+                if (agentData.list.isEmpty()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("暂无智能体数据", color = Color.LightGray, fontSize = 13.sp)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(agentData.list) { agent ->
+                            val isSelected = agent.id == agentData.agent.id
+                            AgentItemBox(
+                                agent = agent,
+                                isSelected = isSelected,
+                                onSelect = { if (!isSelected) showSelectConfirm = agent },
+                                onEdit = { showEditDialog = agent },
+                                onDelete = { showDeleteConfirm = agent }
+                            )
+                        }
                     }
                 }
             }

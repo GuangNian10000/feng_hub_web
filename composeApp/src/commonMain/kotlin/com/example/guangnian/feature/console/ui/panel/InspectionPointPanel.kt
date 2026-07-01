@@ -477,10 +477,16 @@ private fun InspectionPointEditDialog(
                             )
                             onConfirm(updated)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        enabled = name.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF007AFF),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFF007AFF).copy(alpha = 0.4f),
+                            disabledContentColor = Color.White.copy(alpha = 0.7f)
+                        ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
-                        Text("保存配置", color = Color.White)
+                        Text("保存配置")
                     }
                 }
             }
@@ -686,10 +692,15 @@ private fun RouteEditDialog(
                             onConfirm(updated)
                         },
                         enabled = route_name.isNotEmpty() && selectedPointIds.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF007AFF),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFF007AFF).copy(alpha = 0.4f),
+                            disabledContentColor = Color.White.copy(alpha = 0.7f)
+                        ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
-                        Text("保存路线", color = Color.White)
+                        Text("保存路线")
                     }
                 }
             }
@@ -754,10 +765,15 @@ private fun PointSelectionDialog(
                     Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = { onConfirm(selectedIds.toList()) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF007AFF),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFF007AFF).copy(alpha = 0.4f),
+                            disabledContentColor = Color.White.copy(alpha = 0.7f)
+                        ),
                         enabled = selectedIds.isNotEmpty()
                     ) {
-                        Text("添加选定 (${selectedIds.size})", color = Color.White)
+                        Text("添加选定 (${selectedIds.size})")
                     }
                 }
             }
