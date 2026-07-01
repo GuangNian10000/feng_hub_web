@@ -41,7 +41,7 @@ fun ActionPosturePanel(
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = "暂无动作数据，点击重试",
-                color = Color(0xFF007AFF),
+                color = Color.White,
                 fontSize = 14.sp,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))

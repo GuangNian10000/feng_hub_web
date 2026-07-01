@@ -35,7 +35,7 @@ fun ActionPanel(
     if (armActions.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("暂无动作数据", color = Color.Gray, fontSize = 14.sp)
+                Text("暂无动作数据", color = Color.White, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(
                     modifier = Modifier
@@ -44,7 +44,7 @@ fun ActionPanel(
                         .clickable { onRetryClick() }
                         .padding(horizontal = 24.dp, vertical = 8.dp)
                 ) {
-                    Text("点击重试", color = Color(0xFF007AFF), fontSize = 14.sp)
+                    Text("点击重试", color = Color.White, fontSize = 14.sp)
                 }
             }
         }
