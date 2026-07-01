@@ -13,6 +13,7 @@ import com.russhwolf.settings.Settings
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.client.plugins.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -38,7 +39,11 @@ data class MapUiState(
     val selectedPoint: InspectionPointBean? = null,
     val menuPosition: androidx.compose.ui.geometry.Offset? = null,
     val tempPoint: Point2DBean? = null,
-    val tempYaw: Float = 0f
+    val tempYaw: Float = 0f,
+    // 加载状态
+    val isMapLoading: Boolean = false,
+    val mapLoadingProgress: Float = 0f,
+    val loadingStage: String = ""
 )
 
 enum class MapInteractionMode {
@@ -156,14 +161,39 @@ class MapViewModel(
     private fun loadMapImage(url: String) {
         viewModelScope.launch(Dispatchers.Default) {
             try {
-                val response = httpClient.get(url)
+                _uiState.update { it.copy(isMapLoading = true, mapLoadingProgress = 0f, loadingStage = "准备下载...") }
+                val response = httpClient.get(url) {
+                    onDownload { bytesSentTotal, contentLength ->
+                        if (contentLength != null && contentLength > 0) {
+                            val progress = bytesSentTotal.toFloat() / contentLength
+                            _uiState.update { 
+                                it.copy(
+                                    mapLoadingProgress = progress * 0.7f,
+                                    loadingStage = "下载地图: ${(progress * 100).toInt()}%"
+                                )
+                            }
+                        }
+                    }
+                }
                 val bytes = response.readBytes()
+                _uiState.update { it.copy(mapLoadingProgress = 0.8f, loadingStage = "解析地图数据...") }
+                
                 val bitmap = PgmUtils.decodePgmToBitmap(bytes)
                 if (bitmap != null) {
-                    _uiState.update { it.copy(mapImage = bitmap) }
+                    _uiState.update { it.copy(mapLoadingProgress = 0.9f, loadingStage = "准备渲染...") }
+                    delay(300) // 给予UI反馈时间
+                    _uiState.update { 
+                        it.copy(
+                            mapImage = bitmap, 
+                            mapLoadingProgress = 1.0f, 
+                            loadingStage = "渲染完成",
+                            isMapLoading = false
+                        ) 
+                    }
                 }
             } catch (e: Exception) {
-                KLog.e("MapViewModel", "地图解析失败: ${e.message}")
+                KLog.e("MapViewModel", "地图加载失败: ${e.message}")
+                _uiState.update { it.copy(isMapLoading = false, loadingStage = "加载失败") }
             }
         }
     }

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
+import androidx.compose.material3.CircularProgressIndicator
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.core.designsystem.components.GlassBox
@@ -145,10 +146,13 @@ fun MapBackgroundLayer(
                 }
 
             StaticMapLayer(mapBitmap, layerModifier)
-            PathLayer(uiState.globalPath, uiState.localPath, config, mapHeightPx, scale, layerModifier)
-            MarkerLayer(uiState.endpoints, config, mapHeightPx, scale, textMeasurer, layerModifier)
-            RobotLayer(uiState.robotPosition, uiState.pointCloud, config, mapHeightPx, scale, layerModifier)
-            InteractionLayer(uiState.interactionMode, uiState.tempPoint, uiState.tempYaw, config, mapHeightPx, scale, layerModifier)
+            
+            if (!uiState.isMapLoading && mapBitmap != null) {
+                PathLayer(uiState.globalPath, uiState.localPath, config, mapHeightPx, scale, layerModifier)
+                MarkerLayer(uiState.endpoints, config, mapHeightPx, scale, textMeasurer, layerModifier)
+                RobotLayer(uiState.robotPosition, uiState.pointCloud, config, mapHeightPx, scale, layerModifier)
+                InteractionLayer(uiState.interactionMode, uiState.tempPoint, uiState.tempYaw, config, mapHeightPx, scale, layerModifier)
+            }
 
             if (config == null) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -157,7 +161,55 @@ fun MapBackgroundLayer(
             }
         }
 
+        if (uiState.isMapLoading) {
+            MapLoadingOverlay(uiState.mapLoadingProgress, uiState.loadingStage)
+        }
+
         MapControlOverlays(uiState, mapViewModel, config, mapHeightPx, scale, offset)
+    }
+}
+
+@Composable
+private fun MapLoadingOverlay(progress: Float, stage: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0x99000000)),
+        contentAlignment = Alignment.Center
+    ) {
+        GlassBox(
+            modifier = Modifier.width(240.dp).padding(20.dp),
+            bgColor = Color(0xCC1E1E1E)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.size(80.dp),
+                        color = Color(0xFF007AFF),
+                        strokeWidth = 6.dp,
+                        trackColor = Color.White.copy(alpha = 0.1f),
+                    )
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = stage,
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
 
