@@ -1,6 +1,6 @@
 package com.example.guangnian.feature.main.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,12 +9,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.DrawableResource
+import guangnian.composeapp.generated.resources.*
 
 @Composable
 fun MainControlScreen(
@@ -49,29 +53,39 @@ fun MainControlContent(
     onConnectClick: () -> Unit,
     onNavigateToInteraction: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF1E1E1E))
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-    ) {
-        TopConnectionBar(
-            ip = ip,
-            port = port,
-            connectionState = connectionState,
-            canConnect = canConnect,
-            onIpChange = onIpChange,
-            onPortChange = onPortChange,
-            onConnectClick = onConnectClick
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 背景图片
+        Image(
+            painter = painterResource(Res.drawable.bg_main),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        FunctionGrid(
-            modifier = Modifier.weight(1f),
-            onNavigateToInteraction = onNavigateToInteraction
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        BottomStatusBar(connectionState = connectionState)
+        
+        // 主内容层
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+        ) {
+            TopConnectionBar(
+                ip = ip,
+                port = port,
+                connectionState = connectionState,
+                canConnect = canConnect,
+                onIpChange = onIpChange,
+                onPortChange = onPortChange,
+                onConnectClick = onConnectClick
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            FunctionGrid(
+                modifier = Modifier.weight(1f),
+                onNavigateToInteraction = onNavigateToInteraction
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            BottomStatusBar(connectionState = connectionState)
+        }
     }
 }
 
@@ -133,29 +147,33 @@ fun FunctionGrid(
     onNavigateToInteraction: () -> Unit
 ) {
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-        // 绑定跳转回调至综合控制面板。
-        MenuCard("综合控制", Modifier.weight(1f), onClick = onNavigateToInteraction)
+        // 总控制模块
+        MenuCard("总控制", Res.drawable.ic_control, Modifier.weight(1f), onClick = onNavigateToInteraction)
         Spacer(modifier = Modifier.width(24.dp))
-        MenuCard("建图录制", Modifier.weight(1f))
+        // 示教动作模块
+        MenuCard("示教动作", Res.drawable.ic_teach, Modifier.weight(1f))
         Spacer(modifier = Modifier.width(24.dp))
-        MenuCard("图传视频", Modifier.weight(1f))
+        // 人脸识别模块
+        MenuCard("人脸识别", Res.drawable.ic_face, Modifier.weight(1f))
     }
 }
 
 @Composable
-fun MenuCard(title: String, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+fun MenuCard(title: String, icon: DrawableResource, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     Card(
         modifier = modifier.fillMaxHeight().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2C)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xAA2C2C2C)), // 稍微透明一点以显示背景
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
         ) {
-            Box(modifier = Modifier.size(80.dp).background(Color(0xFF444444), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                Text("图", color = Color.Gray)
-            }
+            Image(
+                painter = painterResource(icon),
+                contentDescription = title,
+                modifier = Modifier.size(80.dp)
+            )
             Spacer(modifier = Modifier.height(16.dp))
             Text(text = title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
