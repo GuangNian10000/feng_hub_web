@@ -178,34 +178,34 @@ private fun MapLoadingOverlay(progress: Float, stage: String) {
         contentAlignment = Alignment.Center
     ) {
         GlassBox(
-            modifier = Modifier.width(240.dp).padding(20.dp),
+            modifier = Modifier.padding(20.dp),
             bgColor = Color(0xCC1E1E1E)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            Row(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
                         progress = { progress },
-                        modifier = Modifier.size(80.dp),
+                        modifier = Modifier.size(56.dp),
                         color = Color(0xFF007AFF),
-                        strokeWidth = 6.dp,
+                        strokeWidth = 4.dp,
                         trackColor = Color.White.copy(alpha = 0.1f),
                     )
                     Text(
                         text = "${(progress * 100).toInt()}%",
                         color = Color.White,
-                        fontSize = 16.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.width(20.dp))
                 Text(
                     text = stage,
                     color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -312,7 +312,7 @@ private fun RobotLayer(
         val robotRadius = (12f * adaptiveFactor).coerceAtLeast(10f / scale)
         drawCircle(color = Color(0xFFFFA500), radius = robotRadius, center = px)
         val arrowLength = (16f * adaptiveFactor).coerceAtLeast(14f / scale)
-        drawDirectionArrow(px, arrowLength, robotPosition.yaw, Color.Red, offset = robotRadius * 0.5f)
+        drawDirectionArrow(px, arrowLength, robotPosition.yaw, Color.Red, offset = robotRadius * 1.4f)
 
         if (worldCloud.isNotEmpty()) {
             val points = worldCloud.map { MapTransformUtils.worldToPixel(it.x, it.y, config, mapHeightPx) }
