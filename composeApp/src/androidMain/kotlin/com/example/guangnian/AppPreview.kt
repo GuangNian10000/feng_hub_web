@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.main.ui.MainControlContent
+import com.example.guangnian.feature.main.viewmodel.ControlType
 
 @Preview(
     device = "spec:width=896dp,height=414dp,orientation=landscape",
@@ -20,10 +21,12 @@ fun AppLandscapePreview() {
             port = "8080",
             connectionState = TcpState.DISCONNECTED,
             canConnect = true,
+            controlType = ControlType.DOG,
             onIpChange = {},
             onPortChange = {},
             onConnectClick = {},
-            onNavigateToInteraction = {}
+            onNavigateToInteraction = {},
+            onTypeClick = {}
         )
     }
 }

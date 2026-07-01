@@ -3,13 +3,34 @@ package com.example.guangnian.feature.main.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
+import com.russhwolf.settings.Settings
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+enum class ControlType(val displayName: String) {
+    ROBOT("峰客机器人"),
+    DOG("峰客机器狗")
+}
 
 /**
  * 机器人连接界面的 ViewModel
  * 逻辑已下沉到 RobotConnectionManager，此处主要负责 UI 状态的暴露与桥接
  */
-class RobotViewModel(private val connectionManager: RobotConnectionManager) : ViewModel() {
+class RobotViewModel(
+    private val connectionManager: RobotConnectionManager,
+    private val settings: Settings
+) : ViewModel() {
+
+    private val _controlType = MutableStateFlow(
+        ControlType.valueOf(settings.getString("control_type", ControlType.DOG.name))
+    )
+    val controlType: StateFlow<ControlType> = _controlType.asStateFlow()
+
+    fun setControlType(type: ControlType) {
+        _controlType.value = type
+        settings.putString("control_type", type.name)
+    }
 
     // 桥接全局连接状态
     val ip: StateFlow<String> = connectionManager.ip

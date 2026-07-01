@@ -39,7 +39,7 @@ val appModule = module {
     
     // ViewModels
     single { RobotConnectionManager(get(), get()) }
-    factory { RobotViewModel(get()) }
+    factory { RobotViewModel(get(), get()) }
     factory { 
         ConsoleViewModel(
             motionControlApi = get(),
