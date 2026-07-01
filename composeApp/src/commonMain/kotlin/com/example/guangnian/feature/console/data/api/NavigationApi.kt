@@ -14,6 +14,7 @@ interface NavigationApi {
     suspend fun getPointCloud(): List<Point2DBean>
     suspend fun getGlobalPath(): PathPointsBean
     suspend fun getLocalPath(): PathPointsBean
+    suspend fun getNavStatus(): RobotNavStatusBean
 
     // 巡检点相关 (增删改查)
     suspend fun getInspectionPoints(): List<InspectionPointBean>

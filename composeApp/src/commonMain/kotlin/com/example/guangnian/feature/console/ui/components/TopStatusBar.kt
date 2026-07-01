@@ -1,5 +1,6 @@
 package com.example.guangnian.feature.console.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -17,9 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.guangnian.core.designsystem.components.GlassBox
 import com.example.guangnian.core.network.tcp.TcpState
+import com.example.guangnian.feature.console.data.bean.RobotNavState
+import com.example.guangnian.feature.console.data.bean.RobotNavStatusBean
 
 @Composable
 fun TopStatusBar(
+    navStatus: RobotNavStatusBean,
     connectionState: TcpState,
     connectionError: String?,
     latency: Long?,
@@ -31,7 +35,7 @@ fun TopStatusBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top
     ) {
         GlassBox(modifier = Modifier.height(36.dp)) {
@@ -52,6 +56,46 @@ fun TopStatusBar(
                 Text("TEMP 42°C", color = Color.White, fontSize = 12.sp)
             }
         }
+
+        // 机器人状态区域
+        GlassBox(modifier = Modifier.height(36.dp)) {
+            Row(
+                modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val (stateText, stateColor) = when (navStatus.state) {
+                    RobotNavState.IDLE -> "空闲" to Color.LightGray
+                    RobotNavState.NAV_READY -> "就绪" to Color(0xFF4CAF50)
+                    RobotNavState.NAVIGATING -> "导航中" to Color(0xFF2196F3)
+                    RobotNavState.RELOCALIZING -> "重定位中" to Color(0xFFFF9800)
+                    RobotNavState.EMERGENCY_STOP -> "急停" to Color(0xFFE53935)
+                    RobotNavState.MAPPING -> "建图中" to Color(0xFF9C27B0)
+                    else -> navStatus.state to Color.White
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(stateColor, shape = androidx.compose.foundation.shape.CircleShape)
+                )
+                Text(
+                    text = "机器人状态: $stateText",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                if (!navStatus.current_point_id.isNullOrBlank()) {
+                    Text(
+                        text = " -> ${navStatus.current_point_id}",
+                        color = Color.LightGray,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
 
         GlassBox(
             modifier = Modifier

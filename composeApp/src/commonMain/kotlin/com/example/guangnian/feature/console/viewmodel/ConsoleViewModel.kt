@@ -9,6 +9,9 @@ import com.example.guangnian.feature.console.data.api.RouteApi
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
+import com.example.guangnian.core.network.tcp.KmpTcpDispatcher
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -24,6 +27,7 @@ data class ConsoleUiState(
     val favoriteActions: List<FavoriteActionBean> = emptyList(),
     val endpoints: List<InspectionPointBean> = emptyList(),
     val routes: List<RouteBean> = emptyList(),
+    val robotNavStatus: RobotNavStatusBean = RobotNavStatusBean(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     // 交互状态
@@ -39,6 +43,7 @@ class ConsoleViewModel(
 ) : ViewModel() {
     private companion object {
         const val TAG = "ConsoleViewModel"
+        private val json = Json { ignoreUnknownKeys = true }
     }
 
     private val _uiState = MutableStateFlow(ConsoleUiState())
@@ -60,6 +65,39 @@ class ConsoleViewModel(
                     }
                     else -> {}
                 }
+            }
+        }
+
+        // 注册导航状态主动推送监听
+        viewModelScope.launch {
+            KmpTcpDispatcher.registerHandler("/slam/nav_status/") { requestJson ->
+                try {
+                    requestJson["msg"]?.let { msgElement ->
+                        val navStatus = json.decodeFromJsonElement<RobotNavStatusBean>(msgElement)
+                        _uiState.update { it.copy(robotNavStatus = navStatus) }
+                    }
+                } catch (e: Exception) {
+                    KLog.e(TAG, "解析推送的导航状态失败: ${e.message}")
+                }
+                null
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            KmpTcpDispatcher.unregisterHandler("/slam/nav_status/")
+        }
+    }
+
+    fun fetchNavStatus() {
+        viewModelScope.launch {
+            try {
+                val status = navigationApi.getNavStatus()
+                _uiState.update { it.copy(robotNavStatus = status) }
+            } catch (e: Exception) {
+                KLog.e(TAG, "获取导航状态失败: ${e.message}")
             }
         }
     }

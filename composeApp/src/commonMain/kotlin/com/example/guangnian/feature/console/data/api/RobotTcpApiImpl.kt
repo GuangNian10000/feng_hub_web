@@ -303,6 +303,8 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 获取局部路径规划
     override suspend fun getLocalPath() = request<PathPointsBean>("slam/get_local_path")
 
+    override suspend fun getNavStatus() = request<com.example.guangnian.feature.console.data.bean.RobotNavStatusBean>("navigation/get_status")
+
     // 获取机器人电量
     override suspend fun getBattery() = request<BatteryBean>("state/get_battery")
 

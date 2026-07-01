@@ -71,6 +71,10 @@ fun InteractionScreen(
         mapViewModel.updateEndpoints(uiState.endpoints)
     }
 
+    LaunchedEffect(Unit) {
+        consoleViewModel.fetchNavStatus()
+    }
+
     LaunchedEffect(activeFragment, inspectionTab) {
         when (activeFragment) {
             "姿态动作" -> consoleViewModel.fetchPostureList()
@@ -149,6 +153,7 @@ fun InteractionScreen(
         }
 
         TopStatusBar(
+            navStatus = uiState.robotNavStatus,
             connectionState = connectionState,
             connectionError = connectionError,
             latency = latency,
