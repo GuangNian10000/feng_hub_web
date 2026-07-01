@@ -514,6 +514,13 @@ private fun MapControlOverlays(
             GlassBox(modifier = Modifier.width(110.dp), bgColor = Color(0xEE2C2C2C)) {
                 Column {
                     Text(
+                        "前往该点",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onGoToPoint() }.padding(10.dp)
+                    )
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Text(
                         "修改信息",
                         color = Color.White,
                         fontSize = 13.sp,

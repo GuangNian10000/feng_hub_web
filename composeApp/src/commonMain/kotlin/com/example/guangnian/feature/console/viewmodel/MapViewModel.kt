@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch
 import kotlin.math.atan2
 
 data class MapUiState(
@@ -261,6 +262,18 @@ class MapViewModel(
 
     fun onPointClick(screenOffset: androidx.compose.ui.geometry.Offset, point: InspectionPointBean) {
         _uiState.update { it.copy(interactionMode = MapInteractionMode.POINT_MENU, menuPosition = screenOffset, selectedPoint = point) }
+    }
+
+    fun onGoToPoint() {
+        val point = _uiState.value.selectedPoint ?: return
+        viewModelScope.launch {
+            try {
+                navigationApi.startPoint(point.point_id)
+            } catch (e: Exception) {
+                KLog.e("MapViewModel", "Failed to go to point: ${e.message}")
+            }
+        }
+        clearInteraction()
     }
 
     fun onEditPoint() {
