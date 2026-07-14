@@ -34,11 +34,11 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun getRoutes() = request<List<RouteBean>>("slam/route_query_all")
 
     override suspend fun addRoute(route: RouteBean) = request<BaseBean>("slam/route_add", mapOf(
-        "route_id" to (route.route_id ?: ""),
+        //"route_id" to (route.route_id ?: ""),
         "route_name" to route.route_name,
         "description" to route.description,
         "isActive" to route.isActive,
-        "points" to (route.points ?: emptyList()),
+        "points" to (route.point_ids ?: emptyList()),
         "loopCount" to route.loopCount
     ))
 
@@ -47,7 +47,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         "route_name" to route.route_name,
         "description" to route.description,
         "isActive" to route.isActive,
-        "points" to (route.points ?: emptyList()),
+        "points" to (route.point_ids ?: emptyList()),
         "loopCount" to route.loopCount
     ))
 
@@ -108,7 +108,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         executePosture(mapOf("posture_name" to postureName))
 
     // 执行运动控制动作
-    override suspend fun executeMotion(motionId: Int) =
+    override suspend fun executeMotion(motionId: String) =
         request<Unit>("webrtc/execution", mapOf("motion_id" to motionId))
 
     // 执行预设运动控制（ahead/back/left/right/turn_left/turn_right/turn_back）
@@ -264,7 +264,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 创建巡检点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =
         request<BaseBean>("slam/point_add", mapOf(
-            "point_id" to point.point_id,
+            //"point_id" to point.point_id,
             "name" to point.name,
             "x" to (point.position?.x ?: point.x),
             "y" to (point.position?.y ?: point.y),
@@ -304,6 +304,13 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun getLocalPath() = request<PathPointsBean>("slam/get_local_path")
 
     override suspend fun getNavStatus() = request<com.example.guangnian.feature.console.data.bean.RobotNavStatusBean>("navigation/get_status")
+
+    // --- FaceApi 实现 ---
+    override suspend fun robotCaptureFace(name: String) =
+        request<Unit>("face/add_person", mapOf("name" to name), targetNode = TcpNode.TABLET)
+
+    override suspend fun deleteFace(name: String) =
+        request<BaseBean>("face/delete_person", mapOf("name" to name), targetNode = TcpNode.TABLET)
 
     // 获取机器人电量
     override suspend fun getBattery() = request<BatteryBean>("state/get_battery")

@@ -58,5 +58,7 @@ val appModule = module {
     }
     factory { AgentViewModel(get()) }
     factory { KnowledgeViewModel(get()) }
+    single { com.example.guangnian.feature.face.data.repository.FaceRepository(get(), get()) }
+    factory { com.example.guangnian.feature.face.viewmodel.FaceViewModel(get()) }
     factory { SpeechSynthesisViewModel(get(), get()) }
 }

@@ -14,10 +14,13 @@ import com.example.guangnian.feature.console.ui.InteractionScreen
 import com.example.guangnian.feature.main.ui.MainControlScreen
 import org.koin.compose.KoinApplication
 
+import com.example.guangnian.feature.face.ui.FaceScreen
+
 // 定义应用层级路由枚举。
 enum class AppRoute {
     MAIN_CONTROL,
-    INTERACTION
+    INTERACTION,
+    FACE_MANAGEMENT
 }
 
 @Composable
@@ -34,12 +37,18 @@ fun App() {
                 when (route) {
                     AppRoute.MAIN_CONTROL -> {
                         MainControlScreen(
-                            onNavigateToInteraction = { currentRoute = AppRoute.INTERACTION }
+                            onNavigateToInteraction = { currentRoute = AppRoute.INTERACTION },
+                            onNavigateToFace = { currentRoute = AppRoute.FACE_MANAGEMENT }
                         )
                     }
                     AppRoute.INTERACTION -> {
                         InteractionScreen(
                             onBackClick = { currentRoute = AppRoute.MAIN_CONTROL }
+                        )
+                    }
+                    AppRoute.FACE_MANAGEMENT -> {
+                        FaceScreen(
+                            onBack = { currentRoute = AppRoute.MAIN_CONTROL }
                         )
                     }
                 }

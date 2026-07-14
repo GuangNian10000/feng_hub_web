@@ -26,7 +26,8 @@ fun AppLandscapePreview() {
             onPortChange = {},
             onConnectClick = {},
             onNavigateToInteraction = {},
-            onTypeClick = {}
+            onTypeClick = {},
+            onNavigateToFace = {}
         )
     }
 }

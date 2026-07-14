@@ -33,7 +33,8 @@ val DefaultTextShadow = Shadow(
 
 @Composable
 fun MainControlScreen(
-    onNavigateToInteraction: () -> Unit = {}
+    onNavigateToInteraction: () -> Unit = {},
+    onNavigateToFace: () -> Unit = {}
 ) {
     val viewModel: RobotViewModel = koinViewModel()
     val ip by viewModel.ip.collectAsState()
@@ -54,6 +55,7 @@ fun MainControlScreen(
         onPortChange = viewModel::onPortChanged,
         onConnectClick = viewModel::connect,
         onNavigateToInteraction = onNavigateToInteraction,
+        onNavigateToFace = onNavigateToFace,
         onTypeClick = { showTypeDialog = true }
     )
 
@@ -80,6 +82,7 @@ fun MainControlContent(
     onPortChange: (String) -> Unit,
     onConnectClick: () -> Unit,
     onNavigateToInteraction: () -> Unit,
+    onNavigateToFace: () -> Unit,
     onTypeClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -112,7 +115,8 @@ fun MainControlContent(
             ) {
                 FunctionGrid(
                     controlType = controlType,
-                    onNavigateToInteraction = onNavigateToInteraction
+                    onNavigateToInteraction = onNavigateToInteraction,
+                    onNavigateToFace = onNavigateToFace
                 )
             }
 
@@ -242,7 +246,8 @@ fun TopConnectionBar(
 fun FunctionGrid(
     modifier: Modifier = Modifier,
     controlType: ControlType,
-    onNavigateToInteraction: () -> Unit
+    onNavigateToInteraction: () -> Unit,
+    onNavigateToFace: () -> Unit
 ) {
     val isDog = controlType == ControlType.DOG
     val targetIconSize = if (isDog) 160.dp else 140.dp
@@ -267,7 +272,7 @@ fun FunctionGrid(
             Spacer(modifier = Modifier.width(spacerWidth))
             MenuCard("示教动作", Res.drawable.ic_teach, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize)
             Spacer(modifier = Modifier.width(spacerWidth))
-            MenuCard("人脸识别", Res.drawable.ic_face, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize)
+            MenuCard("人脸识别", Res.drawable.ic_face, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize, onClick = onNavigateToFace)
         }
 
         if (controlType == ControlType.DOG) {

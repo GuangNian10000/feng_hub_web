@@ -8,4 +8,5 @@ interface RobotTcpApi :
     MotionControlApi, 
     NavigationApi, 
     RobotStatusApi, 
-    TeachApi
+    TeachApi,
+    com.example.guangnian.feature.face.data.api.FaceApi

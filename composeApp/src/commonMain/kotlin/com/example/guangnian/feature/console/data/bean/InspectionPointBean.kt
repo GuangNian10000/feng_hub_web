@@ -1,11 +1,13 @@
 package com.example.guangnian.feature.console.data.bean
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class InspectionPointBean(
     val id: Int = 0,
     val point_id: String = "",
+    @SerialName("point_name")
     val name: String = "", // 点位名称
     val x: Double = 0.0, // x 坐标 (保留兼容)
     val y: Double = 0.0,

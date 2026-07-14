@@ -170,7 +170,7 @@ class ConsoleViewModel(
         }
     }
 
-    fun sendArmCommand(armId: Int) {
+    fun sendArmCommand(armId: String) {
         viewModelScope.launch {
             try {
                 motionControlApi.executeMotion(armId)

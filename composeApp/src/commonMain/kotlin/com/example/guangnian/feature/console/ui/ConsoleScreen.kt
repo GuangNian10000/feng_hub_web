@@ -186,7 +186,7 @@ fun InteractionScreen(
             onActionClick = { fav ->
                 confirmActionPayload = fav.name to {
                     if (fav.isArmAction) {
-                        consoleViewModel.sendArmCommand(fav.id.toInt())
+                        consoleViewModel.sendArmCommand(fav.id)
                     } else {
                         consoleViewModel.sendPostureCommand(fav.id)
                     }

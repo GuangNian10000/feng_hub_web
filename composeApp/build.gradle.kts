@@ -58,6 +58,10 @@ kotlin {
             implementation("com.benasher44:uuid:0.8.2")
 
             implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
+
+            // Coil
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

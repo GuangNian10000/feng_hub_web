@@ -9,7 +9,8 @@ data class RouteBean(
     val route_name: String = "", // 路线名称
     val description: String = "",
     val pointIds: String? = null, // 查询返回的点位ID字符串
-    val points: List<String>? = null, // 新增/更新使用的点位ID列表
+    val point_ids: List<String>? = null, // 新增/更新使用的点位ID列表
+    val points: List<InspectionPointBean>? = null, // 新增/更新使用的点位ID列表
     val pointCount: Int? = null,
     val isActive: Boolean = true,
     val createTime: Long? = null,

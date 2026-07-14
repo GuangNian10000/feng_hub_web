@@ -8,7 +8,7 @@ interface MotionControlApi {
     suspend fun getMotionList(): List<MotionBean>
     suspend fun executePosture(msg: Map<String, String>)
     suspend fun executePosture(postureName: String)
-    suspend fun executeMotion(motionId: Int)
+    suspend fun executeMotion(motionId: String)
     suspend fun executeSport(sport: String)
     suspend fun executeArm(armId: Int)
     suspend fun moveTranslate(angle: Double, level: Int)

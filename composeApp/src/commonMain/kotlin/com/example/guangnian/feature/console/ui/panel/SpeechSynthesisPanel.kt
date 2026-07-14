@@ -500,7 +500,7 @@ fun SynthesisEditDialog(
 @Composable
 fun ActionSelectionDialog(
     consoleViewModel: ConsoleViewModel,
-    currentActionId: Int?,
+    currentActionId: String?,
     onSelect: (ArmActionBean) -> Unit,
     onDismiss: () -> Unit
 ) {

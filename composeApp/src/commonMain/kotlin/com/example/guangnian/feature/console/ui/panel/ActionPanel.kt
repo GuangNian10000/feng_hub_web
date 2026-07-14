@@ -27,8 +27,8 @@ import com.example.guangnian.feature.console.data.bean.FavoriteActionBean
 fun ActionPanel(
     armActions: List<ArmActionBean>,
     favoriteActions: List<FavoriteActionBean>,
-    onActionClick: (Int, String) -> Unit,
-    onActionLongClick: (Int, String) -> Unit,
+    onActionClick: (String, String) -> Unit,
+    onActionLongClick: (String, String) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
