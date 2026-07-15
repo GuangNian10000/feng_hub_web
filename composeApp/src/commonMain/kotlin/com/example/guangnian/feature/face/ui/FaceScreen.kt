@@ -1,10 +1,12 @@
 package com.example.guangnian.feature.face.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -12,18 +14,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.guangnian.feature.face.data.bean.FaceData
 import com.example.guangnian.feature.face.data.bean.FaceConfig
@@ -40,7 +41,7 @@ fun FaceScreen(
     val faces by viewModel.faces.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val config by viewModel.config.collectAsState()
-    
+
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedFaceForDelete by remember { mutableStateOf<FaceData?>(null) }
     var currentActionName by remember { mutableStateOf("") }
@@ -53,8 +54,8 @@ fun FaceScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("人脸管理", fontSize = 18.sp) },
+            CenterAlignedTopAppBar(
+                title = { Text("人脸管理", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
@@ -66,23 +67,21 @@ fun FaceScreen(
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "添加人脸")
-            }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            // 配置区域
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             FaceConfigPanel(
                 config = config,
                 onThresholdChange = viewModel::updateThreshold,
                 onFlipChange = viewModel::toggleCameraFlip,
-                onOnlyKnownChange = viewModel::toggleOnlyKnown
+                onOnlyKnownChange = viewModel::toggleOnlyKnown,
+                onAddFace = { showAddDialog = true }
             )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
             if (loading && faces.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -91,7 +90,7 @@ fun FaceScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(faces) { face ->
@@ -128,19 +127,19 @@ fun FaceScreen(
     selectedFaceForDelete?.let { face ->
         AlertDialog(
             onDismissRequest = { selectedFaceForDelete = null },
-            title = { Text("删除人脸", fontSize = 16.sp) },
-            text = { Text("确定要删除 [${face.username}] 吗？", fontSize = 14.sp) },
+            title = { Text("确认删除") },
+            text = { Text("是否确定删除用户 [${face.username}] 的人脸数据？此操作不可恢复。") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteFace(face)
                     selectedFaceForDelete = null
                 }) {
-                    Text("删除", color = Color.Red, fontSize = 14.sp)
+                    Text("删除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { selectedFaceForDelete = null }) {
-                    Text("取消", fontSize = 14.sp)
+                    Text("取消")
                 }
             }
         )
@@ -152,41 +151,50 @@ fun FaceConfigPanel(
     config: FaceConfig,
     onThresholdChange: (Float) -> Unit,
     onFlipChange: (Boolean) -> Unit,
-    onOnlyKnownChange: (Boolean) -> Unit
+    onOnlyKnownChange: (Boolean) -> Unit,
+    onAddFace: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text("识别配置", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = config.camera_flip, 
-                        onCheckedChange = onFlipChange,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Text("摄像头翻转", style = MaterialTheme.typography.bodySmall, fontSize = 12.sp)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = config.only_known, 
-                        onCheckedChange = onOnlyKnownChange,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Text("只识别已知人脸", style = MaterialTheme.typography.bodySmall, fontSize = 12.sp)
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("识别阈值: ", style = MaterialTheme.typography.bodySmall, fontSize = 12.sp)
+                Checkbox(
+                    checked = config.camera_flip,
+                    onCheckedChange = onFlipChange,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("摄像头翻转", style = MaterialTheme.typography.bodySmall)
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = config.only_known,
+                    onCheckedChange = onOnlyKnownChange,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("仅识别已知", style = MaterialTheme.typography.bodySmall)
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("阈值:", style = MaterialTheme.typography.bodySmall)
+                Spacer(modifier = Modifier.width(6.dp))
                 var thresholdText by remember(config.threshold) { mutableStateOf(config.threshold.toString()) }
+                //移除不支持的contentPadding参数
+                //移除高度限制以防文本被Material3组件的默认高度截断
                 OutlinedTextField(
                     value = thresholdText,
                     onValueChange = {
@@ -195,11 +203,19 @@ fun FaceConfigPanel(
                             if (value in 0f..1f) onThresholdChange(value)
                         }
                     },
-                    modifier = Modifier.width(80.dp).height(48.dp),
-                    textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    modifier = Modifier.width(80.dp),
+                    textStyle = MaterialTheme.typography.bodySmall,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
+            }
+
+            FilledIconButton(
+                onClick = onAddFace,
+                modifier = Modifier.size(36.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "新增", modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -212,15 +228,21 @@ fun FaceItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.size(50.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray),
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 if (!face.imageUrl.isNullOrEmpty()) {
@@ -231,21 +253,30 @@ fun FaceItem(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Text(face.username.take(1).uppercase(), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = face.username, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(text = face.username, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 face.description?.takeIf { it.isNotBlank() }?.let { desc ->
-                    Text(text = desc, fontSize = 12.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color.Red, modifier = Modifier.size(20.dp))
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "删除",
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
@@ -262,62 +293,63 @@ fun AddFaceDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("录入新人脸", fontSize = 16.sp) },
+        title = { Text("录入新人脸") },
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("姓名", fontSize = 12.sp) },
+                    label = { Text("姓名") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                    shape = RoundedCornerShape(12.dp)
                 )
-                
-                Text("选择录入方式:", style = MaterialTheme.typography.bodySmall, fontSize = 11.sp)
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = { if (name.isNotBlank()) onUploadImage(name) },
-                        modifier = Modifier.weight(1f).height(40.dp),
-                        enabled = name.isNotBlank(),
-                        contentPadding = PaddingValues(0.dp)
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("选择录入方式", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("相册选取", fontSize = 12.sp)
+                        OutlinedButton(
+                            onClick = { if (name.isNotBlank()) onUploadImage(name) },
+                            modifier = Modifier.weight(1f),
+                            enabled = name.isNotBlank(),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("相册选取")
+                        }
+                        OutlinedButton(
+                            onClick = { if (name.isNotBlank()) onTakePhoto(name) },
+                            modifier = Modifier.weight(1f),
+                            enabled = name.isNotBlank(),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("拍照上传")
+                        }
                     }
+
                     Button(
-                        onClick = { if (name.isNotBlank()) onTakePhoto(name) },
-                        modifier = Modifier.weight(1f).height(40.dp),
+                        onClick = { if (name.isNotBlank()) onCaptureRobotFrame(name) },
+                        modifier = Modifier.fillMaxWidth(),
                         enabled = name.isNotBlank(),
-                        contentPadding = PaddingValues(0.dp)
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("拍照上传", fontSize = 12.sp)
+                        Text("获取机器人当前帧")
                     }
-                }
-                
-                Button(
-                    onClick = { if (name.isNotBlank()) onCaptureRobotFrame(name) },
-                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                    enabled = name.isNotBlank(),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text("获取机器人当前帧", fontSize = 12.sp)
                 }
             }
         },
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消", fontSize = 14.sp)
+                Text("取消")
             }
         }
     )

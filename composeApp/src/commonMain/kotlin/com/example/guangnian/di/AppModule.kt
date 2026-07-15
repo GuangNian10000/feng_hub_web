@@ -9,6 +9,9 @@ import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import com.russhwolf.settings.Settings
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 val appModule = module {
@@ -33,6 +36,13 @@ val appModule = module {
             install(HttpTimeout) {
                 requestTimeoutMillis = 5000
                 connectTimeoutMillis = 5000
+            }
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                    prettyPrint = true
+                    isLenient = true
+                })
             }
         }
     }
