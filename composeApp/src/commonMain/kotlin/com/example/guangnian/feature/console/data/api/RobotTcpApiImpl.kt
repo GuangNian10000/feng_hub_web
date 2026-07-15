@@ -249,7 +249,11 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<BaseBean>("slam/start_point", mapOf("point_id" to point_id))
 
     // 停止当前导航目标
-    override suspend fun stopPosition() = request<Unit>("slam/stop_position")
+    override suspend fun stopPosition() = request<Unit>("navigation/stop_position")
+
+    override suspend fun pauseNavigation() = request<Unit>("navigation/pause")
+
+    override suspend fun resumeNavigation() = request<Unit>("navigation/resume")
 
     // 获取 2D 点云数据
     override suspend fun getPointCloud() = request<List<Point2DBean>>("slam/point_cloud")

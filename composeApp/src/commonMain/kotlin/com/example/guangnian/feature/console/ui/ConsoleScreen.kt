@@ -170,8 +170,22 @@ fun InteractionScreen(
         InspectionControlPanel(
             isPaused = isInspectionPaused,
             showEndMapping = uiState.robotNavStatus.state == RobotNavState.MAPPING,
-            onPauseToggle = { isInspectionPaused = !isInspectionPaused },
-            onCancelClick = { /* TODO: Implement cancel logic */ },
+            onPauseToggle = {
+                val actionName = if (isInspectionPaused) "继续巡检" else "暂停巡检"
+                confirmActionPayload = actionName to {
+                    if (isInspectionPaused) {
+                        consoleViewModel.resumeNavigation()
+                    } else {
+                        consoleViewModel.pauseNavigation()
+                    }
+                    isInspectionPaused = !isInspectionPaused
+                }
+            },
+            onCancelClick = {
+                confirmActionPayload = "取消巡检" to {
+                    consoleViewModel.stopNavigation()
+                }
+            },
             onEndMappingClick = {
                 confirmActionPayload = "结束建图" to { consoleViewModel.endMapping() }
             },

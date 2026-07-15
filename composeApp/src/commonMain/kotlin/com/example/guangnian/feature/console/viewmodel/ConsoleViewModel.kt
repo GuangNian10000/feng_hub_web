@@ -234,6 +234,36 @@ class ConsoleViewModel(
         }
     }
 
+    fun pauseNavigation() {
+        viewModelScope.launch {
+            try {
+                navigationApi.pauseNavigation()
+            } catch (e: Exception) {
+                KLog.e(TAG, "暂停导航失败: ${e.message}")
+            }
+        }
+    }
+
+    fun resumeNavigation() {
+        viewModelScope.launch {
+            try {
+                navigationApi.resumeNavigation()
+            } catch (e: Exception) {
+                KLog.e(TAG, "继续导航失败: ${e.message}")
+            }
+        }
+    }
+
+    fun stopNavigation() {
+        viewModelScope.launch {
+            try {
+                navigationApi.stopPosition()
+            } catch (e: Exception) {
+                KLog.e(TAG, "取消导航失败: ${e.message}")
+            }
+        }
+    }
+
     fun addInspectionPoint(point: InspectionPointBean) {
         executeTask("添加巡检点失败") {
             navigationApi.addInspectionPoint(point)

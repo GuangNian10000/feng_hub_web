@@ -11,6 +11,8 @@ interface NavigationApi {
     suspend fun startPosition(x: Double, y: Double, yaw: Double)
     suspend fun startPoint(point_id: String, x: Double? = null, y: Double? = null, yaw: Double? = null)
     suspend fun stopPosition()
+    suspend fun pauseNavigation()
+    suspend fun resumeNavigation()
     suspend fun getPointCloud(): List<Point2DBean>
     suspend fun getGlobalPath(): PathPointsBean
     suspend fun getLocalPath(): PathPointsBean
