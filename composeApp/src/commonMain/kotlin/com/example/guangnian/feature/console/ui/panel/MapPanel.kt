@@ -48,27 +48,29 @@ fun MapBackgroundLayer(
     modifier: Modifier = Modifier
 ) {
     val config = uiState.mapConfig
-    // 稳定性修复：不直接以 config 对象为 key，避免轮询导致的状态重置
-    // 只有当坐标系关键参数变化时才重置缩放和位移
-    val configIdentity = remember(config) {
-        config?.let { "${it.origin}_${it.resolution}" } ?: "none"
-    }
+    // 稳定性修复：使用地图图片 URL 作为标识，只有切换地图时才重置状态
+    val mapId = remember(config?.image) { config?.image ?: "none" }
     
-    var scale by remember(configIdentity) { mutableFloatStateOf(1f) }
-    var offset by remember(configIdentity) { mutableStateOf(Offset.Zero) }
-    var isInitialized by remember(configIdentity) { mutableStateOf(false) }
+    var scale by remember(mapId) { mutableFloatStateOf(1f) }
+    var offset by remember(mapId) { mutableStateOf(Offset.Zero) }
+    var isInitialized by remember(mapId) { mutableStateOf(false) }
 
     val mapBitmap = uiState.mapImage
     val textMeasurer = rememberTextMeasurer()
     val mapHeightPx = mapBitmap?.height?.toFloat() ?: 1000f
+
+    // 使用 rememberUpdatedState 避免 pointerInput 因为频繁变更的 scale/offset 而重新启动，解决抖动问题
+    val currentScale by rememberUpdatedState(scale)
+    val currentOffset by rememberUpdatedState(offset)
+    val currentMapBitmap by rememberUpdatedState(mapBitmap)
 
     Box(modifier = modifier.fillMaxSize()) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF121212))
-                .pointerInput(uiState.mapConfig) {
-                    if (uiState.mapConfig == null) return@pointerInput
+                .pointerInput(mapId) { // 使用稳定的 mapId
+                    if (config == null) return@pointerInput
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val oldScale = scale
                         val newScale = (scale * zoom).coerceIn(0.1f, 10f)
@@ -76,11 +78,11 @@ fun MapBackgroundLayer(
                         scale = newScale
                     }
                 }
-                .pointerInput(uiState.mapConfig, uiState.interactionMode, scale, offset, mapBitmap) {
-                    val currentConfig = uiState.mapConfig ?: return@pointerInput
+                .pointerInput(mapId, uiState.interactionMode) { // 移除 scale/offset 依赖
+                    val currentConfig = config ?: return@pointerInput
                     detectTapGestures(
                         onLongPress = { screenOffset ->
-                            val mapPixelOffset = (screenOffset - offset) / scale
+                            val mapPixelOffset = (screenOffset - currentOffset) / currentScale
                             val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                             KLog.d("MapDebug", "长按创建点位: 屏幕=$screenOffset, 像素=$mapPixelOffset, 世界=$worldPos")
                             mapViewModel.onMapLongClick(screenOffset, worldPos)
@@ -88,47 +90,42 @@ fun MapBackgroundLayer(
                         onTap = { screenOffset ->
                             when (uiState.interactionMode) {
                                 MapInteractionMode.PICK_ORIENTATION, MapInteractionMode.PICK_ROBOT_ORIENTATION, MapInteractionMode.PICK_GO_HERE_ORIENTATION -> {
-                                    val mapPixelOffset = (screenOffset - offset) / scale
+                                    val mapPixelOffset = (screenOffset - currentOffset) / currentScale
                                     val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                                     mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
                                 }
                                 MapInteractionMode.PICK_POSITION -> {
-                                    val mapPixelOffset = (screenOffset - offset) / scale
+                                    val mapPixelOffset = (screenOffset - currentOffset) / currentScale
                                     val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                                     mapViewModel.onMapClickForPosition(worldPos)
                                 }
                                 MapInteractionMode.CONFIRM_POINT, MapInteractionMode.CONFIRM_ROBOT_POSITION -> {
                                 }
                                 else -> {
-                                    val adaptiveFactor = 1f / sqrt(scale)
-                                    val screenPointRadius = (12f * adaptiveFactor) * scale
+                                    val adaptiveFactor = 1f / sqrt(currentScale)
+                                    val screenPointRadius = (12f * adaptiveFactor) * currentScale
                                     val clickRadius = (screenPointRadius * 2.5f).coerceAtLeast(100f)
 
                                     val clickedPoint = uiState.endpoints.find { ep ->
                                         val realX = ep.position?.x ?: ep.x
                                         val realY = ep.position?.y ?: ep.y
                                         val px = MapTransformUtils.worldToPixel(realX, realY, currentConfig, mapHeightPx)
-                                        val spx = px.x * scale + offset.x
-                                        val spy = px.y * scale + offset.y
+                                        val spx = px.x * currentScale + currentOffset.x
+                                        val spy = px.y * currentScale + currentOffset.y
                                         hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
                                     }
                                     
                                     if (clickedPoint != null) {
-                                        // 如果点击到了导览点，正常响应（即使此处有机器人）
                                         mapViewModel.onPointClick(screenOffset, clickedPoint)
                                     } else {
-                                        // 如果没点击到导览点，检测是否点击了机器人
                                         val isClickedRobot = uiState.robotPosition?.let { robot ->
                                             val px = MapTransformUtils.worldToPixel(robot.x, robot.y, currentConfig, mapHeightPx)
-                                            val spx = px.x * scale + offset.x
-                                            val spy = px.y * scale + offset.y
+                                            val spx = px.x * currentScale + currentOffset.x
+                                            val spy = px.y * currentScale + currentOffset.y
                                             hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
                                         } ?: false
 
-                                        if (isClickedRobot) {
-                                            // 机器人位置不可点击，不做任何处理（不触发弹窗，也不清除当前交互）
-                                            // 或者也可以调用 clearInteraction() 取决于交互习惯，这里选择不做操作以符合“点不了”的直觉
-                                        } else {
+                                        if (!isClickedRobot) {
                                             mapViewModel.clearInteraction()
                                         }
                                     }
@@ -141,8 +138,8 @@ fun MapBackgroundLayer(
             val containerWidth = constraints.maxWidth.toFloat()
             val containerHeight = constraints.maxHeight.toFloat()
 
-            // 只有当关键参数变化时，才重新初始化变换
-            LaunchedEffect(configIdentity, containerWidth, containerHeight) {
+            // 居中逻辑：仅在首次加载新地图（mapId 改变且 isInitialized 为 false）且图片加载完成时执行
+            LaunchedEffect(mapId, mapBitmap, containerWidth, containerHeight) {
                 if (mapBitmap != null && !isInitialized && containerWidth > 0 && containerHeight > 0) {
                     val bmpW = mapBitmap.width.toFloat()
                     val bmpH = mapBitmap.height.toFloat()
@@ -168,7 +165,7 @@ fun MapBackgroundLayer(
 
             StaticMapLayer(mapBitmap, layerModifier)
             
-            if (!uiState.isMapLoading && mapBitmap != null) {
+            if (mapBitmap != null) { // 移除 !uiState.isMapLoading 判断，避免刷新时图层消失导致的闪烁
                 PathLayer(uiState.globalPath, uiState.localPath, config, mapHeightPx, scale, layerModifier)
                 MarkerLayer(uiState.endpoints, config, mapHeightPx, scale, textMeasurer, layerModifier)
                 RobotLayer(uiState.robotPosition, uiState.pointCloud, config, mapHeightPx, scale, layerModifier)
