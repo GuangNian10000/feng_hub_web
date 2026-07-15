@@ -261,6 +261,12 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 急停（停止运动/建图）
     override suspend fun stopAll() = request<Unit>("slam/stop_all")
 
+    // 恢复急停
+    override suspend fun recover() = request<Unit>("slam/recover")
+
+    // 查询急停状态
+    override suspend fun getEmergency() = request<Unit>("slam/get_emergency")
+
     // 获取巡检点列表
     override suspend fun getInspectionPoints() =
         request<List<InspectionPointBean>>("slam/point_query_all")

@@ -258,13 +258,13 @@ fun FaceConfigPanel(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ConfigToggle(
-                label = "翻转",
+                label = "摄像头翻转",
                 checked = config.camera_flip,
                 onCheckedChange = onFlipChange
             )
 
             ConfigToggle(
-                label = "已知",
+                label = "仅识别已知人脸",
                 checked = config.only_known,
                 onCheckedChange = onOnlyKnownChange
             )

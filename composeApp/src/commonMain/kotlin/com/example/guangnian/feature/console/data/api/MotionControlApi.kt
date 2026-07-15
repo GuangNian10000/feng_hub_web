@@ -17,4 +17,6 @@ interface MotionControlApi {
     suspend fun stopTranslate()
     suspend fun stopRotate()
     suspend fun stopAll()
+    suspend fun recover()
+    suspend fun getEmergency()
 }
