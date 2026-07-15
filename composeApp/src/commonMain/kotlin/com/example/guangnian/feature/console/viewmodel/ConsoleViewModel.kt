@@ -76,6 +76,10 @@ class ConsoleViewModel(
                     requestJson["msg"]?.let { msgElement ->
                         val navStatus = json.decodeFromJsonElement<RobotNavStatusBean>(msgElement)
                         _uiState.update { it.copy(robotNavStatus = navStatus) }
+                        
+                        // 同时同步建图状态给 EventBus
+                        val isMapping = navStatus.state == RobotNavState.MAPPING
+                        eventBus.tryEmit(RobotEvent.MappingStateChanged(isMapping))
                     }
                 } catch (e: Exception) {
                     KLog.e(TAG, "解析推送的导航状态失败: ${e.message}")
@@ -156,12 +160,14 @@ class ConsoleViewModel(
     fun startMapping(mapName: String) {
         executeTask("开始建图失败") {
             navigationApi.startMapping(mapName)
+            eventBus.emit(RobotEvent.MappingStateChanged(true))
         }
     }
 
     fun endMapping() {
         executeTask("结束建图失败") {
             navigationApi.endMapping()
+            eventBus.emit(RobotEvent.MappingStateChanged(false))
             fetchMaps() // 结束后刷新列表
         }
     }

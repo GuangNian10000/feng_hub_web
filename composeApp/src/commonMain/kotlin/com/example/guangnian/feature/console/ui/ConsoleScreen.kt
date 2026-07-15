@@ -19,6 +19,7 @@ import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.ui.panel.*
 import com.example.guangnian.feature.console.ui.components.*
 import com.example.guangnian.feature.console.viewmodel.*
+import com.example.guangnian.feature.console.data.bean.RobotNavState
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
@@ -168,6 +169,7 @@ fun InteractionScreen(
 
         InspectionControlPanel(
             isPaused = isInspectionPaused,
+            showEndMapping = uiState.robotNavStatus.state == RobotNavState.MAPPING,
             onPauseToggle = { isInspectionPaused = !isInspectionPaused },
             onCancelClick = { /* TODO: Implement cancel logic */ },
             onEndMappingClick = {

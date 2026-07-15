@@ -11,6 +11,7 @@ import com.example.guangnian.core.designsystem.components.ControlButton
 @Composable
 fun InspectionControlPanel(
     isPaused: Boolean,
+    showEndMapping: Boolean,
     onPauseToggle: () -> Unit,
     onCancelClick: () -> Unit,
     onEndMappingClick: () -> Unit,
@@ -41,12 +42,14 @@ fun InspectionControlPanel(
                 onClick = onCancelClick
             )
 
-            ControlButton(
-                text = "结束建图",
-                bgColor = Color(0xFFF57C00),
-                modifier = Modifier.fillMaxWidth().height(36.dp),
-                onClick = onEndMappingClick
-            )
+            if (showEndMapping) {
+                ControlButton(
+                    text = "结束建图",
+                    bgColor = Color(0xFFF57C00),
+                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                    onClick = onEndMappingClick
+                )
+            }
         }
     }
 }

@@ -35,6 +35,7 @@ data class MapUiState(
     val globalPath: List<Point2DBean> = emptyList(),
     val localPath: List<Point2DBean> = emptyList(),
     val pointCloud: List<Point2DBean> = emptyList(),
+    val isMapping: Boolean = false,
     // 交互状态
     val interactionMode: MapInteractionMode = MapInteractionMode.NONE,
     val selectedPoint: InspectionPointBean? = null,
@@ -73,6 +74,9 @@ class MapViewModel(
                     is RobotEvent.PointsChanged -> {
                         refreshMapData()
                     }
+                    is RobotEvent.MappingStateChanged -> {
+                        _uiState.update { it.copy(isMapping = event.isMapping) }
+                    }
                     else -> {}
                 }
             }
@@ -82,14 +86,26 @@ class MapViewModel(
     private fun startMapDataPolling() {
         // 1. 地图配置与图片加载
         viewModelScope.launch {
-            while (isActive && _uiState.value.mapConfig == null) {
+            while (isActive) {
                 try {
                     val config = navigationApi.getMapConfig()
                     val savedIp = settings.getString("saved_ip", "192.168.1.100")
                     val fixedUrl = config.getFixedImageUrl(savedIp)
-                    _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
-                    loadMapImage(fixedUrl)
+                    
+                    // 如果是第一次加载或者正在建图模式，持续更新配置和图片
+                    if (_uiState.value.mapConfig == null || _uiState.value.isMapping) {
+                        _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
+                        loadMapImage(fixedUrl)
+                    }
                 } catch (e: Exception) {
+                    KLog.e("MapViewModel", "获取地图配置失败: ${e.message}")
+                }
+                
+                // 如果正在建图，地图刷新频率可以适当高一点（例如 3s 一次）
+                // 如果不在建图，且地图已加载，则可以停止轮询或极低频率
+                if (_uiState.value.mapConfig != null && !_uiState.value.isMapping) {
+                    delay(10000)
+                } else {
                     delay(3000)
                 }
             }
