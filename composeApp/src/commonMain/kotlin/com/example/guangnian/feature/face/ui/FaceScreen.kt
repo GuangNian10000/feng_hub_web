@@ -4,12 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,11 +44,10 @@ fun FaceScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedFaceForDelete by remember { mutableStateOf<FaceData?>(null) }
     var currentActionName by remember { mutableStateOf("") }
-    var currentActionDesc by remember { mutableStateOf("") }
 
     val imagePicker = rememberImagePicker { bytes ->
         if (currentActionName.isNotBlank()) {
-            viewModel.uploadFaceImage(currentActionName, currentActionDesc, bytes)
+            viewModel.uploadFaceImage(currentActionName, bytes)
         }
     }
 
@@ -59,8 +61,8 @@ fun FaceScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { viewModel.refresh() }) {
-                        Text("刷新", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                    IconButton(onClick = { viewModel.refresh() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "刷新")
                     }
                 }
             )
@@ -106,20 +108,18 @@ fun FaceScreen(
     if (showAddDialog) {
         AddFaceDialog(
             onDismiss = { showAddDialog = false },
-            onUploadImage = { name, desc ->
+            onUploadImage = { name ->
                 currentActionName = name
-                currentActionDesc = desc
                 imagePicker.pickImage()
                 showAddDialog = false
             },
-            onTakePhoto = { name, desc ->
+            onTakePhoto = { name ->
                 currentActionName = name
-                currentActionDesc = desc
                 imagePicker.takePhoto()
                 showAddDialog = false
             },
-            onCaptureRobotFrame = { name, desc ->
-                viewModel.captureFromRobotFrame(name, desc)
+            onCaptureRobotFrame = { name ->
+                viewModel.captureFromRobotFrame(name)
                 showAddDialog = false
             }
         )
@@ -239,8 +239,8 @@ fun FaceItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = face.username, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                if (!face.description.isNullOrEmpty()) {
-                    Text(text = face.description ?: "", fontSize = 12.sp, color = Color.Gray)
+                face.description?.takeIf { it.isNotBlank() }?.let { desc ->
+                    Text(text = desc, fontSize = 12.sp, color = Color.Gray)
                 }
             }
 
@@ -254,18 +254,22 @@ fun FaceItem(
 @Composable
 fun AddFaceDialog(
     onDismiss: () -> Unit,
-    onUploadImage: (String, String) -> Unit,
-    onTakePhoto: (String, String) -> Unit,
-    onCaptureRobotFrame: (String, String) -> Unit
+    onUploadImage: (String) -> Unit,
+    onTakePhoto: (String) -> Unit,
+    onCaptureRobotFrame: (String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var desc by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("录入新人脸", fontSize = 16.sp) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -274,41 +278,39 @@ fun AddFaceDialog(
                     singleLine = true,
                     textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
                 )
-                OutlinedTextField(
-                    value = desc,
-                    onValueChange = { desc = it },
-                    label = { Text("描述 (可选)", fontSize = 12.sp) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
-                )
                 
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("选择录入方式:", style = MaterialTheme.typography.bodySmall, fontSize = 12.sp)
+                Text("选择录入方式:", style = MaterialTheme.typography.bodySmall, fontSize = 11.sp)
                 
-                Button(
-                    onClick = { if (name.isNotBlank()) onUploadImage(name, desc) },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = name.isNotBlank()
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("从相册选取", fontSize = 13.sp)
+                    Button(
+                        onClick = { if (name.isNotBlank()) onUploadImage(name) },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        enabled = name.isNotBlank(),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("相册选取", fontSize = 12.sp)
+                    }
+                    Button(
+                        onClick = { if (name.isNotBlank()) onTakePhoto(name) },
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        enabled = name.isNotBlank(),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("拍照上传", fontSize = 12.sp)
+                    }
                 }
                 
                 Button(
-                    onClick = { if (name.isNotBlank()) onTakePhoto(name, desc) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = name.isNotBlank()
-                ) {
-                    Text("手机拍照", fontSize = 13.sp)
-                }
-                
-                Button(
-                    onClick = { if (name.isNotBlank()) onCaptureRobotFrame(name, desc) },
-                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { if (name.isNotBlank()) onCaptureRobotFrame(name) },
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                    enabled = name.isNotBlank()
+                    enabled = name.isNotBlank(),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("获取机器人当前帧", fontSize = 13.sp)
+                    Text("获取机器人当前帧", fontSize = 12.sp)
                 }
             }
         },

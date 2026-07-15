@@ -80,7 +80,7 @@ class FaceViewModel(
         }
     }
 
-    fun uploadFaceImage(name: String, description: String?, imageBytes: ByteArray) {
+    fun uploadFaceImage(name: String, imageBytes: ByteArray, description: String? = null) {
         viewModelScope.launch {
             _loading.value = true
             try {
@@ -92,7 +92,7 @@ class FaceViewModel(
         }
     }
 
-    fun captureFromRobotFrame(name: String, description: String?) {
+    fun captureFromRobotFrame(name: String, description: String? = null) {
         viewModelScope.launch {
             _loading.value = true
             try {

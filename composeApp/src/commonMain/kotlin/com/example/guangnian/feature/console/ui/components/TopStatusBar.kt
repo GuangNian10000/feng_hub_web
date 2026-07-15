@@ -65,13 +65,13 @@ fun TopStatusBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val (stateText, stateColor) = when (navStatus.state) {
-                    RobotNavState.IDLE -> "空闲" to Color.LightGray
-                    RobotNavState.NAV_READY -> "就绪" to Color(0xFF4CAF50)
-                    RobotNavState.NAVIGATING -> "导航中" to Color(0xFF2196F3)
-                    RobotNavState.RELOCALIZING -> "重定位中" to Color(0xFFFF9800)
-                    RobotNavState.EMERGENCY_STOP -> "急停" to Color(0xFFE53935)
-                    RobotNavState.MAPPING -> "建图中" to Color(0xFF9C27B0)
-                    else -> navStatus.state to Color.White
+                    RobotNavState.IDLE -> navStatus.state_zh to Color.LightGray
+                    RobotNavState.NAV_READY -> navStatus.state_zh to Color(0xFF4CAF50)
+                    RobotNavState.NAVIGATING -> navStatus.state_zh to Color(0xFF2196F3)
+                    RobotNavState.RELOCALIZING -> navStatus.state_zh to Color(0xFFFF9800)
+                    RobotNavState.EMERGENCY_STOP -> navStatus.state_zh to Color(0xFFE53935)
+                    RobotNavState.MAPPING -> navStatus.state_zh to Color(0xFF9C27B0)
+                    else -> navStatus.state_zh to Color.White
                 }
                 
                 Box(
