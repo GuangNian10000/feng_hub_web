@@ -1,5 +1,6 @@
 package com.example.guangnian.feature.console.ui.panel
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,17 +10,26 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.guangnian.core.utils.KLog
+import com.example.guangnian.core.utils.PgmUtils
 import com.example.guangnian.feature.console.data.bean.MapBean
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.readBytes
+import org.koin.compose.koinInject
 
 @Composable
 fun MapManagementPanel(
@@ -46,7 +56,7 @@ fun MapManagementPanel(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = null }) {
-                    Text("取消", color = Color.Gray)
+                    Text("取消", color = Color.Gray) //
                 }
             }
         )
@@ -72,7 +82,7 @@ fun MapManagementPanel(
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 12.dp)
             ) {
                 items(maps) { map ->
@@ -91,22 +101,67 @@ private fun MapItem(
     map: MapBean,
     onDeleteClick: () -> Unit
 ) {
+    val httpClient = koinInject<HttpClient>()
+    var imageBitmap by remember(map.image_url) { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(map.image_url) {
+        if (map.image_url.isNotEmpty()) {
+            try {
+                val bytes = httpClient.get(map.image_url).readBytes()
+                imageBitmap = PgmUtils.decodePgmToBitmap(bytes)
+            } catch (e: Exception) {
+                KLog.e("MapManagementPanel", "加载地图预览失败: ${e.message}")
+            }
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .height(80.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(Color(0x1AFFFFFF))
-            .border(0.5.dp, Color(0x12FFFFFF), RoundedCornerShape(6.dp))
-            .padding(horizontal = 12.dp),
+            .border(
+                width = if (map.is_active) 2.dp else 0.5.dp,
+                color = if (map.is_active) Color(0xFF007AFF) else Color(0x12FFFFFF),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 地图预览图 (手动解析 PGM)
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color.Black.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (imageBitmap != null) {
+                Image(
+                    bitmap = imageBitmap!!,
+                    contentDescription = map.map_name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Map,
+                    contentDescription = null,
+                    tint = Color.Gray.copy(alpha = 0.5f),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = map.map_name.ifEmpty { "未命名地图" },
                     color = Color.White,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -116,27 +171,12 @@ private fun MapItem(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFF4CAF50).copy(alpha = 0.2f))
+                            .background(Color(0xFF007AFF))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
-                        Text("当前使用", color = Color(0xFF4CAF50), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("正在使用", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-            }
-            Text(
-                text = "UID: ${map.map_uid}",
-                color = Color.Gray,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            map.created_at?.let {
-                Text(
-                    text = "创建于: $it",
-                    color = Color.Gray.copy(alpha = 0.7f),
-                    fontSize = 10.sp,
-                    maxLines = 1
-                )
             }
         }
 
@@ -145,7 +185,7 @@ private fun MapItem(
                 imageVector = Icons.Default.Delete,
                 contentDescription = "删除",
                 tint = if (map.is_active) Color.Gray.copy(alpha = 0.5f) else Color(0xFFFF5252),
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }

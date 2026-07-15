@@ -18,7 +18,8 @@ data class MapBean(
     val runtime_supported: Boolean = false,
     val last_error: String? = null,
     val created_at: String? = null,
-    val updated_at: String? = null
+    val updated_at: String? = null,
+    val image_url:String = ""
 )
 
 @Serializable
