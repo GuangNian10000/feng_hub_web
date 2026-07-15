@@ -102,9 +102,9 @@ class MapViewModel(
                     val pos = navigationApi.getPosition()
                     _uiState.update { it.copy(robotPosition = pos) }
                 } catch (e: Exception) {
-                    delay(500)
+                    delay(3000) //500
                 }
-                delay(200)
+                delay(3000) //200
             }
         }
 
@@ -126,7 +126,7 @@ class MapViewModel(
                 } catch (e: Exception) {
                     KLog.e("MapViewModel", "路径数据同步异常: ${e.message}")
                 }
-                delay(1000)
+                delay(3000)
             }
         }
 
@@ -139,7 +139,7 @@ class MapViewModel(
                 } catch (e: Exception) {
                     KLog.e("MapViewModel", "导览点同步异常")
                 }
-                delay(1000)
+                delay(3000)
             }
         }
     }

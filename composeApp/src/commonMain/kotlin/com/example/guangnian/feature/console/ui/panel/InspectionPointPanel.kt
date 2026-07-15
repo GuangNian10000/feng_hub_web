@@ -522,7 +522,7 @@ private fun RouteLinearItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "点位数: ${route.pointCount ?: 0} | 循环: ${route.loopCount}次",
+                text = "点位数: ${route.points?.size ?: route.pointCount ?: 0} | 循环: ${route.loopCount}次",
                 color = Color.Gray,
                 fontSize = 11.sp,
                 maxLines = 1
@@ -552,7 +552,11 @@ private fun RouteEditDialog(
     
     // 解析已有的点位
     val initialPointIds = remember(initialRoute) {
-        initialRoute?.pointIds?.split(",")?.filter { it.isNotEmpty() } ?: initialRoute?.points ?: emptyList()
+        // 优先从 points 列表提取 ID，如果没有则看 point_ids 列表，最后看 pointIds 字符串
+        initialRoute?.points?.map { it.point_id }
+            ?: initialRoute?.point_ids
+            ?: initialRoute?.pointIds?.split(",")?.filter { it.isNotEmpty() }
+            ?: emptyList()
     }
     var selectedPointIds by remember { mutableStateOf(initialPointIds) }
     var showPointSelector by remember { mutableStateOf(false) }
@@ -687,7 +691,8 @@ private fun RouteEditDialog(
                                 route_name = route_name,
                                 description = description,
                                 loopCount = loopCount.toIntOrNull() ?: 1,
-                                points = selectedPointIds
+                                point_ids = selectedPointIds,
+                                points = selectedPointIds.mapNotNull { id -> availablePoints.find { it.point_id == id } }
                             )
                             onConfirm(updated)
                         },
