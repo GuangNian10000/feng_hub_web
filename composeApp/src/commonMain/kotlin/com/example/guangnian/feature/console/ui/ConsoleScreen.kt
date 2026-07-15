@@ -170,6 +170,9 @@ fun InteractionScreen(
             isPaused = isInspectionPaused,
             onPauseToggle = { isInspectionPaused = !isInspectionPaused },
             onCancelClick = { /* TODO: Implement cancel logic */ },
+            onEndMappingClick = {
+                confirmActionPayload = "结束建图" to { consoleViewModel.endMapping() }
+            },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 64.dp, end = 24.dp)
@@ -310,6 +313,13 @@ fun InteractionScreen(
                             maps = uiState.maps,
                             onDeleteMap = { mapUid ->
                                 consoleViewModel.deleteMap(mapUid)
+                            },
+                            onStartMapping = { name ->
+                                consoleViewModel.startMapping(name)
+                            },
+                            onSetAddAction = { text, action ->
+                                addActionText = text
+                                onAddClickAction = action
                             },
                             onRetryClick = { consoleViewModel.fetchMaps() }
                         )

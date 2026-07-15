@@ -153,6 +153,19 @@ class ConsoleViewModel(
         }
     }
 
+    fun startMapping(mapName: String) {
+        executeTask("开始建图失败") {
+            navigationApi.startMapping(mapName)
+        }
+    }
+
+    fun endMapping() {
+        executeTask("结束建图失败") {
+            navigationApi.endMapping()
+            fetchMaps() // 结束后刷新列表
+        }
+    }
+
     fun fetchRoutes() {
         executeTask("获取路线列表失败") {
             val list = routeApi.getRoutes()

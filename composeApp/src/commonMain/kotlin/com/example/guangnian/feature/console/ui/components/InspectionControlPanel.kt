@@ -13,6 +13,7 @@ fun InspectionControlPanel(
     isPaused: Boolean,
     onPauseToggle: () -> Unit,
     onCancelClick: () -> Unit,
+    onEndMappingClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     GlassBox(
@@ -38,6 +39,13 @@ fun InspectionControlPanel(
                 bgColor = Color(0xFF616161),
                 modifier = Modifier.fillMaxWidth().height(36.dp),
                 onClick = onCancelClick
+            )
+
+            ControlButton(
+                text = "结束建图",
+                bgColor = Color(0xFFF57C00),
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                onClick = onEndMappingClick
             )
         }
     }

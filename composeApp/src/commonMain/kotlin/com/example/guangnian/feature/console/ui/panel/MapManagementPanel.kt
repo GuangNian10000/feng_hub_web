@@ -35,10 +35,60 @@ import org.koin.compose.koinInject
 fun MapManagementPanel(
     maps: List<MapBean>,
     onDeleteMap: (String) -> Unit,
+    onStartMapping: (String) -> Unit,
+    onSetAddAction: (String, () -> Unit) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDeleteConfirm by remember { mutableStateOf<MapBean?>(null) }
+    var showStartMappingDialog by remember { mutableStateOf(false) }
+    var newMapName by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        onSetAddAction("开始建图") {
+            newMapName = ""
+            showStartMappingDialog = true
+        }
+    }
+
+    if (showStartMappingDialog) {
+        AlertDialog(
+            onDismissRequest = { showStartMappingDialog = false },
+            title = { Text("开始建图", color = Color.Black, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("请输入新地图的名称：", color = Color.DarkGray, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = newMapName,
+                        onValueChange = { newMapName = it },
+                        placeholder = { Text("例如：办公室_1F") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            containerColor = Color.White,
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newMapName.isNotBlank()) {
+                            onStartMapping(newMapName)
+                            showStartMappingDialog = false
+                        }
+                    },
+                    enabled = newMapName.isNotBlank()
+                ) {
+                    Text("开始", color = Color(0xFF007AFF))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartMappingDialog = false }) {
+                    Text("取消", color = Color.Gray)
+                }
+            }
+        )
+    }
 
     if (showDeleteConfirm != null) {
         AlertDialog(
