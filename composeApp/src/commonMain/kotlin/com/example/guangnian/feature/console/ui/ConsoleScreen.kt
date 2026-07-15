@@ -56,7 +56,7 @@ fun InteractionScreen(
     // 动作执行确认弹窗状态
     var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
 
-    val menus = listOf("姿态动作", "动作", "导览管理", "语音合成", "智能体设置", "地图录制", "知识库")
+    val menus = listOf("姿态动作", "动作", "导览管理", "语音合成", "智能体设置", "地图管理", "知识库")
 
     var leftJoyX by remember { mutableFloatStateOf(0f) }
     var leftJoyY by remember { mutableFloatStateOf(0f) }
@@ -79,6 +79,7 @@ fun InteractionScreen(
         when (activeFragment) {
             "姿态动作" -> consoleViewModel.fetchPostureList()
             "动作" -> consoleViewModel.fetchArmList()
+            "地图管理" -> consoleViewModel.fetchMaps()
             "导览管理" -> {
                 if (inspectionTab == "导览点") {
                     consoleViewModel.fetchInspectionPoints()
@@ -227,7 +228,7 @@ fun InteractionScreen(
         }
 
         AnimatedVisibility(
-            visible = activeFragment != null && activeFragment != "地图录制",
+            visible = activeFragment != null,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 16.dp, bottom = 96.dp, start = 180.dp, end = 180.dp),
@@ -305,6 +306,13 @@ fun InteractionScreen(
                             addActionText = text
                             onAddClickAction = action
                         })
+                        "地图管理" -> MapManagementPanel(
+                            maps = uiState.maps,
+                            onDeleteMap = { mapUid ->
+                                consoleViewModel.deleteMap(mapUid)
+                            },
+                            onRetryClick = { consoleViewModel.fetchMaps() }
+                        )
                     }
                 }
             )

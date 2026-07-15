@@ -27,6 +27,7 @@ data class ConsoleUiState(
     val favoriteActions: List<FavoriteActionBean> = emptyList(),
     val endpoints: List<InspectionPointBean> = emptyList(),
     val routes: List<RouteBean> = emptyList(),
+    val maps: List<MapBean> = emptyList(),
     val robotNavStatus: RobotNavStatusBean = RobotNavStatusBean(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -135,6 +136,20 @@ class ConsoleViewModel(
         executeTask("获取巡检点失败") {
             val list = navigationApi.getInspectionPoints()
             _uiState.update { it.copy(endpoints = list) }
+        }
+    }
+
+    fun fetchMaps() {
+        executeTask("获取地图列表失败") {
+            val response = navigationApi.getMaps()
+            _uiState.update { it.copy(maps = response.maps) }
+        }
+    }
+
+    fun deleteMap(mapUid: String) {
+        executeTask("删除地图失败") {
+            navigationApi.archiveMap(mapUid)
+            fetchMaps()
         }
     }
 

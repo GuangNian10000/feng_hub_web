@@ -22,4 +22,8 @@ interface NavigationApi {
     suspend fun updateInspectionPoint(point: InspectionPointBean): BaseBean // 对应 point_add (Upsert)
     suspend fun deleteInspectionPoint(point_id: String): BaseBean // 对应 point_delete_by_pid
     suspend fun startInspectionPoint(point_id: String): BaseBean
+
+    // 地图管理
+    suspend fun getMaps(): MapListResponse
+    suspend fun archiveMap(mapUid: String): BaseBean
 }

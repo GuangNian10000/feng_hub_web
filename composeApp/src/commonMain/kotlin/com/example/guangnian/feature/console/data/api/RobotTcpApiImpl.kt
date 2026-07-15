@@ -261,6 +261,12 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun getInspectionPoints() =
         request<List<InspectionPointBean>>("slam/point_query_all")
 
+    // 获取地图列表
+    override suspend fun getMaps() = request<com.example.guangnian.feature.console.data.bean.MapListResponse>("map/list")
+
+    // 归档（删除）地图
+    override suspend fun archiveMap(mapUid: String) = request<BaseBean>("map/archive",mapOf("map_uid" to mapUid))//("map", mapOf("topic" to "archive", "map_uid" to mapUid))
+
     // 创建巡检点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =
         request<BaseBean>("slam/point_add", mapOf(
