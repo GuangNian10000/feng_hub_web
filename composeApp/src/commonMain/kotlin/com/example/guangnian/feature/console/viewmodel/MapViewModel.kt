@@ -178,27 +178,43 @@ class MapViewModel(
     private fun loadMapImage(url: String) {
         viewModelScope.launch(Dispatchers.Default) {
             try {
-                _uiState.update { it.copy(isMapLoading = true, mapLoadingProgress = 0f, loadingStage = "准备下载...") }
+                val isMapping = _uiState.value.isMapping
+                val hasMap = _uiState.value.mapImage != null
+                
+                // 如果正在建图且已经有地图图片了，就不显示加载框以避免闪烁
+                val showLoading = !isMapping || !hasMap
+                
+                if (showLoading) {
+                    _uiState.update { it.copy(isMapLoading = true, mapLoadingProgress = 0f, loadingStage = "准备下载...") }
+                }
+
                 val response = httpClient.get(url) {
-                    onDownload { bytesSentTotal, contentLength ->
-                        if (contentLength != null && contentLength > 0) {
-                            val progress = bytesSentTotal.toFloat() / contentLength
-                            _uiState.update { 
-                                it.copy(
-                                    mapLoadingProgress = progress * 0.7f,
-                                    loadingStage = "下载地图: ${(progress * 100).toInt()}%"
-                                )
+                    if (showLoading) {
+                        onDownload { bytesSentTotal, contentLength ->
+                            if (contentLength != null && contentLength > 0) {
+                                val progress = bytesSentTotal.toFloat() / contentLength
+                                _uiState.update { 
+                                    it.copy(
+                                        mapLoadingProgress = progress * 0.7f,
+                                        loadingStage = "下载地图: ${(progress * 100).toInt()}%"
+                                    )
+                                }
                             }
                         }
                     }
                 }
                 val bytes = response.readBytes()
-                _uiState.update { it.copy(mapLoadingProgress = 0.8f, loadingStage = "解析地图数据...") }
+                
+                if (showLoading) {
+                    _uiState.update { it.copy(mapLoadingProgress = 0.8f, loadingStage = "解析地图数据...") }
+                }
                 
                 val bitmap = PgmUtils.decodePgmToBitmap(bytes)
                 if (bitmap != null) {
-                    _uiState.update { it.copy(mapLoadingProgress = 0.9f, loadingStage = "准备渲染...") }
-                    delay(300) // 给予UI反馈时间
+                    if (showLoading) {
+                        _uiState.update { it.copy(mapLoadingProgress = 0.9f, loadingStage = "准备渲染...") }
+                        delay(300) // 给予UI反馈时间
+                    }
                     _uiState.update { 
                         it.copy(
                             mapImage = bitmap, 
@@ -207,6 +223,8 @@ class MapViewModel(
                             isMapLoading = false
                         ) 
                     }
+                } else {
+                    _uiState.update { it.copy(isMapLoading = false) }
                 }
             } catch (e: Exception) {
                 KLog.e("MapViewModel", "地图加载失败: ${e.message}")

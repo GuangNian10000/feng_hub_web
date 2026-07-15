@@ -48,9 +48,15 @@ fun MapBackgroundLayer(
     modifier: Modifier = Modifier
 ) {
     val config = uiState.mapConfig
-    var scale by remember(config) { mutableFloatStateOf(1f) }
-    var offset by remember(config) { mutableStateOf(Offset.Zero) }
-    var isInitialized by remember(config) { mutableStateOf(false) }
+    // 稳定性修复：不直接以 config 对象为 key，避免轮询导致的状态重置
+    // 只有当坐标系关键参数变化时才重置缩放和位移
+    val configIdentity = remember(config) {
+        config?.let { "${it.origin}_${it.resolution}" } ?: "none"
+    }
+    
+    var scale by remember(configIdentity) { mutableFloatStateOf(1f) }
+    var offset by remember(configIdentity) { mutableStateOf(Offset.Zero) }
+    var isInitialized by remember(configIdentity) { mutableStateOf(false) }
 
     val mapBitmap = uiState.mapImage
     val textMeasurer = rememberTextMeasurer()
@@ -61,8 +67,8 @@ fun MapBackgroundLayer(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF121212))
-                .pointerInput(config) {
-                    if (config == null) return@pointerInput
+                .pointerInput(uiState.mapConfig) {
+                    if (uiState.mapConfig == null) return@pointerInput
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val oldScale = scale
                         val newScale = (scale * zoom).coerceIn(0.1f, 10f)
@@ -70,12 +76,12 @@ fun MapBackgroundLayer(
                         scale = newScale
                     }
                 }
-                .pointerInput(config, uiState.interactionMode, scale, offset, mapBitmap) {
-                    if (config == null) return@pointerInput
+                .pointerInput(uiState.mapConfig, uiState.interactionMode, scale, offset, mapBitmap) {
+                    val currentConfig = uiState.mapConfig ?: return@pointerInput
                     detectTapGestures(
                         onLongPress = { screenOffset ->
                             val mapPixelOffset = (screenOffset - offset) / scale
-                            val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                            val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                             KLog.d("MapDebug", "长按创建点位: 屏幕=$screenOffset, 像素=$mapPixelOffset, 世界=$worldPos")
                             mapViewModel.onMapLongClick(screenOffset, worldPos)
                         },
@@ -83,12 +89,12 @@ fun MapBackgroundLayer(
                             when (uiState.interactionMode) {
                                 MapInteractionMode.PICK_ORIENTATION, MapInteractionMode.PICK_ROBOT_ORIENTATION, MapInteractionMode.PICK_GO_HERE_ORIENTATION -> {
                                     val mapPixelOffset = (screenOffset - offset) / scale
-                                    val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                                    val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                                     mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
                                 }
                                 MapInteractionMode.PICK_POSITION -> {
                                     val mapPixelOffset = (screenOffset - offset) / scale
-                                    val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, config, mapHeightPx)
+                                    val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                                     mapViewModel.onMapClickForPosition(worldPos)
                                 }
                                 MapInteractionMode.CONFIRM_POINT, MapInteractionMode.CONFIRM_ROBOT_POSITION -> {
@@ -101,7 +107,7 @@ fun MapBackgroundLayer(
                                     val clickedPoint = uiState.endpoints.find { ep ->
                                         val realX = ep.position?.x ?: ep.x
                                         val realY = ep.position?.y ?: ep.y
-                                        val px = MapTransformUtils.worldToPixel(realX, realY, config, mapHeightPx)
+                                        val px = MapTransformUtils.worldToPixel(realX, realY, currentConfig, mapHeightPx)
                                         val spx = px.x * scale + offset.x
                                         val spy = px.y * scale + offset.y
                                         hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
@@ -113,7 +119,7 @@ fun MapBackgroundLayer(
                                     } else {
                                         // 如果没点击到导览点，检测是否点击了机器人
                                         val isClickedRobot = uiState.robotPosition?.let { robot ->
-                                            val px = MapTransformUtils.worldToPixel(robot.x, robot.y, config, mapHeightPx)
+                                            val px = MapTransformUtils.worldToPixel(robot.x, robot.y, currentConfig, mapHeightPx)
                                             val spx = px.x * scale + offset.x
                                             val spy = px.y * scale + offset.y
                                             hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
@@ -135,7 +141,8 @@ fun MapBackgroundLayer(
             val containerWidth = constraints.maxWidth.toFloat()
             val containerHeight = constraints.maxHeight.toFloat()
 
-            LaunchedEffect(mapBitmap, containerWidth, containerHeight) {
+            // 只有当关键参数变化时，才重新初始化变换
+            LaunchedEffect(configIdentity, containerWidth, containerHeight) {
                 if (mapBitmap != null && !isInitialized && containerWidth > 0 && containerHeight > 0) {
                     val bmpW = mapBitmap.width.toFloat()
                     val bmpH = mapBitmap.height.toFloat()
