@@ -250,8 +250,9 @@ private fun PathLayer(
 ) {
     if (config == null) return
     Canvas(modifier = modifier) {
-        drawPathLine(globalPath, config, mapHeightPx, Color(0xFF03DC6B), 5f / scale)
-        drawPathLine(localPath, config, mapHeightPx, Color(0xFFF3D65A), 6f / scale)
+        // 增加路径粗细：全局路径从 5f 改为 12f，局部路径从 6f 改为 15f
+        drawPathLine(globalPath, config, mapHeightPx, Color(0xFF03DC6B), 17f / scale)
+        drawPathLine(localPath, config, mapHeightPx, Color(0xFFF3D65A), 20f / scale)
     }
 }
 
