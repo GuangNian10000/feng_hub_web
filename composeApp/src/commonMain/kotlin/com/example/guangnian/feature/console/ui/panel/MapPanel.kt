@@ -56,6 +56,7 @@ fun MapBackgroundLayer(
     
     var scale by remember(mapId) { mutableFloatStateOf(1f) }
     var offset by remember(mapId) { mutableStateOf(Offset.Zero) }
+    var rotation by remember(mapId) { mutableFloatStateOf(0f) }
     var isInitialized by remember(mapId) { mutableStateOf(false) }
 
     val mapBitmap = uiState.mapImage
@@ -65,7 +66,19 @@ fun MapBackgroundLayer(
     // 使用 rememberUpdatedState 避免 pointerInput 因为频繁变更的 scale/offset 而重新启动，解决抖动问题
     val currentScale by rememberUpdatedState(scale)
     val currentOffset by rememberUpdatedState(offset)
+    val currentRotation by rememberUpdatedState(rotation)
     val currentMapBitmap by rememberUpdatedState(mapBitmap)
+
+    // 辅助函数：将屏幕坐标转换为地图像素坐标（考虑缩放、偏移和旋转）
+    val screenToMapPixel = { screenOffset: Offset ->
+        val rad = -currentRotation * (PI / 180).toFloat()
+        val cosA = cos(rad)
+        val sinA = sin(rad)
+        val relativeOffset = screenOffset - currentOffset
+        val unrotatedX = relativeOffset.x * cosA - relativeOffset.y * sinA
+        val unrotatedY = relativeOffset.x * sinA + relativeOffset.y * cosA
+        Offset(unrotatedX, unrotatedY) / currentScale
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         BoxWithConstraints(
@@ -74,18 +87,30 @@ fun MapBackgroundLayer(
                 .background(Color(0xFF121212))
                 .pointerInput(mapId) { // 使用稳定的 mapId
                     if (config == null) return@pointerInput
-                    detectTransformGestures { centroid, pan, zoom, _ ->
+                    detectTransformGestures { centroid, pan, zoom, rotationChange ->
                         val oldScale = scale
                         val newScale = (scale * zoom).coerceIn(0.1f, 10f)
-                        offset = centroid + pan - (centroid - offset) * (newScale / oldScale)
+                        
+                        // 更新旋转角度
+                        rotation += rotationChange
+                        
+                        // 计算缩放和旋转后的偏移量，使其围绕手势中心点变换
+                        val centeredOffset = offset - centroid
+                        val rad = rotationChange * (PI / 180).toFloat()
+                        val cosA = cos(rad)
+                        val sinA = sin(rad)
+                        val rotatedX = centeredOffset.x * cosA - centeredOffset.y * sinA
+                        val rotatedY = centeredOffset.x * sinA + centeredOffset.y * cosA
+                        
+                        offset = centroid + pan + Offset(rotatedX, rotatedY) * (newScale / oldScale)
                         scale = newScale
                     }
                 }
-                .pointerInput(mapId, uiState.interactionMode) { // 移除 scale/offset 依赖
+                .pointerInput(mapId, uiState.interactionMode) { 
                     val currentConfig = config ?: return@pointerInput
                     detectTapGestures(
                         onLongPress = { screenOffset ->
-                            val mapPixelOffset = (screenOffset - currentOffset) / currentScale
+                            val mapPixelOffset = screenToMapPixel(screenOffset)
                             val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                             KLog.d("MapDebug", "长按创建点位: 屏幕=$screenOffset, 像素=$mapPixelOffset, 世界=$worldPos")
                             mapViewModel.onMapLongClick(screenOffset, worldPos)
@@ -93,12 +118,12 @@ fun MapBackgroundLayer(
                         onTap = { screenOffset ->
                             when (uiState.interactionMode) {
                                 MapInteractionMode.PICK_ORIENTATION, MapInteractionMode.PICK_ROBOT_ORIENTATION, MapInteractionMode.PICK_GO_HERE_ORIENTATION -> {
-                                    val mapPixelOffset = (screenOffset - currentOffset) / currentScale
+                                    val mapPixelOffset = screenToMapPixel(screenOffset)
                                     val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                                     mapViewModel.onMapClickForOrientation(screenOffset, worldPos)
                                 }
                                 MapInteractionMode.PICK_POSITION -> {
-                                    val mapPixelOffset = (screenOffset - currentOffset) / currentScale
+                                    val mapPixelOffset = screenToMapPixel(screenOffset)
                                     val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
                                     mapViewModel.onMapClickForPosition(worldPos)
                                 }
@@ -113,8 +138,15 @@ fun MapBackgroundLayer(
                                         val realX = ep.position?.x ?: ep.x
                                         val realY = ep.position?.y ?: ep.y
                                         val px = MapTransformUtils.worldToPixel(realX, realY, currentConfig, mapHeightPx)
-                                        val spx = px.x * currentScale + currentOffset.x
-                                        val spy = px.y * currentScale + currentOffset.y
+                                        
+                                        // 将像素坐标转回屏幕坐标进行点击判定
+                                        val rad = currentRotation * (PI / 180).toFloat()
+                                        val cosA = cos(rad)
+                                        val sinA = sin(rad)
+                                        val scaled = px * currentScale
+                                        val spx = (scaled.x * cosA - scaled.y * sinA) + currentOffset.x
+                                        val spy = (scaled.x * sinA + scaled.y * cosA) + currentOffset.y
+                                        
                                         hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
                                     }
                                     
@@ -123,8 +155,12 @@ fun MapBackgroundLayer(
                                     } else {
                                         val isClickedRobot = uiState.robotPosition?.let { robot ->
                                             val px = MapTransformUtils.worldToPixel(robot.x, robot.y, currentConfig, mapHeightPx)
-                                            val spx = px.x * currentScale + currentOffset.x
-                                            val spy = px.y * currentScale + currentOffset.y
+                                            val rad = currentRotation * (PI / 180).toFloat()
+                                            val cosA = cos(rad)
+                                            val sinA = sin(rad)
+                                            val scaled = px * currentScale
+                                            val spx = (scaled.x * cosA - scaled.y * sinA) + currentOffset.x
+                                            val spy = (scaled.x * sinA + scaled.y * cosA) + currentOffset.y
                                             hypot(screenOffset.x - spx, screenOffset.y - spy) < clickRadius
                                         } ?: false
 
@@ -151,6 +187,7 @@ fun MapBackgroundLayer(
                     val targetScale = (if (scaleW < scaleH) scaleW else scaleH) * 0.9f
                     val finalScale = if (targetScale < 1.0f) targetScale else 1.0f
                     scale = finalScale
+                    rotation = 0f
                     offset = Offset((containerWidth - bmpW * finalScale) / 2f, (containerHeight - bmpH * finalScale) / 2f)
                     isInitialized = true
                 }
@@ -161,6 +198,7 @@ fun MapBackgroundLayer(
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
+                    rotationZ = rotation
                     translationX = offset.x
                     translationY = offset.y
                     transformOrigin = TransformOrigin(0f, 0f)
