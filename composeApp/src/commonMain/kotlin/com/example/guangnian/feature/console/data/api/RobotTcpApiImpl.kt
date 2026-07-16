@@ -53,11 +53,11 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         "route_id" to route_id
     ))
 
-    override suspend fun startRoute(route_id: String) = request<BaseBean>("navigation/start_route", mapOf(
+    override suspend fun startRoute(route_id: String) = request<BaseBean>("slam/start_route", mapOf(
         "route_id" to route_id
     ))
 
-    override suspend fun getRouteStatus() = request<RouteStatusBean>("navigation/get_status")
+    override suspend fun getRouteStatus() = request<RouteStatusBean>("slam/get_status")
 
     override suspend fun selectAgent(agent: AgentEntity) =
         request<BaseBean>("agent/select_agent", mapOf("agent" to Json.encodeToString(agent)),targetNode= TcpNode.TABLET)
@@ -247,13 +247,13 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<BaseBean>("slam/start_point", mapOf("point_id" to point_id))
 
     // 停止当前导航目标
-    override suspend fun stopPosition() = request<Unit>("navigation/stop_position")
+    override suspend fun stopPosition() = request<Unit>("slam/stop_position")
 
     // 暂停导览
-    override suspend fun pauseNavigation() = request<BaseBean>("navigation/pause")
+    override suspend fun pauseNavigation() = request<BaseBean>("slam/pause")
 
     // 继续导览
-    override suspend fun resumeNavigation() = request<BaseBean>("navigation/resume")
+    override suspend fun resumeNavigation() = request<BaseBean>("slam/resume")
 
     // 获取 2D 点云数据
     override suspend fun getPointCloud() = request<List<Point2DBean>>("slam/point_cloud")
@@ -325,7 +325,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 获取局部路径规划
     override suspend fun getLocalPath() = request<PathPointsBean>("slam/get_local_path")
 
-    override suspend fun getNavStatus() = request<com.example.guangnian.feature.console.data.bean.RobotNavStatusBean>("navigation/get_status")
+    override suspend fun getNavStatus() = request<com.example.guangnian.feature.console.data.bean.RobotNavStatusBean>("slam/get_status")
 
     // --- FaceApi 实现 ---
     override suspend fun robotCaptureFace(name: String) =
