@@ -348,7 +348,7 @@ fun BottomStatusBar(
                 style = TextStyle(shadow = DefaultTextShadow)
             )
             Text(
-                text = "型号: ${if (controlType == ControlType.DOG) "户外巡检版" else "通用机器人版"}",
+                text = "型号: ${if (controlType == ControlType.DOG) "户外导航版" else "通用机器人版"}",
                 color = Color(0xFFE0E0E0),
                 fontSize = 12.sp,
                 style = TextStyle(shadow = DefaultTextShadow)

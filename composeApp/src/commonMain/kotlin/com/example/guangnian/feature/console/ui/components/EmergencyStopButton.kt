@@ -19,17 +19,21 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun EmergencyStopButton(
     onClick: () -> Unit,
+    isEmergency: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val bgColor = if (isEmergency) Color(0xFFFBC02D) else Color(0xFFE53935)
+    val label = if (isEmergency) "恢复" else "急停"
+
     Box(
         modifier = modifier
             .size(56.dp)
             .clip(CircleShape)
-            .background(Color(0xFFE53935).copy(alpha = 0.95f))
+            .background(bgColor.copy(alpha = 0.95f))
             .border(2.dp, Color(0x44FFFFFF), CircleShape)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text("急停", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
+        Text(label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
     }
 }

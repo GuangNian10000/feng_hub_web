@@ -8,7 +8,6 @@ import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.data.bean.AgentListResponse
 import com.example.guangnian.feature.console.data.bean.HeartbeatStatusBean
 import com.example.guangnian.feature.console.data.bean.InspectionPointBean
-import com.example.guangnian.feature.console.data.bean.PointListResponse
 import com.example.guangnian.feature.console.data.bean.MapConfigBean
 import com.example.guangnian.feature.console.data.bean.MotionBean
 import com.example.guangnian.feature.console.data.bean.OfflineStateBean
@@ -24,7 +23,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 import com.example.guangnian.feature.console.data.bean.RouteBean
-import com.example.guangnian.feature.console.data.bean.RouteListResponse
 import com.example.guangnian.feature.console.data.bean.RouteStatusBean
 
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
@@ -244,16 +242,18 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<Unit>("slam/start_point", msg)
     }
 
-    // 前往巡检点
+    // 前往导航点
     override suspend fun startInspectionPoint(point_id: String) =
         request<BaseBean>("slam/start_point", mapOf("point_id" to point_id))
 
     // 停止当前导航目标
     override suspend fun stopPosition() = request<Unit>("navigation/stop_position")
 
-    override suspend fun pauseNavigation() = request<Unit>("navigation/pause")
+    // 暂停导览
+    override suspend fun pauseNavigation() = request<BaseBean>("navigation/pause")
 
-    override suspend fun resumeNavigation() = request<Unit>("navigation/resume")
+    // 继续导览
+    override suspend fun resumeNavigation() = request<BaseBean>("navigation/resume")
 
     // 获取 2D 点云数据
     override suspend fun getPointCloud() = request<List<Point2DBean>>("slam/point_cloud")
@@ -267,7 +267,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 查询急停状态
     override suspend fun getEmergency() = request<Unit>("slam/get_emergency")
 
-    // 获取巡检点列表
+    // 获取导航点列表
     override suspend fun getInspectionPoints() =
         request<List<InspectionPointBean>>("slam/point_query_all")
 
@@ -277,7 +277,13 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 归档（删除）地图
     override suspend fun archiveMap(mapUid: String) = request<BaseBean>("map/archive",mapOf("map_uid" to mapUid))//("map", mapOf("topic" to "archive", "map_uid" to mapUid))
 
-    // 创建巡检点
+    // 切换地图
+    override suspend fun switchMap(map_uid: String) = request<BaseBean>("map/switch",
+            mapOf(
+                "map_uid" to map_uid
+            ))
+
+    // 创建导航点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =
         request<BaseBean>("slam/point_add", mapOf(
             //"point_id" to point.point_id,
@@ -293,7 +299,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
             "needRotate" to point.needRotate
         ))
 
-    // 更新巡检点
+    // 更新导航点
     override suspend fun updateInspectionPoint(point: InspectionPointBean) =
         request<BaseBean>("slam/point_add", mapOf(
             "point_id" to point.point_id,
@@ -309,7 +315,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
             "needRotate" to point.needRotate
         ))
 
-    // 删除巡检点
+    // 删除导航点
     override suspend fun deleteInspectionPoint(point_id: String) =
         request<BaseBean>("slam/point_delete_by_pid", mapOf("point_id" to point_id))
 

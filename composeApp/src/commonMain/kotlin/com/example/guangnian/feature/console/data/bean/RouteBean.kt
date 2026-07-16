@@ -20,7 +20,7 @@ data class RouteBean(
 
 @Serializable
 data class RouteListResponse(
-    val receive: String = "",
+    val receive: Boolean = false,
     val routes: List<RouteBean> = emptyList()
 )
 

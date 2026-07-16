@@ -35,12 +35,14 @@ import org.koin.compose.koinInject
 fun MapManagementPanel(
     maps: List<MapBean>,
     onDeleteMap: (String) -> Unit,
+    onSwitchMap: (String) -> Unit,
     onStartMapping: (String) -> Unit,
     onSetAddAction: (String, () -> Unit) -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDeleteConfirm by remember { mutableStateOf<MapBean?>(null) }
+    var showSwitchConfirm by remember { mutableStateOf<MapBean?>(null) }
     var showStartMappingDialog by remember { mutableStateOf(false) }
     var newMapName by remember { mutableStateOf("") }
 
@@ -106,7 +108,29 @@ fun MapManagementPanel(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = null }) {
-                    Text("取消", color = Color.Gray) //
+                    Text("取消", color = Color.Gray)
+                }
+            }
+        )
+    }
+
+    if (showSwitchConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showSwitchConfirm = null },
+            title = { Text("确认切换地图", color = Color.Black, fontWeight = FontWeight.Bold) },
+            text = { Text("确定要切换到地图 “${showSwitchConfirm?.map_name}” 吗？", color = Color.DarkGray) },
+            containerColor = Color.White,
+            confirmButton = {
+                TextButton(onClick = {
+                    showSwitchConfirm?.let { onSwitchMap(it.map_uid) }
+                    showSwitchConfirm = null
+                }) {
+                    Text("切换", color = Color(0xFF007AFF))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSwitchConfirm = null }) {
+                    Text("取消", color = Color.Gray)
                 }
             }
         )
@@ -138,7 +162,12 @@ fun MapManagementPanel(
                 items(maps) { map ->
                     MapItem(
                         map = map,
-                        onDeleteClick = { showDeleteConfirm = map }
+                        onDeleteClick = { showDeleteConfirm = map },
+                        onClick = {
+                            if (!map.is_active) {
+                                showSwitchConfirm = map
+                            }
+                        }
                     )
                 }
             }
@@ -149,7 +178,8 @@ fun MapManagementPanel(
 @Composable
 private fun MapItem(
     map: MapBean,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     val httpClient = koinInject<HttpClient>()
     var imageBitmap by remember(map.image_url) { mutableStateOf<ImageBitmap?>(null) }
@@ -176,6 +206,7 @@ private fun MapItem(
                 color = if (map.is_active) Color(0xFF007AFF) else Color(0x12FFFFFF),
                 shape = RoundedCornerShape(8.dp)
             )
+            .clickable { onClick() }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -211,20 +242,21 @@ private fun MapItem(
                 Text(
                     text = map.map_name.ifEmpty { "未命名地图" },
                     color = Color.White,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 if (map.is_active) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(2.dp))
                             .background(Color(0xFF007AFF))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
                     ) {
-                        Text("正在使用", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("正在使用", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

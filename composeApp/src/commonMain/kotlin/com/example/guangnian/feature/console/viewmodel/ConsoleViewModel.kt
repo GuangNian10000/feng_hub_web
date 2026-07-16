@@ -29,6 +29,7 @@ data class ConsoleUiState(
     val routes: List<RouteBean> = emptyList(),
     val maps: List<MapBean> = emptyList(),
     val robotNavStatus: RobotNavStatusBean = RobotNavStatusBean(),
+    val isInspectionPaused: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     // 交互状态
@@ -137,7 +138,7 @@ class ConsoleViewModel(
     }
 
     fun fetchInspectionPoints() {
-        executeTask("获取巡检点失败") {
+        executeTask("获取导航点失败") {
             val list = navigationApi.getInspectionPoints()
             _uiState.update { it.copy(endpoints = list) }
         }
@@ -153,6 +154,13 @@ class ConsoleViewModel(
     fun deleteMap(mapUid: String) {
         executeTask("删除地图失败") {
             navigationApi.archiveMap(mapUid)
+            fetchMaps()
+        }
+    }
+
+    fun switchMap(mapUid: String) {
+        executeTask("切换地图失败") {
+            navigationApi.switchMap(mapUid)
             fetchMaps()
         }
     }
@@ -219,7 +227,7 @@ class ConsoleViewModel(
             try {
                 navigationApi.startInspectionPoint(point_id)
             } catch (e: Exception) {
-                KLog.e(TAG, "开始巡检点失败: ${e.message}")
+                KLog.e(TAG, "开始导航点失败: ${e.message}")
             }
         }
     }
@@ -237,7 +245,10 @@ class ConsoleViewModel(
     fun pauseNavigation() {
         viewModelScope.launch {
             try {
-                navigationApi.pauseNavigation()
+                val res = navigationApi.pauseNavigation()
+                if (res.receive) {
+                    _uiState.update { it.copy(isInspectionPaused = true) }
+                }
             } catch (e: Exception) {
                 KLog.e(TAG, "暂停导航失败: ${e.message}")
             }
@@ -247,7 +258,10 @@ class ConsoleViewModel(
     fun resumeNavigation() {
         viewModelScope.launch {
             try {
-                navigationApi.resumeNavigation()
+                val res = navigationApi.resumeNavigation()
+                if (res.receive) {
+                    _uiState.update { it.copy(isInspectionPaused = false) }
+                }
             } catch (e: Exception) {
                 KLog.e(TAG, "继续导航失败: ${e.message}")
             }
@@ -265,7 +279,7 @@ class ConsoleViewModel(
     }
 
     fun addInspectionPoint(point: InspectionPointBean) {
-        executeTask("添加巡检点失败") {
+        executeTask("添加导航点失败") {
             navigationApi.addInspectionPoint(point)
             fetchInspectionPoints()
             eventBus.emit(RobotEvent.PointsChanged)
@@ -273,7 +287,7 @@ class ConsoleViewModel(
     }
 
     fun updateInspectionPoint(point: InspectionPointBean) {
-        executeTask("更新巡检点失败") {
+        executeTask("更新导航点失败") {
             navigationApi.updateInspectionPoint(point)
             fetchInspectionPoints()
             eventBus.emit(RobotEvent.PointsChanged)
@@ -281,7 +295,7 @@ class ConsoleViewModel(
     }
 
     fun deleteInspectionPoint(point_id: String) {
-        executeTask("删除巡检点失败") {
+        executeTask("删除导航点失败") {
             navigationApi.deleteInspectionPoint(point_id)
             fetchInspectionPoints()
             eventBus.emit(RobotEvent.PointsChanged)
@@ -315,6 +329,16 @@ class ConsoleViewModel(
                 motionControlApi.stopAll()
             } catch (e: Exception) {
                 KLog.e(TAG, "停止指令发送失败: ${e.message}")
+            }
+        }
+    }
+
+    fun recover() {
+        viewModelScope.launch {
+            try {
+                motionControlApi.recover()
+            } catch (e: Exception) {
+                KLog.e(TAG, "恢复指令发送失败: ${e.message}")
             }
         }
     }

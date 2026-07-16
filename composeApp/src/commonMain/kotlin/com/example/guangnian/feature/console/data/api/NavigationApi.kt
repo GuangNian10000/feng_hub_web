@@ -11,14 +11,14 @@ interface NavigationApi {
     suspend fun startPosition(x: Double, y: Double, yaw: Double)
     suspend fun startPoint(point_id: String, x: Double? = null, y: Double? = null, yaw: Double? = null)
     suspend fun stopPosition()
-    suspend fun pauseNavigation()
-    suspend fun resumeNavigation()
+    suspend fun pauseNavigation(): BaseBean
+    suspend fun resumeNavigation(): BaseBean
     suspend fun getPointCloud(): List<Point2DBean>
     suspend fun getGlobalPath(): PathPointsBean
     suspend fun getLocalPath(): PathPointsBean
     suspend fun getNavStatus(): RobotNavStatusBean
 
-    // 巡检点相关 (增删改查)
+    // 导航点相关 (增删改查)
     suspend fun getInspectionPoints(): List<InspectionPointBean>
     suspend fun addInspectionPoint(point: InspectionPointBean): BaseBean // 对应 point_add (Upsert)
     suspend fun updateInspectionPoint(point: InspectionPointBean): BaseBean // 对应 point_add (Upsert)
@@ -28,4 +28,5 @@ interface NavigationApi {
     // 地图管理
     suspend fun getMaps(): MapListResponse
     suspend fun archiveMap(mapUid: String): BaseBean
+    suspend fun switchMap(map_uid:String): BaseBean
 }

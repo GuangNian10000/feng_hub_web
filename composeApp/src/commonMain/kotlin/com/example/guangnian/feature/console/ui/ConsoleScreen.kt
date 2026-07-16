@@ -52,7 +52,6 @@ fun InteractionScreen(
         onAddClickAction = null
         addActionText = ""
     }
-    var isInspectionPaused by remember { mutableStateOf(false) }
 
     // 动作执行确认弹窗状态
     var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
@@ -168,21 +167,20 @@ fun InteractionScreen(
         )
 
         InspectionControlPanel(
-            isPaused = isInspectionPaused,
+            isPaused = uiState.isInspectionPaused,
             showEndMapping = uiState.robotNavStatus.state == RobotNavState.MAPPING,
             onPauseToggle = {
-                val actionName = if (isInspectionPaused) "继续巡检" else "暂停巡检"
+                val actionName = if (uiState.isInspectionPaused) "继续导航" else "暂停导航"
                 confirmActionPayload = actionName to {
-                    if (isInspectionPaused) {
+                    if (uiState.isInspectionPaused) {
                         consoleViewModel.resumeNavigation()
                     } else {
                         consoleViewModel.pauseNavigation()
                     }
-                    isInspectionPaused = !isInspectionPaused
                 }
             },
             onCancelClick = {
-                confirmActionPayload = "取消巡检" to {
+                confirmActionPayload = "取消导航" to {
                     consoleViewModel.stopNavigation()
                 }
             },
@@ -218,8 +216,13 @@ fun InteractionScreen(
         )
 
         EmergencyStopButton(
+            isEmergency = uiState.robotNavStatus.state == RobotNavState.EMERGENCY_STOP,
             onClick = {
-                confirmActionPayload = "急停" to { consoleViewModel.stopAll() }
+                if (uiState.robotNavStatus.state == RobotNavState.EMERGENCY_STOP) {
+                    confirmActionPayload = "恢复" to { consoleViewModel.recover() }
+                } else {
+                    confirmActionPayload = "急停" to { consoleViewModel.stopAll() }
+                }
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -329,6 +332,9 @@ fun InteractionScreen(
                             maps = uiState.maps,
                             onDeleteMap = { mapUid ->
                                 consoleViewModel.deleteMap(mapUid)
+                            },
+                            onSwitchMap = { mapUid ->
+                                consoleViewModel.switchMap(mapUid)
                             },
                             onStartMapping = { name ->
                                 consoleViewModel.startMapping(name)

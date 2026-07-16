@@ -24,7 +24,7 @@ data class MapBean(
 
 @Serializable
 data class MapListResponse(
-    val receive: String = "",
+    val receive: Boolean = false,
     val active_map_uid: String = "",
     val maps: List<MapBean> = emptyList()
 )

@@ -25,7 +25,7 @@ fun InspectionControlPanel(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(6.dp)
         ) {
-            val pauseBtnText = if (isPaused) "继续巡检" else "暂停巡检"
+            val pauseBtnText = if (isPaused) "继续导航" else "暂停导航"
             val pauseBtnColor = if (isPaused) Color(0xFF388E3C) else Color(0xFFC2185B)
 
             ControlButton(
@@ -36,7 +36,7 @@ fun InspectionControlPanel(
             )
 
             ControlButton(
-                text = "取消巡检",
+                text = "取消导航",
                 bgColor = Color(0xFF616161),
                 modifier = Modifier.fillMaxWidth().height(36.dp),
                 onClick = onCancelClick

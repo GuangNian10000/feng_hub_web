@@ -25,7 +25,7 @@ data class InspectionPointBean(
 
 @Serializable
 data class PointListResponse(
-    val receive: String = "",
+    val receive: Boolean = false,
     val points: List<InspectionPointBean> = emptyList()
 )
 
