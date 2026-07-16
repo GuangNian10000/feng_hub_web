@@ -49,7 +49,10 @@ fun MapBackgroundLayer(
 ) {
     val config = uiState.mapConfig
     // 稳定性修复：使用地图图片 URL 作为标识，只有切换地图时才重置状态
-    val mapId = remember(config?.image) { config?.image ?: "none" }
+    // 建图模式下，image 路径可能会包含实时更新的参数，我们只取路径部分作为唯一标识
+    val mapId = remember(config?.image) { 
+        config?.image?.substringBefore("?") ?: "none" 
+    }
     
     var scale by remember(mapId) { mutableFloatStateOf(1f) }
     var offset by remember(mapId) { mutableStateOf(Offset.Zero) }
