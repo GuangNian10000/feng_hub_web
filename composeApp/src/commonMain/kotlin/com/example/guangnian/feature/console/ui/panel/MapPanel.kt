@@ -109,6 +109,9 @@ fun MapBackgroundLayer(
                 .pointerInput(mapId, uiState.interactionMode) { 
                     val currentConfig = config ?: return@pointerInput
                     detectTapGestures(
+                        onDoubleTap = {
+                            isInitialized = false
+                        },
                         onLongPress = { screenOffset ->
                             val mapPixelOffset = screenToMapPixel(screenOffset)
                             val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
@@ -178,14 +181,15 @@ fun MapBackgroundLayer(
             val containerHeight = constraints.maxHeight.toFloat()
 
             // 居中逻辑：仅在首次加载新地图（mapId 改变且 isInitialized 为 false）且图片加载完成时执行
-            LaunchedEffect(mapId, mapBitmap, containerWidth, containerHeight) {
+            LaunchedEffect(mapId, mapBitmap, containerWidth, containerHeight, isInitialized) {
                 if (mapBitmap != null && !isInitialized && containerWidth > 0 && containerHeight > 0) {
                     val bmpW = mapBitmap.width.toFloat()
                     val bmpH = mapBitmap.height.toFloat()
                     val scaleW = containerWidth / bmpW
                     val scaleH = containerHeight / bmpH
-                    val targetScale = (if (scaleW < scaleH) scaleW else scaleH) * 0.9f
-                    val finalScale = if (targetScale < 1.0f) targetScale else 1.0f
+                    // 默认放大显示，设为自适应填充倍率的 3.0 倍，确保地图清晰且足够大
+                    val finalScale = (if (scaleW < scaleH) scaleW else scaleH) * 1.0f
+
                     scale = finalScale
                     rotation = 0f
                     offset = Offset((containerWidth - bmpW * finalScale) / 2f, (containerHeight - bmpH * finalScale) / 2f)
