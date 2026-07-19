@@ -33,6 +33,7 @@ abstract class BaseTcpApi {
         val payloadKeys = msgPayload?.keys?.joinToString(prefix = "[", postfix = "]") ?: "[]"
 
         val requestElement = buildJsonObject {
+            // ... (保持原有的 buildJsonObject 内容)
             put("from", TcpNode.PHONE)
             put("to", targetNode)
             put("id", messageId)
@@ -45,31 +46,8 @@ abstract class BaseTcpApi {
                             is String -> put(k, v)
                             is Number -> put(k, v)
                             is Boolean -> put(k, v)
-                            is Map<*, *> -> put(k, buildJsonObject {
-                                v.forEach { (subK, subV) ->
-                                    val sk = subK.toString()
-                                    when (subV) {
-                                        is String -> put(sk, subV)
-                                        is Number -> put(sk, subV)
-                                        is Boolean -> put(sk, subV)
-                                        is Map<*, *> -> put(sk, Json.encodeToJsonElement(subV))
-                                        is Iterable<*> -> put(sk, Json.encodeToJsonElement(subV))
-                                        else -> put(sk, subV.toString())
-                                    }
-                                }
-                            })
-                            is Iterable<*> -> put(k, buildJsonArray {
-                                v.forEach { item ->
-                                    when (item) {
-                                        is String -> add(item)
-                                        is Number -> add(item)
-                                        is Boolean -> add(item)
-                                        is Map<*, *> -> add(Json.encodeToJsonElement(item))
-                                        is Iterable<*> -> add(Json.encodeToJsonElement(item))
-                                        else -> add(item.toString())
-                                    }
-                                }
-                            })
+                            is Map<*, *> -> put(k, Json.encodeToJsonElement(v))
+                            is Iterable<*> -> put(k, Json.encodeToJsonElement(v))
                             else -> put(k, v.toString())
                         }
                     }
@@ -77,13 +55,13 @@ abstract class BaseTcpApi {
             }
         }
 
-        //KLog.d("BaseTcpApi", "开始请求 [$routeName]: id=$messageId, target=$targetNode, payloadKeys=$payloadKeys")
+        KLog.d("BaseTcpApi", "开始请求 [$routeName]: id=$messageId, target=$targetNode, 参数=$payloadKeys")
 
         if (T::class == Unit::class) {
             KmpTcpClient.send(requestElement.toString())
             KLog.d(
                 "BaseTcpApi",
-                "请求已入队 [$routeName]: id=$messageId, target=$targetNode, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                "请求入队成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
             )
             return Unit as T
         }
@@ -92,16 +70,13 @@ abstract class BaseTcpApi {
             ?: run {
                 KLog.w(
                     "BaseTcpApi",
-                    "请求失败 [$routeName]: id=$messageId, target=$targetNode, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                    "请求超时或失败 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
                 )
-                throw Exception("TCP请求超时或失败: $route")
+                throw Exception("TCP请求超时: $route")
             }
 
         val msgElement = responseJson["msg"] ?: run {
-            KLog.w(
-                "BaseTcpApi",
-                "响应缺少 msg [$routeName]: id=$messageId, response=${responseJson}"
-            )
+            KLog.w("BaseTcpApi", "响应数据为空 [$routeName]: id=$messageId")
             throw Exception("TCP响应缺少 msg 字段: $route")
         }
 
@@ -109,15 +84,11 @@ abstract class BaseTcpApi {
             val result = json.decodeFromJsonElement<T>(msgElement)
             KLog.d(
                 "BaseTcpApi",
-                "请求成功 [$routeName]: id=$messageId, target=$targetNode, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                "请求执行成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
             )
             result
         } catch (e: Exception) {
-            KLog.w(
-                "BaseTcpApi",
-                "响应解析失败 [$routeName]: id=$messageId, msg=$msgElement, error=${e.message}",
-                e
-            )
+            KLog.e("BaseTcpApi", "响应解析异常 [$routeName]: id=$messageId, error=${e.message}")
             throw e
         }
     }

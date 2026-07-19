@@ -81,7 +81,7 @@ object KmpTcpClient {
                 }
             }
         } catch (e: Exception) {
-            KLog.w(TAG, "读取数据流异常断开: ${e.message}", e)
+            KLog.w(TAG, "读取消息异常断开: ${e.message}")
             if (_connectionError.value == null) {
                 _connectionError.value = "异常断开: ${e.message ?: "未知异常"}"
             }
@@ -90,18 +90,16 @@ object KmpTcpClient {
         }
     }
 
-    // 核心改进：单一的发送消费循环，杜绝了 ByteWriteChannel 的并发修改冲突
     private suspend fun startSendLoop() {
         try {
             val channel = sendChannel ?: return
-            // for 循环会持续挂起等待队列中的新消息，有消息就立刻写入
             for (msg in channel) {
                 if (_connectionState.value != TcpState.CONNECTED) break
                 writeChannel?.writeStringUtf8(msg)
                 KLog.d(TAG, TcpLogFormatter.message("发送成功", msg))
             }
         } catch (e: Exception) {
-            KLog.w(TAG, "发送数据流异常断开: ${e.message}", e)
+            KLog.w(TAG, "发送消息异常断开: ${e.message}")
             if (_connectionError.value == null) {
                 _connectionError.value = "发送异常: ${e.message ?: "未知异常"}"
             }

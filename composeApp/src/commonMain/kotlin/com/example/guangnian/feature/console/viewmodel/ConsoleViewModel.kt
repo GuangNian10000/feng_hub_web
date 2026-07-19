@@ -107,11 +107,12 @@ class ConsoleViewModel(
         viewModelScope.launch {
             val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "用户操作: 主动获取导航状态")
                 val status = navigationApi.getNavStatus()
                 _uiState.update { it.copy(robotNavStatus = status) }
-                KLog.d(TAG, "主动获取导航状态成功: state=${status.state}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                KLog.i(TAG, "主动获取导航状态成功: state=${status.state}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "主动获取导航状态失败: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+                KLog.e(TAG, "主动获取导航状态失败: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             }
         }
     }
