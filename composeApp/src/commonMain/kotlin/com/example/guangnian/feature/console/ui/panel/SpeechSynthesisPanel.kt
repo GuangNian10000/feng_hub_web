@@ -25,6 +25,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.api.VoiceApi
 import com.example.guangnian.feature.console.data.bean.ArmActionBean
 import com.example.guangnian.feature.console.data.bean.SpeechSynthesisBean
@@ -52,6 +53,9 @@ class SpeechSynthesisViewModel(
     private val voiceApi: VoiceApi,
     private val settings: Settings
 ) : ViewModel() {
+    private companion object {
+        const val TAG = "SpeechSynthesisViewModel"
+    }
 
     private val _synthesisList = MutableStateFlow<List<SpeechSynthesisBean>>(emptyList())
     val synthesisList: StateFlow<List<SpeechSynthesisBean>> = _synthesisList.asStateFlow()
@@ -72,7 +76,9 @@ class SpeechSynthesisViewModel(
         try {
             val list = Json.decodeFromString<List<SpeechSynthesisBean>>(jsonStr)
             _synthesisList.value = list
+            KLog.d(TAG, "读取本地语音合成列表成功: count=${list.size}, jsonLength=${jsonStr.length}")
         } catch (e: Exception) {
+            KLog.w(TAG, "读取本地语音合成列表失败，使用空列表: jsonLength=${jsonStr.length}, error=${e.message}", e)
             _synthesisList.value = emptyList()
         }
     }
@@ -84,8 +90,9 @@ class SpeechSynthesisViewModel(
             val jsonStr = Json.encodeToString(list)
             // TODO: 替换为实际的 KM Settings 写入逻辑
             settings.putString("speech_synthesis_list", jsonStr)
+            KLog.d(TAG, "保存本地语音合成列表成功: count=${list.size}, jsonLength=${jsonStr.length}")
         } catch (e: Exception) {
-            e.printStackTrace()
+            KLog.w(TAG, "保存本地语音合成列表失败: count=${list.size}, error=${e.message}", e)
         }
     }
 
@@ -103,13 +110,16 @@ class SpeechSynthesisViewModel(
                 )
             )
         }
+        KLog.i(TAG, "保存语音合成条目: isUpdate=${index >= 0}, id=${bean.id}, textLength=${bean.text.length}, voiceId=${bean.voice?.id}, actionId=${bean.action?.arm_id}")
         saveToSp(currentList)
         viewModelScope.launch { _toastEvent.emit("保存成功") }
     }
 
     fun deleteItem(id: String) {
         val currentList = _synthesisList.value.toMutableList()
+        val beforeCount = currentList.size
         currentList.removeAll { it.id == id }
+        KLog.i(TAG, "删除语音合成条目: id=$id, before=$beforeCount, after=${currentList.size}")
         saveToSp(currentList)
         viewModelScope.launch { _toastEvent.emit("删除成功") }
     }
@@ -117,11 +127,15 @@ class SpeechSynthesisViewModel(
     // 执行合成（发送 TCP 请求）
     fun executeSynthesis(bean: SpeechSynthesisBean) {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             _isLoading.value = true
             try {
+                KLog.i(TAG, "开始执行语音合成: id=${bean.id}, textLength=${bean.text.length}, voiceId=${bean.voice?.id}, actionId=${bean.action?.arm_id}")
                 voiceApi.executeSynthesis(bean)
+                KLog.d(TAG, "语音合成指令发送成功: id=${bean.id}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
                 _toastEvent.emit("指令已发送")
             } catch (e: Exception) {
+                KLog.w(TAG, "语音合成指令发送失败: id=${bean.id}, error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 _toastEvent.emit("发送异常: ${e.message}")
             } finally {
                 _isLoading.value = false

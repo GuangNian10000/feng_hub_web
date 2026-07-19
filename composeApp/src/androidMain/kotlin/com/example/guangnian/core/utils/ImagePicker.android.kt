@@ -20,23 +20,27 @@ actual fun rememberImagePicker(onImagePicked: (ByteArray) -> Unit): ImagePicker 
         uri?.let {
             try {
                 contentResolver.openInputStream(it)?.use { input ->
-                    onImagePicked(input.readBytes())
+                    val bytes = input.readBytes()
+                    KLog.d("ImagePicker", "选择相册图片成功: uri=$it, bytes=${bytes.size}")
+                    onImagePicked(bytes)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                KLog.w("ImagePicker", "选择相册图片失败: uri=$it, error=${e.message}", e)
             }
         }
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        bitmap?.let {
-            val stream = ByteArrayOutputStream()
-            it.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-            onImagePicked(stream.toByteArray())
+        ) { bitmap ->
+            bitmap?.let {
+                val stream = ByteArrayOutputStream()
+                it.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                val bytes = stream.toByteArray()
+                KLog.d("ImagePicker", "拍照预览成功: width=${it.width}, height=${it.height}, bytes=${bytes.size}")
+                onImagePicked(bytes)
+            }
         }
-    }
 
     return remember {
         object : ImagePicker {

@@ -76,7 +76,7 @@ object KmpTcpClient {
             while (true) {
                 val line = readChannel?.readUTF8Line() ?: break
                 if (line.isNotBlank()) {
-                    KLog.d(TAG, "收到消息: $line")
+                    KLog.d(TAG, TcpLogFormatter.message("收到消息", line))
                     _messageFlow.emit(line)
                 }
             }
@@ -98,7 +98,7 @@ object KmpTcpClient {
             for (msg in channel) {
                 if (_connectionState.value != TcpState.CONNECTED) break
                 writeChannel?.writeStringUtf8(msg)
-                KLog.d(TAG, "发送成功: ${msg.trim()}")
+                KLog.d(TAG, TcpLogFormatter.message("发送成功", msg))
             }
         } catch (e: Exception) {
             KLog.w(TAG, "发送数据流异常断开: ${e.message}", e)
@@ -112,7 +112,7 @@ object KmpTcpClient {
 
     fun send(msg: String) {
         if (_connectionState.value != TcpState.CONNECTED) {
-            KLog.w(TAG, "未连接，放弃发送: $msg")
+            KLog.w(TAG, TcpLogFormatter.message("未连接，放弃发送", msg))
             return
         }
         val finalMsg = if (msg.endsWith("\n")) msg else "$msg\n"
@@ -124,7 +124,7 @@ object KmpTcpClient {
         val result = sendChannel?.trySend(finalMsg)
 
         if (result?.isFailure == true) {
-            KLog.w(TAG, "消息压入发送队列失败: ${finalMsg.trim()}")
+            KLog.w(TAG, TcpLogFormatter.message("消息压入发送队列失败", finalMsg))
         }
     }
 

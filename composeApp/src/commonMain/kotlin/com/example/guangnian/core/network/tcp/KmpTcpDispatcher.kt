@@ -63,22 +63,26 @@ object KmpTcpDispatcher {
                     val type = json["type"]?.jsonPrimitive?.content ?: ""
                     val topic = json["topic"]?.jsonPrimitive?.content ?: ""
                     val routePath = "/$type/$topic/"
+                    val routeName = TcpLogFormatter.routeOf(type, topic)
 
                     if (id.isNotEmpty()) {
                         val deferred = mutex.withLock { pendingRequests.remove(id) }
                         if (deferred != null) {
                             // 主动请求的响应
+                            //KLog.d("KmpTcpDispatcher", "响应匹配 [$routeName]: id=$id")
                             deferred.complete(json)
                         } else {
                             // id 存在但无匹配请求，视为需要回复的被动消息
+                            KLog.d("KmpTcpDispatcher", "收到被动请求 [$routeName]: id=$id")
                             handlePassiveRequest(routePath, json)
                         }
                     } else {
                         // 无 id 消息，视为单向推送
+                        KLog.d("KmpTcpDispatcher", "收到服务端推送 [$routeName]")
                         handlePassiveRequest(routePath, json)
                     }
                 } catch (e: Exception) {
-                    KLog.w("KmpTcpDispatcher", "TCP响应 JSON 解析异常: ${e.message}", e)
+                    KLog.w("KmpTcpDispatcher", "TCP 响应 JSON 解析异常: ${e.message}, raw=$rawMsg", e)
                 }
             }
         }
@@ -86,16 +90,18 @@ object KmpTcpDispatcher {
 
     private fun handlePassiveRequest(routePath: String, requestJson: JsonObject) {
         scope.launch {
+            val routeName = routePath.trim('/').ifEmpty { "unknown/unknown" }
+            val replyId = requestJson["id"]?.jsonPrimitive?.content ?: ""
             val handler = mutex.withLock { routeHandlers[routePath] }
             if (handler != null) {
                 try {
+                    KLog.d("KmpTcpDispatcher", "开始处理路由 [$routeName]: id=$replyId")
                     // 执行业务回调
                     val resultElement = handler.invoke(requestJson)
 
                     // 若返回非空 JSON 元素，则进行原路回复
                     if (resultElement != null) {
                         val fromNode = requestJson["from"]?.jsonPrimitive?.content ?: TcpNode.ARM
-                        val replyId = requestJson["id"]?.jsonPrimitive?.content ?: ""
 
                         val responseJson = buildJsonObject {
                             put("from", TcpNode.PHONE)
@@ -105,12 +111,16 @@ object KmpTcpDispatcher {
                             put("id", replyId)
                             put("msg", resultElement)
                         }
+                        KLog.d("KmpTcpDispatcher", "路由处理完成，准备回复 [$routeName]: id=$replyId, response=$responseJson")
                         KmpTcpClient.send(responseJson.toString())
+                    } else {
+                        KLog.d("KmpTcpDispatcher", "路由处理完成，无需回复 [$routeName]: id=$replyId")
                     }
                 } catch (e: Exception) {
                     KLog.w("KmpTcpDispatcher", "路由处理异常 [$routePath]: ${e.message}", e)
                 }
             } else {
+                KLog.d("KmpTcpDispatcher", "未注册 handler，转发为 serverEvent [$routeName]: id=$replyId")
                 _serverEventFlow.emit(requestJson)
             }
         }
@@ -127,8 +137,9 @@ object KmpTcpDispatcher {
     }
 
     suspend fun request(requestJsonString: String, messageId: String, timeoutMs: Long = 5000): JsonObject? {
+        val routeName = TcpLogFormatter.routeOf(requestJsonString)
         if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
-            KLog.w("KmpTcpDispatcher", "TCP 未连接，无法发送请求")
+            KLog.w("KmpTcpDispatcher", "TCP 未连接，无法发送请求 [$routeName]: id=$messageId")
             return null
         }
 
@@ -139,6 +150,7 @@ object KmpTcpDispatcher {
             pendingRequests[messageId] = deferred
         }
 
+        //KLog.d("KmpTcpDispatcher", "等待响应 [$routeName]: id=$messageId, timeout=${timeoutMs}ms")
         KmpTcpClient.send(requestJsonString)
 
         return try {
@@ -146,11 +158,11 @@ object KmpTcpDispatcher {
                 deferred.await()
             }
         } catch (e: TimeoutCancellationException) {
-            KLog.w("KmpTcpDispatcher", "TCP 请求超时 ($timeoutMs ms): id=$messageId")
+            KLog.w("KmpTcpDispatcher", "TCP 请求超时 [$routeName]: id=$messageId, timeout=${timeoutMs}ms")
             mutex.withLock { pendingRequests.remove(messageId) }
             null
         } catch (e: Exception) {
-            KLog.w("KmpTcpDispatcher", "TCP 请求异常: ${e.message}", e)
+            KLog.w("KmpTcpDispatcher", "TCP 请求异常 [$routeName]: id=$messageId, error=${e.message}", e)
             mutex.withLock { pendingRequests.remove(messageId) }
             null
         }

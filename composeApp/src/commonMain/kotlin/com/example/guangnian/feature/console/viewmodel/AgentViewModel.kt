@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 data class AgentUiState(
     val agentData: AgentListResponse = AgentListResponse(),
@@ -21,6 +22,9 @@ data class AgentUiState(
 )
 
 class AgentViewModel(private val api: AgentManagerApi) : ViewModel() {
+    private companion object {
+        const val TAG = "AgentViewModel"
+    }
 
     private val _uiState = MutableStateFlow(AgentUiState())
     val uiState: StateFlow<AgentUiState> = _uiState.asStateFlow()
@@ -30,11 +34,14 @@ class AgentViewModel(private val api: AgentManagerApi) : ViewModel() {
 
     private fun executeTask(errorPrefix: String, block: suspend () -> Unit) {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            KLog.d(TAG, "任务开始: $errorPrefix")
             _uiState.update { it.copy(isLoading = true) }
             try {
                 block()
+                KLog.d(TAG, "任务成功: $errorPrefix, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w("AgentViewModel", "$errorPrefix: ${e.message}", e)
+                KLog.w(TAG, "任务失败: $errorPrefix, error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 _toastEvent.emit("$errorPrefix: ${e.message}")
             } finally {
                 _uiState.update { it.copy(isLoading = false) }

@@ -86,6 +86,9 @@ class RobotConnectionManager(
         val currentIp = _ip.value
         val currentPortStr = _port.value
         val portInt = currentPortStr.toIntOrNull() ?: 9002
+        if (currentPortStr.toIntOrNull() == null) {
+            KLog.w(TAG, "端口格式异常，使用默认端口: input=$currentPortStr, default=$portInt")
+        }
 
         // 更新最后连接参数，用于 UI 判断
         _lastConnectedIp.value = currentIp
@@ -114,10 +117,10 @@ class RobotConnectionManager(
             while (isActive) {
                 try {
                     val startTime = Clock.System.now().toEpochMilliseconds()
-                    robotApi.sendHeartbeat(startTime)
+                    val heartbeat = robotApi.sendHeartbeat(startTime)
                     val endTime = Clock.System.now().toEpochMilliseconds()
                     _latency.value = endTime - startTime
-                    // 心跳成功结果可根据需要记录，此处保持静默或 debug
+                    KLog.d(TAG, "心跳成功: latency=${_latency.value}ms, status=${heartbeat.status}")
                 } catch (e: Exception) {
                     KLog.w(TAG, "心跳异常，判定为连接假死，主动断开", e)
                     _latency.value = null

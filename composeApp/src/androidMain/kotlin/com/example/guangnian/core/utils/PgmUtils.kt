@@ -36,13 +36,12 @@ actual object PgmUtils {
                     i++
                 }
                 val word = data.decodeToString(start, i)
-                // KLog.d("PgmUtils", "readNextWord: '$word'")
                 return word
             }
 
             val magic = readNextWord()
             if (magic != "P5") {
-                KLog.w("PgmUtils", "Invalid PGM magic: '$magic'")
+                KLog.w("PgmUtils", "PGM 解码失败: magic 非法, magic=$magic, bytes=${data.size}")
                 return null
             }
 
@@ -51,7 +50,7 @@ actual object PgmUtils {
             val maxValStr = readNextWord()
 
             if (widthStr.isEmpty() || heightStr.isEmpty() || maxValStr.isEmpty()) {
-                KLog.w("PgmUtils", "Failed to read PGM header: w='$widthStr', h='$heightStr', max='$maxValStr'")
+                KLog.w("PgmUtils", "PGM 解码失败: header 不完整, width=$widthStr, height=$heightStr, maxVal=$maxValStr, bytes=${data.size}")
                 return null
             }
 
@@ -63,7 +62,7 @@ actual object PgmUtils {
             // But skipWhitespaceAndComments is safer, though PGM spec says "a single whitespace character".
             if (i < data.size) i++
 
-            KLog.d("PgmUtils", "Decoding PGM: ${width}x${height}, maxVal: $maxVal")
+            KLog.d("PgmUtils", "开始解码 PGM: width=$width, height=$height, maxVal=$maxVal, bytes=${data.size}")
 
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val pixels = IntArray(width * height)
@@ -79,9 +78,10 @@ actual object PgmUtils {
             }
 
             bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+            KLog.d("PgmUtils", "PGM 解码成功: width=$width, height=$height, pixels=${pixels.size}")
             return bitmap.asImageBitmap()
         } catch (e: Exception) {
-            KLog.w("PgmUtils", "Error decoding PGM: ${e.message}", e)
+            KLog.w("PgmUtils", "PGM 解码异常: ${e.message}, bytes=${data.size}", e)
             return null
         }
     }

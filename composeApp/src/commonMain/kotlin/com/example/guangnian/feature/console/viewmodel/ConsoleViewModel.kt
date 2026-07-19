@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.*
+import kotlin.time.Clock
 
 data class ConsoleUiState(
     val postures: List<PostureBean> = emptyList(),
@@ -53,6 +54,8 @@ class ConsoleViewModel(
 
     private val _errorEvents = MutableSharedFlow<String>()
     val errorEvents = _errorEvents.asSharedFlow()
+    private var taskSeq = 0L
+    private var joystickSeq = 0L
 
     init {
         // 监听来自 Map 或其他组件的事件
@@ -60,9 +63,11 @@ class ConsoleViewModel(
             eventBus.events.collect { event ->
                 when (event) {
                     is RobotEvent.RequestEditPoint -> {
+                        KLog.d(TAG, "收到编辑点位事件: pointId=${event.point.point_id}, name=${event.point.name}")
                         _uiState.update { it.copy(pendingPoint = event.point) }
                     }
                     is RobotEvent.RequestDeletePoint -> {
+                        KLog.d(TAG, "收到删除点位事件: pointId=${event.point.point_id}, name=${event.point.name}")
                         _uiState.update { it.copy(deleteConfirmPoint = event.point) }
                     }
                     else -> {}
@@ -77,13 +82,14 @@ class ConsoleViewModel(
                     requestJson["msg"]?.let { msgElement ->
                         val navStatus = json.decodeFromJsonElement<RobotNavStatusBean>(msgElement)
                         _uiState.update { it.copy(robotNavStatus = navStatus) }
+                        KLog.d(TAG, "收到导航状态推送: state=${navStatus.state}, msg=$msgElement")
                         
                         // 同时同步建图状态给 EventBus
                         val isMapping = navStatus.state == RobotNavState.MAPPING
                         eventBus.tryEmit(RobotEvent.MappingStateChanged(isMapping))
                     }
                 } catch (e: Exception) {
-                    KLog.w(TAG, "解析推送的导航状态失败: ${e.message}")
+                    KLog.w(TAG, "解析推送的导航状态失败: ${e.message}, raw=$requestJson", e)
                 }
                 null
             }
@@ -99,11 +105,13 @@ class ConsoleViewModel(
 
     fun fetchNavStatus() {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
                 val status = navigationApi.getNavStatus()
                 _uiState.update { it.copy(robotNavStatus = status) }
+                KLog.d(TAG, "主动获取导航状态成功: state=${status.state}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "获取导航状态失败: ${e.message}")
+                KLog.w(TAG, "主动获取导航状态失败: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
             }
         }
     }
@@ -189,10 +197,16 @@ class ConsoleViewModel(
 
     private fun executeTask(errorMsg: String, block: suspend () -> Unit) {
         viewModelScope.launch {
+            taskSeq += 1
+            val seq = taskSeq
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            KLog.d(TAG, "任务开始 #$seq: $errorMsg")
             _uiState.update { it.copy(isLoading = true) }
             try {
                 block()
+                KLog.d(TAG, "任务成功 #$seq: $errorMsg, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
+                KLog.w(TAG, "任务失败 #$seq: $errorMsg, error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 handleError(errorMsg, e)
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
@@ -204,76 +218,97 @@ class ConsoleViewModel(
 
     fun sendPostureCommand(postureName: String) {
         viewModelScope.launch { 
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始发送姿态指令: postureName=$postureName")
                 motionControlApi.executePosture(postureName)
+                KLog.d(TAG, "姿态指令发送成功: postureName=$postureName, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "发送姿态指令失败: ${e.message}")
+                KLog.w(TAG, "发送姿态指令失败: postureName=$postureName, error=${e.message}", e)
             }
         }
     }
 
     fun sendArmCommand(armId: String) {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始发送机械臂动作: armId=$armId")
                 motionControlApi.executeMotion(armId)
+                KLog.d(TAG, "机械臂动作发送成功: armId=$armId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "发送机械臂动作失败: ${e.message}")
+                KLog.w(TAG, "发送机械臂动作失败: armId=$armId, error=${e.message}", e)
             }
         }
     }
 
     fun startInspectionPoint(point_id: String) {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始导航到点位: pointId=$point_id")
                 navigationApi.startInspectionPoint(point_id)
+                KLog.d(TAG, "导航到点位指令成功: pointId=$point_id, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "开始导航点失败: ${e.message}")
+                KLog.w(TAG, "开始导航点失败: pointId=$point_id, error=${e.message}", e)
             }
         }
     }
 
     fun startRoute(route_id: String) {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始路线导航: routeId=$route_id")
                 routeApi.startRoute(route_id)
+                KLog.d(TAG, "路线导航指令成功: routeId=$route_id, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "开始路线失败: ${e.message}")
+                KLog.w(TAG, "开始路线失败: routeId=$route_id, error=${e.message}", e)
             }
         }
     }
 
     fun pauseNavigation() {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始暂停导航")
                 val res = navigationApi.pauseNavigation()
                 if (res.receive) {
                     _uiState.update { it.copy(isInspectionPaused = true) }
                 }
+                KLog.d(TAG, "暂停导航成功: receive=${res.receive}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "暂停导航失败: ${e.message}")
+                KLog.w(TAG, "暂停导航失败: ${e.message}", e)
             }
         }
     }
 
     fun resumeNavigation() {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始继续导航")
                 val res = navigationApi.resumeNavigation()
                 if (res.receive) {
                     _uiState.update { it.copy(isInspectionPaused = false) }
                 }
+                KLog.d(TAG, "继续导航成功: receive=${res.receive}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "继续导航失败: ${e.message}")
+                KLog.w(TAG, "继续导航失败: ${e.message}", e)
             }
         }
     }
 
     fun stopNavigation() {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始取消导航")
                 navigationApi.stopPosition()
+                KLog.d(TAG, "取消导航成功: 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "取消导航失败: ${e.message}")
+                KLog.w(TAG, "取消导航失败: ${e.message}", e)
             }
         }
     }
@@ -325,20 +360,26 @@ class ConsoleViewModel(
 
     fun stopAll() {
         viewModelScope.launch { 
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始发送急停指令")
                 motionControlApi.stopAll()
+                KLog.d(TAG, "急停指令发送成功: 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "停止指令发送失败: ${e.message}")
+                KLog.w(TAG, "停止指令发送失败: ${e.message}", e)
             }
         }
     }
 
     fun recover() {
         viewModelScope.launch {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
+                KLog.i(TAG, "开始发送急停恢复指令")
                 motionControlApi.recover()
+                KLog.d(TAG, "急停恢复指令发送成功: 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "恢复指令发送失败: ${e.message}")
+                KLog.w(TAG, "恢复指令发送失败: ${e.message}", e)
             }
         }
     }
@@ -354,9 +395,11 @@ class ConsoleViewModel(
         lastLeftX = leftX
         lastLeftY = leftY
         lastRightX = rightX
+        KLog.d(TAG, "摇杆输入: active=$active, leftX=$leftX, leftY=$leftY, rightX=$rightX")
 
         if (active) {
             if (joystickJob == null || !joystickJob!!.isActive) {
+                KLog.i(TAG, "启动摇杆指令循环")
                 joystickJob = viewModelScope.launch {
                     while (isActive) {
                         val distance = hypot(lastLeftX, lastLeftY)
@@ -367,24 +410,33 @@ class ConsoleViewModel(
                             if (angle < 0) angle += 360
                         }
                         val rotateLevel = (-lastRightX * 10).toInt().coerceIn(-10, 10)
+                        joystickSeq += 1
+                        val seq = joystickSeq
+                        val startTime = Clock.System.now().toEpochMilliseconds()
 
                         try {
+                            KLog.d(TAG, "准备发送摇杆指令 #$seq: angle=$angle, translateLevel=$translateLevel, rotateLevel=$rotateLevel")
                             motionControlApi.moveMixed(angle, translateLevel, rotateLevel)
+                            KLog.d(TAG, "摇杆指令发送成功 #$seq: angle=$angle, translateLevel=$translateLevel, rotateLevel=$rotateLevel, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
                         } catch (e: Exception) {
-                            KLog.w(TAG, "摇杆指令发送失败: ${e.message}")
+                            KLog.w(TAG, "摇杆指令发送失败 #$seq: angle=$angle, translateLevel=$translateLevel, rotateLevel=$rotateLevel, error=${e.message}", e)
                         }
                         delay(100)
                     }
                 }
             }
         } else {
+            KLog.i(TAG, "停止摇杆指令循环: lastSeq=$joystickSeq")
             joystickJob?.cancel()
             joystickJob = null
             viewModelScope.launch { 
+                val startTime = Clock.System.now().toEpochMilliseconds()
                 try {
+                    KLog.d(TAG, "发送摇杆归零指令")
                     motionControlApi.moveMixed(0.0, 0, 0)
+                    KLog.d(TAG, "摇杆归零指令发送成功: 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
                 } catch (e: Exception) {
-                    KLog.w(TAG, "停止摇杆指令发送失败: ${e.message}")
+                    KLog.w(TAG, "停止摇杆指令发送失败: ${e.message}", e)
                 }
             }
         }
