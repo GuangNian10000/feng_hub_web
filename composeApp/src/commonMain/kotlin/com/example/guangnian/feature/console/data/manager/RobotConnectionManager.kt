@@ -95,7 +95,7 @@ class RobotConnectionManager(
         settings.putString("saved_ip", currentIp)
         settings.putString("saved_port", currentPortStr)
 
-        KLog.d(TAG, "发起连接: $currentIp:$portInt")
+        KLog.i(TAG, "发起连接: $currentIp:$portInt")
         KmpTcpClient.connect(currentIp, portInt)
     }
 
@@ -103,22 +103,23 @@ class RobotConnectionManager(
      * 断开连接
      */
     fun disconnect() {
-        KLog.d(TAG, "主动断开连接")
+        KLog.i(TAG, "主动断开连接")
         KmpTcpClient.disconnectAndReset()
     }
 
     private fun startHeartbeatLoop() {
         heartbeatJob?.cancel()
         heartbeatJob = scope.launch {
-            KLog.d(TAG, "已连接，启动心跳保活机制")
+            KLog.i(TAG, "已连接，启动心跳保活机制")
             while (isActive) {
                 try {
                     val startTime = Clock.System.now().toEpochMilliseconds()
                     robotApi.sendHeartbeat(startTime)
                     val endTime = Clock.System.now().toEpochMilliseconds()
                     _latency.value = endTime - startTime
+                    // 心跳成功结果可根据需要记录，此处保持静默或 debug
                 } catch (e: Exception) {
-                    KLog.e(TAG, "心跳异常，判定为连接假死，主动断开", e)
+                    KLog.w(TAG, "心跳异常，判定为连接假死，主动断开", e)
                     _latency.value = null
                     KmpTcpClient.setConnectionError("心跳超时或发送失败")
                     KmpTcpClient.disconnectAndReset()
@@ -131,7 +132,7 @@ class RobotConnectionManager(
 
     private fun stopHeartbeatLoop() {
         if (heartbeatJob != null) {
-            KLog.d(TAG, "停止心跳保活机制")
+            KLog.i(TAG, "停止心跳保活机制")
             heartbeatJob?.cancel()
             heartbeatJob = null
             _latency.value = null

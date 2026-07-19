@@ -190,7 +190,7 @@ private fun MapItem(
                 val bytes = httpClient.get(map.image_url).readBytes()
                 imageBitmap = PgmUtils.decodePgmToBitmap(bytes)
             } catch (e: Exception) {
-                KLog.e("MapManagementPanel", "加载地图预览失败: ${e.message}")
+                KLog.w("MapManagementPanel", "加载地图预览失败: ${e.message}", e)
             }
         }
     }

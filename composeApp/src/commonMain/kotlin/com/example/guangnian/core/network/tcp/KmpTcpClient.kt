@@ -32,7 +32,7 @@ object KmpTcpClient {
             try {
                 _connectionError.value = null
 
-                KLog.d(TAG, "正在准备连接机器狗: $ip:$port...")
+                KLog.i(TAG, "正在准备连接机器狗: $ip:$port...")
                 _connectionState.value = TcpState.CONNECTING
 
                 val selectorManager = SelectorManager(Dispatchers.IO)
@@ -45,7 +45,7 @@ object KmpTcpClient {
                 writeChannel = socket?.openWriteChannel(autoFlush = true)
                 _connectionState.value = TcpState.CONNECTED
 
-                KLog.d(TAG, "成功连接到机器狗: $ip:$port")
+                KLog.i(TAG, "成功连接到机器狗: $ip:$port")
 
                 // 每次连接成功后，初始化发送队列
                 sendChannel = Channel(Channel.UNLIMITED)
@@ -55,13 +55,13 @@ object KmpTcpClient {
                 scope.launch { startSendLoop() }
 
             } catch (e: TimeoutCancellationException) {
-                KLog.e(TAG, "连接超时", e)
+                KLog.w(TAG, "连接超时", e)
                 if (_connectionError.value == null) {
                     _connectionError.value = "连接超时"
                 }
                 disconnectAndReset()
             } catch (e: Exception) {
-                KLog.e(TAG, "连接失败或异常断开: ${e.message}", e)
+                KLog.w(TAG, "连接失败或异常断开: ${e.message}", e)
                 if (_connectionError.value == null) {
                     _connectionError.value = "连接失败: ${e.message ?: "未知异常"}"
                 }
@@ -72,7 +72,7 @@ object KmpTcpClient {
 
     private suspend fun startReceiveLoop() {
         try {
-            KLog.d(TAG, "开始监听服务器消息...")
+            KLog.i(TAG, "开始监听服务器消息...")
             while (true) {
                 val line = readChannel?.readUTF8Line() ?: break
                 if (line.isNotBlank()) {
@@ -81,7 +81,7 @@ object KmpTcpClient {
                 }
             }
         } catch (e: Exception) {
-            KLog.e(TAG, "读取数据流异常断开: ${e.message}", e)
+            KLog.w(TAG, "读取数据流异常断开: ${e.message}", e)
             if (_connectionError.value == null) {
                 _connectionError.value = "异常断开: ${e.message ?: "未知异常"}"
             }
@@ -101,7 +101,7 @@ object KmpTcpClient {
                 KLog.d(TAG, "发送成功: ${msg.trim()}")
             }
         } catch (e: Exception) {
-            KLog.e(TAG, "发送数据流异常断开: ${e.message}", e)
+            KLog.w(TAG, "发送数据流异常断开: ${e.message}", e)
             if (_connectionError.value == null) {
                 _connectionError.value = "发送异常: ${e.message ?: "未知异常"}"
             }
@@ -112,7 +112,7 @@ object KmpTcpClient {
 
     fun send(msg: String) {
         if (_connectionState.value != TcpState.CONNECTED) {
-            KLog.d(TAG, "未连接，放弃发送: $msg")
+            KLog.w(TAG, "未连接，放弃发送: $msg")
             return
         }
         val finalMsg = if (msg.endsWith("\n")) msg else "$msg\n"
@@ -124,13 +124,13 @@ object KmpTcpClient {
         val result = sendChannel?.trySend(finalMsg)
 
         if (result?.isFailure == true) {
-            KLog.e(TAG, "消息压入发送队列失败: ${finalMsg.trim()}")
+            KLog.w(TAG, "消息压入发送队列失败: ${finalMsg.trim()}")
         }
     }
 
     fun disconnectAndReset() {
         if (_connectionState.value == TcpState.DISCONNECTED) return
-        KLog.d(TAG, "重置网络资源和状态")
+        KLog.i(TAG, "重置网络资源和状态")
         _connectionState.value = TcpState.DISCONNECTED
 
         // 关闭队列，这会使 startSendLoop 中的 for 循环自动退出并结束协程

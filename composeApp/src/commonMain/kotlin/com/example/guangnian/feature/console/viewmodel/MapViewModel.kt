@@ -98,7 +98,7 @@ class MapViewModel(
                         loadMapImage(fixedUrl)
                     }
                 } catch (e: Exception) {
-                    KLog.e("MapViewModel", "获取地图配置失败: ${e.message}")
+                    KLog.w("MapViewModel", "获取地图配置失败: ${e.message}")
                 }
                 
                 // 如果正在建图，地图刷新频率可以适当高一点（例如 3s 一次）
@@ -140,7 +140,7 @@ class MapViewModel(
                         ) }
                     }
                 } catch (e: Exception) {
-                    KLog.e("MapViewModel", "路径数据同步异常: ${e.message}")
+                    KLog.w("MapViewModel", "路径数据同步异常: ${e.message}")
                 }
                 delay(3000)
             }
@@ -153,7 +153,7 @@ class MapViewModel(
                     val points = navigationApi.getInspectionPoints()
                     _uiState.update { it.copy(endpoints = points) }
                 } catch (e: Exception) {
-                    KLog.e("MapViewModel", "导览点同步异常")
+                    KLog.w("MapViewModel", "导览点同步异常")
                 }
                 delay(3000)
             }
@@ -170,7 +170,7 @@ class MapViewModel(
                 val points = navigationApi.getInspectionPoints()
                 _uiState.update { it.copy(endpoints = points) }
             } catch (e: Exception) {
-                KLog.e("MapViewModel", "刷新导览点失败")
+                KLog.w("MapViewModel", "刷新导览点失败")
             }
         }
     }
@@ -227,7 +227,7 @@ class MapViewModel(
                     _uiState.update { it.copy(isMapLoading = false) }
                 }
             } catch (e: Exception) {
-                KLog.e("MapViewModel", "地图加载失败: ${e.message}")
+                KLog.w("MapViewModel", "地图加载失败: ${e.message}")
                 _uiState.update { it.copy(isMapLoading = false, loadingStage = "加载失败") }
             }
         }
@@ -286,9 +286,9 @@ class MapViewModel(
         viewModelScope.launch {
             try {
                 navigationApi.setPosition(origin.x, origin.y, yaw)
-                KLog.d("MapViewModel", "设置机器人位置成功: x=${origin.x}, y=${origin.y}, yaw=$yaw")
+                KLog.i("MapViewModel", "设置机器人位置成功: x=${origin.x}, y=${origin.y}, yaw=$yaw")
             } catch (e: Exception) {
-                KLog.e("MapViewModel", "设置机器人位置失败: ${e.message}")
+                KLog.w("MapViewModel", "设置机器人位置失败: ${e.message}")
             }
         }
         clearInteraction()
@@ -301,9 +301,9 @@ class MapViewModel(
         viewModelScope.launch {
             try {
                 navigationApi.startPoint(point_id = "", x = origin.x, y = origin.y, yaw = yaw)
-                KLog.d("MapViewModel", "前往此处成功: x=${origin.x}, y=${origin.y}, yaw=$yaw")
+                KLog.i("MapViewModel", "前往此处成功: x=${origin.x}, y=${origin.y}, yaw=$yaw")
             } catch (e: Exception) {
-                KLog.e("MapViewModel", "前往此处失败: ${e.message}")
+                KLog.w("MapViewModel", "前往此处失败: ${e.message}")
             }
         }
         clearInteraction()
@@ -323,7 +323,7 @@ class MapViewModel(
             try {
                 navigationApi.startPoint(point.point_id)
             } catch (e: Exception) {
-                KLog.e("MapViewModel", "Failed to go to point: ${e.message}")
+                KLog.w("MapViewModel", "Failed to go to point: ${e.message}")
             }
         }
         clearInteraction()

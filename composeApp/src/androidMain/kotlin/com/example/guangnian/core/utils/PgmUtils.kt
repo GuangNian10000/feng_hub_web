@@ -42,7 +42,7 @@ actual object PgmUtils {
 
             val magic = readNextWord()
             if (magic != "P5") {
-                KLog.e("PgmUtils", "Invalid PGM magic: '$magic'")
+                KLog.w("PgmUtils", "Invalid PGM magic: '$magic'")
                 return null
             }
 
@@ -51,7 +51,7 @@ actual object PgmUtils {
             val maxValStr = readNextWord()
 
             if (widthStr.isEmpty() || heightStr.isEmpty() || maxValStr.isEmpty()) {
-                KLog.e("PgmUtils", "Failed to read PGM header: w='$widthStr', h='$heightStr', max='$maxValStr'")
+                KLog.w("PgmUtils", "Failed to read PGM header: w='$widthStr', h='$heightStr', max='$maxValStr'")
                 return null
             }
 
@@ -81,8 +81,7 @@ actual object PgmUtils {
             bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
             return bitmap.asImageBitmap()
         } catch (e: Exception) {
-            KLog.e("PgmUtils", "Error decoding PGM: ${e.message}")
-            e.printStackTrace()
+            KLog.w("PgmUtils", "Error decoding PGM: ${e.message}", e)
             return null
         }
     }

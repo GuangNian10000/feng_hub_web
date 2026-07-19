@@ -83,7 +83,7 @@ class ConsoleViewModel(
                         eventBus.tryEmit(RobotEvent.MappingStateChanged(isMapping))
                     }
                 } catch (e: Exception) {
-                    KLog.e(TAG, "解析推送的导航状态失败: ${e.message}")
+                    KLog.w(TAG, "解析推送的导航状态失败: ${e.message}")
                 }
                 null
             }
@@ -103,7 +103,7 @@ class ConsoleViewModel(
                 val status = navigationApi.getNavStatus()
                 _uiState.update { it.copy(robotNavStatus = status) }
             } catch (e: Exception) {
-                KLog.e(TAG, "获取导航状态失败: ${e.message}")
+                KLog.w(TAG, "获取导航状态失败: ${e.message}")
             }
         }
     }
@@ -117,7 +117,7 @@ class ConsoleViewModel(
     }
 
     private fun handleError(message: String, throwable: Throwable?) {
-        KLog.e(TAG, "$message: ${throwable?.message}")
+        KLog.w(TAG, "$message: ${throwable?.message}")
         viewModelScope.launch {
             _errorEvents.emit("$message: 请检查网络连接")
         }
@@ -207,7 +207,7 @@ class ConsoleViewModel(
             try {
                 motionControlApi.executePosture(postureName)
             } catch (e: Exception) {
-                KLog.e(TAG, "发送姿态指令失败: ${e.message}")
+                KLog.w(TAG, "发送姿态指令失败: ${e.message}")
             }
         }
     }
@@ -217,7 +217,7 @@ class ConsoleViewModel(
             try {
                 motionControlApi.executeMotion(armId)
             } catch (e: Exception) {
-                KLog.e(TAG, "发送机械臂动作失败: ${e.message}")
+                KLog.w(TAG, "发送机械臂动作失败: ${e.message}")
             }
         }
     }
@@ -227,7 +227,7 @@ class ConsoleViewModel(
             try {
                 navigationApi.startInspectionPoint(point_id)
             } catch (e: Exception) {
-                KLog.e(TAG, "开始导航点失败: ${e.message}")
+                KLog.w(TAG, "开始导航点失败: ${e.message}")
             }
         }
     }
@@ -237,7 +237,7 @@ class ConsoleViewModel(
             try {
                 routeApi.startRoute(route_id)
             } catch (e: Exception) {
-                KLog.e(TAG, "开始路线失败: ${e.message}")
+                KLog.w(TAG, "开始路线失败: ${e.message}")
             }
         }
     }
@@ -250,7 +250,7 @@ class ConsoleViewModel(
                     _uiState.update { it.copy(isInspectionPaused = true) }
                 }
             } catch (e: Exception) {
-                KLog.e(TAG, "暂停导航失败: ${e.message}")
+                KLog.w(TAG, "暂停导航失败: ${e.message}")
             }
         }
     }
@@ -263,7 +263,7 @@ class ConsoleViewModel(
                     _uiState.update { it.copy(isInspectionPaused = false) }
                 }
             } catch (e: Exception) {
-                KLog.e(TAG, "继续导航失败: ${e.message}")
+                KLog.w(TAG, "继续导航失败: ${e.message}")
             }
         }
     }
@@ -273,7 +273,7 @@ class ConsoleViewModel(
             try {
                 navigationApi.stopPosition()
             } catch (e: Exception) {
-                KLog.e(TAG, "取消导航失败: ${e.message}")
+                KLog.w(TAG, "取消导航失败: ${e.message}")
             }
         }
     }
@@ -328,7 +328,7 @@ class ConsoleViewModel(
             try {
                 motionControlApi.stopAll()
             } catch (e: Exception) {
-                KLog.e(TAG, "停止指令发送失败: ${e.message}")
+                KLog.w(TAG, "停止指令发送失败: ${e.message}")
             }
         }
     }
@@ -338,7 +338,7 @@ class ConsoleViewModel(
             try {
                 motionControlApi.recover()
             } catch (e: Exception) {
-                KLog.e(TAG, "恢复指令发送失败: ${e.message}")
+                KLog.w(TAG, "恢复指令发送失败: ${e.message}")
             }
         }
     }
@@ -371,7 +371,7 @@ class ConsoleViewModel(
                         try {
                             motionControlApi.moveMixed(angle, translateLevel, rotateLevel)
                         } catch (e: Exception) {
-                            KLog.e(TAG, "摇杆指令发送失败: ${e.message}")
+                            KLog.w(TAG, "摇杆指令发送失败: ${e.message}")
                         }
                         delay(100)
                     }
@@ -384,7 +384,7 @@ class ConsoleViewModel(
                 try {
                     motionControlApi.moveMixed(0.0, 0, 0)
                 } catch (e: Exception) {
-                    KLog.e(TAG, "停止摇杆指令发送失败: ${e.message}")
+                    KLog.w(TAG, "停止摇杆指令发送失败: ${e.message}")
                 }
             }
         }

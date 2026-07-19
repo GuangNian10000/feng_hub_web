@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.guangnian.feature.console.data.api.AgentManagerApi
 import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.data.bean.AgentListResponse
+import com.example.guangnian.core.utils.KLog
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -33,6 +34,7 @@ class AgentViewModel(private val api: AgentManagerApi) : ViewModel() {
             try {
                 block()
             } catch (e: Exception) {
+                KLog.w("AgentViewModel", "$errorPrefix: ${e.message}", e)
                 _toastEvent.emit("$errorPrefix: ${e.message}")
             } finally {
                 _uiState.update { it.copy(isLoading = false) }

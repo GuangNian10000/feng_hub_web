@@ -1,5 +1,6 @@
 package com.example.guangnian.core.network.tcp
 
+import com.example.guangnian.core.utils.KLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -77,7 +78,7 @@ object KmpTcpDispatcher {
                         handlePassiveRequest(routePath, json)
                     }
                 } catch (e: Exception) {
-                    println("TCP响应 JSON 解析异常: ${e.message}")
+                    KLog.w("KmpTcpDispatcher", "TCP响应 JSON 解析异常: ${e.message}", e)
                 }
             }
         }
@@ -107,7 +108,7 @@ object KmpTcpDispatcher {
                         KmpTcpClient.send(responseJson.toString())
                     }
                 } catch (e: Exception) {
-                    println("路由处理异常 [$routePath]: ${e.message}")
+                    KLog.w("KmpTcpDispatcher", "路由处理异常 [$routePath]: ${e.message}", e)
                 }
             } else {
                 _serverEventFlow.emit(requestJson)
@@ -127,7 +128,7 @@ object KmpTcpDispatcher {
 
     suspend fun request(requestJsonString: String, messageId: String, timeoutMs: Long = 5000): JsonObject? {
         if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
-            //println("TCP 未连接，无法发送请求")
+            KLog.w("KmpTcpDispatcher", "TCP 未连接，无法发送请求")
             return null
         }
 
@@ -145,11 +146,11 @@ object KmpTcpDispatcher {
                 deferred.await()
             }
         } catch (e: TimeoutCancellationException) {
-            println("TCP 请求超时 ($timeoutMs ms): id=$messageId")
+            KLog.w("KmpTcpDispatcher", "TCP 请求超时 ($timeoutMs ms): id=$messageId")
             mutex.withLock { pendingRequests.remove(messageId) }
             null
         } catch (e: Exception) {
-            println("TCP 请求异常: ${e.message}")
+            KLog.w("KmpTcpDispatcher", "TCP 请求异常: ${e.message}", e)
             mutex.withLock { pendingRequests.remove(messageId) }
             null
         }
