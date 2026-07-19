@@ -7,8 +7,8 @@ import kotlinx.serialization.SerialName
 @Serializable
 data class ArmActionBean(
     //@SerialName("id")
-    val arm_id: String,
+    val arm_id: String ="",
     //@SerialName("name")
-    val arm_name: String,
-    val time: Double
+    val arm_name: String = "",
+    val time: Double =0.0
 )
