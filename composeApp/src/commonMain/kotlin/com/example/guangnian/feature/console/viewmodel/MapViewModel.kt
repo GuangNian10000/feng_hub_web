@@ -71,6 +71,7 @@ class MapViewModel(
     private var pathSeq = 0L
     private var pointsSeq = 0L
     private var imageSeq = 0L
+    private var isPointsInitialized = false
 
     init {
         startMapDataPolling()
@@ -220,23 +221,20 @@ class MapViewModel(
             }
         }
 
-        // 4. 导览点数据轮询 (1Hz)
+        // 4. 导览点数据同步 (初始同步一次，成功后依靠事件驱动)
         viewModelScope.launch {
             while (isActive) {
-                pointsSeq += 1
-                val seq = pointsSeq
                 val startTime = Clock.System.now().toEpochMilliseconds()
                 try {
                     val points = navigationApi.getInspectionPoints()
                     _uiState.update { it.copy(endpoints = points) }
-                    KLog.d(
-                        TAG,
-                        "导览点同步成功 #$seq: count=${points.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-                    )
+                    isPointsInitialized = true
+                    KLog.d(TAG, "导览点初始同步成功: count=${points.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                    break // 成功获取后退出循环，后续仅通过事件触发更新
                 } catch (e: Exception) {
-                    KLog.w(TAG, "导览点同步失败 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+                    KLog.w(TAG, "导览点初始同步失败: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 }
-                delay(3000)
+                delay(5000) // 失败则 5 秒后重试
             }
         }
     }
@@ -244,6 +242,7 @@ class MapViewModel(
     fun updateEndpoints(points: List<InspectionPointBean>) {
         KLog.d(TAG, "外部更新导览点: count=${points.size}")
         _uiState.update { it.copy(endpoints = points) }
+        isPointsInitialized = true
     }
 
     fun refreshMapData() {
@@ -252,6 +251,7 @@ class MapViewModel(
             try {
                 val points = navigationApi.getInspectionPoints()
                 _uiState.update { it.copy(endpoints = points) }
+                isPointsInitialized = true
                 KLog.d(TAG, "手动刷新导览点成功: count=${points.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
                 KLog.w(TAG, "手动刷新导览点失败: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
