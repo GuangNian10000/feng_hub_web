@@ -56,7 +56,7 @@ abstract class BaseTcpApi {
             }
         }
 
-        KLog.d("BaseTcpApi", "开始请求 [$routeName]: id=$messageId, target=$targetNode, 参数=$payloadKeys")
+        //KLog.d("BaseTcpApi", "开始请求 [$routeName]: id=$messageId, target=$targetNode, 参数=$payloadKeys")
 
         if (T::class == Unit::class) {
             KmpTcpClient.send(requestElement.toString())
