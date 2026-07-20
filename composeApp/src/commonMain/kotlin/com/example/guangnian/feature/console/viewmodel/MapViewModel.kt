@@ -36,6 +36,7 @@ data class MapUiState(
     val localPath: List<Point2DBean> = emptyList(),
     val pointCloud: List<Point2DBean> = emptyList(),
     val isMapping: Boolean = false,
+    val navStatus: RobotNavStatusBean = RobotNavStatusBean(),
     // 交互状态
     val interactionMode: MapInteractionMode = MapInteractionMode.NONE,
     val selectedPoint: InspectionPointBean? = null,
@@ -87,6 +88,10 @@ class MapViewModel(
                     is RobotEvent.MappingStateChanged -> {
                         KLog.d(TAG, "收到建图状态变更: isMapping=${event.isMapping}")
                         _uiState.update { it.copy(isMapping = event.isMapping) }
+                    }
+                    is RobotEvent.NavStatusChanged -> {
+                        KLog.d(TAG, "收到导航状态变更: state=${event.status.state}")
+                        _uiState.update { it.copy(navStatus = event.status) }
                     }
                     else -> {}
                 }
@@ -167,19 +172,28 @@ class MapViewModel(
                                 emptyList<Point2DBean>()
                             }
                         }
+                        val isNavigating = _uiState.value.navStatus.state == RobotNavState.NAVIGATING
                         val globalDef = async {
-                            try {
-                                navigationApi.getGlobalPath().points
-                            } catch(e: Exception) {
-                                KLog.w(TAG, "全局路径同步失败 #$seq: ${e.message}", e)
+                            if (isNavigating) {
+                                try {
+                                    navigationApi.getGlobalPath().points
+                                } catch (e: Exception) {
+                                    KLog.w(TAG, "全局路径同步失败 #$seq: ${e.message}", e)
+                                    emptyList<Point2DBean>()
+                                }
+                            } else {
                                 emptyList<Point2DBean>()
                             }
                         }
                         val localDef = async {
-                            try {
-                                navigationApi.getLocalPath().points
-                            } catch(e: Exception) {
-                                KLog.w(TAG, "局部路径同步失败 #$seq: ${e.message}", e)
+                            if (isNavigating) {
+                                try {
+                                    navigationApi.getLocalPath().points
+                                } catch (e: Exception) {
+                                    KLog.w(TAG, "局部路径同步失败 #$seq: ${e.message}", e)
+                                    emptyList<Point2DBean>()
+                                }
+                            } else {
                                 emptyList<Point2DBean>()
                             }
                         }

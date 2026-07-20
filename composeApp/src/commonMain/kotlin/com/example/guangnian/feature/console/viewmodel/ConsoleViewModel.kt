@@ -87,9 +87,10 @@ class ConsoleViewModel(
                         _uiState.update { it.copy(robotNavStatus = navStatus) }
                         KLog.d(TAG, "收到导航状态推送: state=${navStatus.state}, msg=$msgElement")
                         
-                        // 同时同步建图状态给 EventBus
+                        // 同时同步状态给 EventBus
                         val isMapping = navStatus.state == RobotNavState.MAPPING
                         eventBus.tryEmit(RobotEvent.MappingStateChanged(isMapping))
+                        eventBus.tryEmit(RobotEvent.NavStatusChanged(navStatus))
                     }
                 } catch (e: Exception) {
                     KLog.w(TAG, "解析推送的导航状态失败: ${e.message}, raw=$requestJson", e)

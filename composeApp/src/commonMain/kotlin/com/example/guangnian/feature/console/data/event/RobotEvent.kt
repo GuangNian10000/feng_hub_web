@@ -1,6 +1,7 @@
 package com.example.guangnian.feature.console.data.event
 
 import com.example.guangnian.feature.console.data.bean.InspectionPointBean
+import com.example.guangnian.feature.console.data.bean.RobotNavStatusBean
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
@@ -17,6 +18,7 @@ sealed class RobotEvent {
     data class ReachGoal(val point_id: String) : RobotEvent()
     data class Error(val message: String) : RobotEvent()
     data class MappingStateChanged(val isMapping: Boolean) : RobotEvent()
+    data class NavStatusChanged(val status: RobotNavStatusBean) : RobotEvent()
 }
 
 /**
