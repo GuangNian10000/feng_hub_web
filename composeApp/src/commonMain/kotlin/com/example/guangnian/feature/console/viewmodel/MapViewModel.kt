@@ -172,7 +172,9 @@ class MapViewModel(
                                 emptyList<Point2DBean>()
                             }
                         }
-                        val isNavigating = _uiState.value.navStatus.state == RobotNavState.NAVIGATING
+                        val isNavigating = _uiState.value.navStatus.state == RobotNavState.NAVIGATING ||
+                                           _uiState.value.navStatus.state == RobotNavState.LOW_BATTERY_NAV ||
+                                           _uiState.value.navStatus.state == RobotNavState.TOUR_PAUSED
                         val globalDef = async {
                             if (isNavigating) {
                                 try {

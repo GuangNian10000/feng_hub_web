@@ -71,6 +71,8 @@ fun TopStatusBar(
                     RobotNavState.RELOCALIZING -> navStatus.state_zh to Color(0xFFFF9800)
                     RobotNavState.EMERGENCY_STOP -> navStatus.state_zh to Color(0xFFE53935)
                     RobotNavState.MAPPING -> navStatus.state_zh to Color(0xFF9C27B0)
+                    RobotNavState.LOW_BATTERY_NAV -> navStatus.state_zh to Color(0xFFFF9800)
+                    RobotNavState.TOUR_PAUSED -> navStatus.state_zh to Color(0xFF9E9E9E)
                     else -> navStatus.state_zh to Color.White
                 }
                 
