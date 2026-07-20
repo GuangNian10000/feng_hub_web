@@ -5,7 +5,9 @@ import com.example.guangnian.feature.console.data.event.RobotEventBus
 import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
 import com.example.guangnian.feature.console.ui.panel.SpeechSynthesisViewModel
 import com.example.guangnian.feature.console.viewmodel.*
+import com.example.guangnian.feature.teach.viewmodel.TeachViewModel
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
+import com.example.guangnian.feature.teach.data.api.TeachApi
 import com.russhwolf.settings.Settings
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -69,6 +71,7 @@ val appModule = module {
     }
     factory { AgentViewModel(get()) }
     factory { KnowledgeViewModel(get()) }
+    factory { TeachViewModel(get()) }
     single { com.example.guangnian.feature.face.data.repository.FaceRepository(get(), get()) }
     factory { com.example.guangnian.feature.face.viewmodel.FaceViewModel(get()) }
     factory { SpeechSynthesisViewModel(get(), get()) }

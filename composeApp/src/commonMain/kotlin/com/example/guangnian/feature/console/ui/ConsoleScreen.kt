@@ -17,6 +17,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.ui.panel.*
+import com.example.guangnian.feature.teach.ui.TeachActionPanel
 import com.example.guangnian.feature.console.ui.components.*
 import com.example.guangnian.feature.console.viewmodel.*
 import com.example.guangnian.feature.console.data.bean.RobotNavState
@@ -56,7 +57,7 @@ fun InteractionScreen(
     // 动作执行确认弹窗状态
     var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
 
-    val menus = listOf("姿态动作", "动作", "导览管理", "语音合成", "智能体设置", "地图管理", "知识库")
+    val menus = listOf("姿态动作", "动作", "示教动作", "导览管理", "语音合成", "智能体设置", "地图管理", "知识库")
 
     var leftJoyX by remember { mutableFloatStateOf(0f) }
     var leftJoyY by remember { mutableFloatStateOf(0f) }
@@ -286,6 +287,10 @@ fun InteractionScreen(
                             onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id.toString(), name, true) },
                             onRetryClick = { consoleViewModel.fetchArmList() }
                         )
+                        "示教动作" -> TeachActionPanel(onSetAddAction = { text, action ->
+                            addActionText = text
+                            onAddClickAction = action
+                        })
                         "导览管理" -> InspectionPointPanel(
                             endpoints = uiState.endpoints,
                             routes = uiState.routes,

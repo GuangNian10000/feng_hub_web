@@ -19,6 +19,7 @@ import com.example.guangnian.feature.console.data.bean.StartupHeartbeatBean
 import com.example.guangnian.feature.console.data.bean.BaseBean
 import com.example.guangnian.feature.console.data.bean.SpeechSynthesisBean
 import com.example.guangnian.feature.console.data.bean.TeachActionBean
+import com.example.guangnian.feature.console.data.bean.TeachStatusBean
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -197,6 +198,9 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 执行示教动作
     override suspend fun executeTeach(name: String) =
         request<Unit>("teach/execution", mapOf("name" to name))
+
+    override suspend fun getTeachStatus() =
+        request<TeachStatusBean>("teach/record_status")
 
     // 开始建图（协议约定字段名为 msg）
     override suspend fun startMapping(mapName: String) =
