@@ -15,6 +15,7 @@ abstract class BaseTcpApi {
     val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
+        coerceInputValues = true
     }
 
     // 增加 targetNode 参数，默认发往 ARM

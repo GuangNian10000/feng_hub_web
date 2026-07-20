@@ -6,9 +6,11 @@ import kotlinx.serialization.SerialName
 // 定义手臂动作列表响应实体
 @Serializable
 data class ArmActionBean(
-    //@SerialName("id")
-    val arm_id: String ="",
-    //@SerialName("name")
+    val arm_id: String = "",
     val arm_name: String = "",
-    val time: Double =0.0
-)
+    @SerialName("time")
+    private val _time: Double? = 0.0
+) {
+    val time: Double get() = _time ?: 0.0
+}
+

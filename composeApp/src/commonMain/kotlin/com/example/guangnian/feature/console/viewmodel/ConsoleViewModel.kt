@@ -46,7 +46,10 @@ class ConsoleViewModel(
 ) : ViewModel() {
     private companion object {
         const val TAG = "ConsoleViewModel"
-        private val json = Json { ignoreUnknownKeys = true }
+        private val json = Json { 
+            ignoreUnknownKeys = true 
+            coerceInputValues = true
+        }
     }
 
     private val _uiState = MutableStateFlow(ConsoleUiState())
