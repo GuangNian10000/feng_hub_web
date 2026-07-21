@@ -9,6 +9,8 @@ import com.example.guangnian.feature.console.data.api.NavigationApi
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
+import com.example.guangnian.core.network.tcp.KmpTcpClient
+import com.example.guangnian.core.network.tcp.TcpState
 import com.russhwolf.settings.Settings
 import io.ktor.client.*
 import io.ktor.client.request.*
@@ -46,7 +48,8 @@ data class MapUiState(
     // 加载状态
     val isMapLoading: Boolean = false,
     val mapLoadingProgress: Float = 0f,
-    val loadingStage: String = ""
+    val loadingStage: String = "",
+    val isConnected: Boolean = false
 )
 
 enum class MapInteractionMode {
@@ -74,8 +77,22 @@ class MapViewModel(
     private var isPointsInitialized = false
 
     init {
+        observeConnectionState()
         startMapDataPolling()
         observeEvents()
+    }
+
+    private fun observeConnectionState() {
+        viewModelScope.launch {
+            KmpTcpClient.connectionState.collect { state ->
+                val isConnected = state == TcpState.CONNECTED
+                _uiState.update { it.copy(isConnected = isConnected) }
+                if (isConnected) {
+                    KLog.i(TAG, "网络已连接，准备刷新数据")
+                    refreshMapData()
+                }
+            }
+        }
     }
 
     private fun observeEvents() {
@@ -104,6 +121,10 @@ class MapViewModel(
         // 1. 地图配置与图片加载
         viewModelScope.launch {
             while (isActive) {
+                if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
+                    delay(2000)
+                    continue
+                }
                 mapConfigSeq += 1
                 val seq = mapConfigSeq
                 val startTime = Clock.System.now().toEpochMilliseconds()
@@ -139,6 +160,10 @@ class MapViewModel(
         // 2. 高频位置刷新 (5Hz)
         viewModelScope.launch {
             while (isActive) {
+                if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
+                    delay(1000)
+                    continue
+                }
                 positionSeq += 1
                 val seq = positionSeq
                 val startTime = Clock.System.now().toEpochMilliseconds()
@@ -160,6 +185,10 @@ class MapViewModel(
         // 3. 动效数据刷新 (1Hz: 点云、路径)
         viewModelScope.launch {
             while (isActive) {
+                if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
+                    delay(1000)
+                    continue
+                }
                 pathSeq += 1
                 val seq = pathSeq
                 val startTime = Clock.System.now().toEpochMilliseconds()
@@ -204,15 +233,17 @@ class MapViewModel(
                         val globalPath = globalDef.await()
                         val localPath = localDef.await()
                         
-                        _uiState.update { it.copy(
-                            pointCloud = pointCloud,
-                            globalPath = globalPath,
-                            localPath = localPath
-                        ) }
-                        KLog.d(
-                            TAG,
-                            "路径数据同步完成 #$seq: pointCloud=${pointCloud.size}, globalPath=${globalPath.size}, localPath=${localPath.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-                        )
+                        if (KmpTcpClient.connectionState.value == TcpState.CONNECTED) {
+                            _uiState.update { it.copy(
+                                pointCloud = pointCloud,
+                                globalPath = globalPath,
+                                localPath = localPath
+                            ) }
+                            KLog.d(
+                                TAG,
+                                "路径数据同步完成 #$seq: pointCloud=${pointCloud.size}, globalPath=${globalPath.size}, localPath=${localPath.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                            )
+                        }
                     }
                 } catch (e: Exception) {
                     KLog.w(TAG, "路径数据同步异常 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
@@ -224,6 +255,10 @@ class MapViewModel(
         // 4. 导览点数据同步 (初始同步一次，成功后依靠事件驱动)
         viewModelScope.launch {
             while (isActive) {
+                if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
+                    delay(2000)
+                    continue
+                }
                 val startTime = Clock.System.now().toEpochMilliseconds()
                 try {
                     val points = navigationApi.getInspectionPoints()

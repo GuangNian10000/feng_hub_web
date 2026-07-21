@@ -9,7 +9,9 @@ import com.example.guangnian.feature.console.data.api.RouteApi
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
+import com.example.guangnian.core.network.tcp.KmpTcpClient
 import com.example.guangnian.core.network.tcp.KmpTcpDispatcher
+import com.example.guangnian.core.network.tcp.TcpState
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.coroutines.flow.*
@@ -33,6 +35,7 @@ data class ConsoleUiState(
     val isInspectionPaused: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val isConnected: Boolean = false,
     // 交互状态
     val pendingPoint: InspectionPointBean? = null,
     val deleteConfirmPoint: InspectionPointBean? = null
@@ -61,6 +64,7 @@ class ConsoleViewModel(
     private var joystickSeq = 0L
 
     init {
+        observeConnectionState()
         // 监听来自 Map 或其他组件的事件
         viewModelScope.launch {
             eventBus.events.collect { event ->
@@ -96,6 +100,14 @@ class ConsoleViewModel(
                     KLog.w(TAG, "解析推送的导航状态失败: ${e.message}, raw=$requestJson", e)
                 }
                 null
+            }
+        }
+    }
+
+    private fun observeConnectionState() {
+        viewModelScope.launch {
+            KmpTcpClient.connectionState.collect { state ->
+                _uiState.update { it.copy(isConnected = state == TcpState.CONNECTED) }
             }
         }
     }

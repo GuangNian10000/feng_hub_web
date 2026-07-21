@@ -110,7 +110,8 @@ abstract class BaseTcpApi {
             result
         } catch (e: Exception) {
             val rawMsg = msgElement.toString()
-            KLog.e("BaseTcpApi", "响应解析异常 [$routeName]: id=$messageId, error=${e.message}, msg原始内容=$rawMsg, 完整响应=$responseJson")
+            KLog.e("BaseTcpApi", "完整响应:[$routeName]: $responseJson")
+           // KLog.e("BaseTcpApi", "响应解析异常 [$routeName]: id=$messageId, error=${e.message}, msg原始内容=$rawMsg")
             
             // 如果 msg 本身是一个字符串（而非预期的对象），说明服务端可能直接返回了错误描述
             if (msgElement is JsonPrimitive && msgElement.isString) {
