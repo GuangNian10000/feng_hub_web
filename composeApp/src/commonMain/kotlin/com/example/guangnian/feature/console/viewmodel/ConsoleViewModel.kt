@@ -165,21 +165,21 @@ class ConsoleViewModel(
     }
 
     fun deleteMap(mapUid: String) {
-        executeTask("删除地图失败") {
+        executeTask("删除地图失败", mapUid) {
             navigationApi.archiveMap(mapUid)
             fetchMaps()
         }
     }
 
     fun switchMap(mapUid: String) {
-        executeTask("切换地图失败") {
+        executeTask("切换地图失败", mapUid) {
             navigationApi.switchMap(mapUid)
             fetchMaps()
         }
     }
 
     fun startMapping(mapName: String) {
-        executeTask("开始建图失败") {
+        executeTask("开始建图失败", mapName) {
             navigationApi.startMapping(mapName)
             eventBus.emit(RobotEvent.MappingStateChanged(true))
         }
@@ -200,18 +200,18 @@ class ConsoleViewModel(
         }
     }
 
-    private fun executeTask(errorMsg: String, block: suspend () -> Unit) {
+    private fun executeTask(errorMsg: String, requestData: Any? = null, block: suspend () -> Unit) {
         viewModelScope.launch {
             taskSeq += 1
             val seq = taskSeq
             val startTime = Clock.System.now().toEpochMilliseconds()
-            KLog.d(TAG, "任务开始 #$seq: $errorMsg")
+            //KLog.d(TAG, "任务开始 #$seq: $errorMsg${if (requestData != null) ", request=$requestData" else ""}")
             _uiState.update { it.copy(isLoading = true) }
             try {
                 block()
                 KLog.d(TAG, "任务成功 #$seq: $errorMsg, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
-                KLog.w(TAG, "任务失败 #$seq: $errorMsg, error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+                KLog.w(TAG, "任务失败 #$seq: $errorMsg, ${if (requestData != null) "request=$requestData, " else ""}error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 handleError(errorMsg, e)
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
@@ -319,7 +319,7 @@ class ConsoleViewModel(
     }
 
     fun addInspectionPoint(point: InspectionPointBean) {
-        executeTask("添加导航点失败") {
+        executeTask("添加导航点失败", point) {
             navigationApi.addInspectionPoint(point)
             fetchInspectionPoints()
             eventBus.emit(RobotEvent.PointsChanged)
@@ -327,7 +327,7 @@ class ConsoleViewModel(
     }
 
     fun updateInspectionPoint(point: InspectionPointBean) {
-        executeTask("更新导航点失败") {
+        executeTask("更新导航点失败", point) {
             navigationApi.updateInspectionPoint(point)
             fetchInspectionPoints()
             eventBus.emit(RobotEvent.PointsChanged)
@@ -335,7 +335,7 @@ class ConsoleViewModel(
     }
 
     fun deleteInspectionPoint(point_id: String) {
-        executeTask("删除导航点失败") {
+        executeTask("删除导航点失败", point_id) {
             navigationApi.deleteInspectionPoint(point_id)
             fetchInspectionPoints()
             eventBus.emit(RobotEvent.PointsChanged)
@@ -343,21 +343,21 @@ class ConsoleViewModel(
     }
 
     fun addRoute(route: RouteBean) {
-        executeTask("添加路线失败") {
+        executeTask("添加路线失败", route) {
             routeApi.addRoute(route)
             fetchRoutes()
         }
     }
 
     fun updateRoute(route: RouteBean) {
-        executeTask("更新路线失败") {
+        executeTask("更新路线失败", route) {
             routeApi.updateRoute(route)
             fetchRoutes()
         }
     }
 
     fun deleteRoute(route_id: String) {
-        executeTask("删除路线失败") {
+        executeTask("删除路线失败", route_id) {
             routeApi.deleteRoute(route_id)
             fetchRoutes()
         }

@@ -109,9 +109,6 @@ fun MapBackgroundLayer(
                 .pointerInput(mapId, uiState.interactionMode) { 
                     val currentConfig = config ?: return@pointerInput
                     detectTapGestures(
-                        onDoubleTap = {
-                            isInitialized = false
-                        },
                         onLongPress = { screenOffset ->
                             val mapPixelOffset = screenToMapPixel(screenOffset)
                             val worldPos = MapTransformUtils.pixelToWorld(mapPixelOffset, currentConfig, mapHeightPx)
@@ -212,8 +209,12 @@ fun MapBackgroundLayer(
             
             if (mapBitmap != null) { // 移除 !uiState.isMapLoading 判断，避免刷新时图层消失导致的闪烁
                 PathLayer(uiState.globalPath, uiState.localPath, config, mapHeightPx, scale, layerModifier)
+                // 调整层级：点云放在下方
+                PointCloudLayer(uiState.robotPosition, uiState.robotPosition?.let { uiState.pointCloud } ?: emptyList(), config, mapHeightPx, scale, layerModifier)
+                // 导览点在点云之上
                 MarkerLayer(uiState.endpoints, config, mapHeightPx, scale, textMeasurer, layerModifier)
-                RobotLayer(uiState.robotPosition, uiState.pointCloud, config, mapHeightPx, scale, layerModifier)
+                // 机器人图标在最上层
+                RobotLayer(uiState.robotPosition, config, mapHeightPx, scale, layerModifier)
                 InteractionLayer(uiState.interactionMode, uiState.tempPoint, uiState.tempYaw, config, mapHeightPx, scale, layerModifier)
             }
 
@@ -358,17 +359,12 @@ private fun MarkerLayer(
 @Composable
 private fun RobotLayer(
     robotPosition: RobotPositionBean?,
-    pointCloud: List<Point2DBean>,
     config: MapConfigBean?,
     mapHeightPx: Float,
     scale: Float,
     modifier: Modifier
 ) {
     if (config == null || robotPosition == null) return
-
-    val worldCloud = remember(pointCloud, robotPosition) {
-        MapTransformUtils.calculatePointCloudWorldCoords(pointCloud, robotPosition)
-    }
 
     Canvas(modifier = modifier) {
         val px = MapTransformUtils.worldToPixel(robotPosition.x, robotPosition.y, config, mapHeightPx)
@@ -377,14 +373,32 @@ private fun RobotLayer(
         drawCircle(color = Color(0xFFFFA500), radius = robotRadius, center = px)
         val arrowLength = (16f * adaptiveFactor).coerceAtLeast(14f / scale)
         drawDirectionArrow(px, arrowLength, robotPosition.yaw, Color.Red, offset = robotRadius * 1.4f)
+    }
+}
 
+@Composable
+private fun PointCloudLayer(
+    robotPosition: RobotPositionBean?,
+    pointCloud: List<Point2DBean>,
+    config: MapConfigBean?,
+    mapHeightPx: Float,
+    scale: Float,
+    modifier: Modifier
+) {
+    if (config == null || robotPosition == null || pointCloud.isEmpty()) return
+
+    val worldCloud = remember(pointCloud, robotPosition) {
+        MapTransformUtils.calculatePointCloudWorldCoords(pointCloud, robotPosition)
+    }
+
+    Canvas(modifier = modifier) {
         if (worldCloud.isNotEmpty()) {
             val points = worldCloud.map { MapTransformUtils.worldToPixel(it.x, it.y, config, mapHeightPx) }
             drawPoints(
                 points = points,
                 pointMode = PointMode.Points,
-                color = Color.Red.copy(alpha = 0.8f),
-                strokeWidth = 6.0f,
+                color = Color.Red.copy(alpha = 0.6f), // 稍微调低透明度减少干扰
+                strokeWidth = 4.0f,
                 cap = StrokeCap.Round
             )
         }

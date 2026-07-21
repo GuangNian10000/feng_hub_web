@@ -47,8 +47,27 @@ abstract class BaseTcpApi {
                             is String -> put(k, v)
                             is Number -> put(k, v)
                             is Boolean -> put(k, v)
-                            is Map<*, *> -> put(k, Json.encodeToJsonElement(v))
-                            is Iterable<*> -> put(k, Json.encodeToJsonElement(v))
+                            is Map<*, *> -> put(k, buildJsonObject {
+                                v.forEach { (mk, mv) ->
+                                    val key = mk.toString()
+                                    when (mv) {
+                                        is String -> put(key, mv)
+                                        is Number -> put(key, mv)
+                                        is Boolean -> put(key, mv)
+                                        else -> put(key, mv.toString())
+                                    }
+                                }
+                            })
+                            is Iterable<*> -> put(k, buildJsonArray {
+                                v.forEach { item ->
+                                    when (item) {
+                                        is String -> add(item)
+                                        is Number -> add(item)
+                                        is Boolean -> add(item)
+                                        else -> add(item.toString())
+                                    }
+                                }
+                            })
                             else -> put(k, v.toString())
                         }
                     }

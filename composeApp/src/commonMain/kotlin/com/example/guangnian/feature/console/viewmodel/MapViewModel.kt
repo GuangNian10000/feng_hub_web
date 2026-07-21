@@ -315,6 +315,9 @@ class MapViewModel(
                         ) 
                     }
                     KLog.d(TAG, "地图图片加载完成 #$seq: url=$url, 总耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                    
+                    // 地图加载完成后，自动刷新一次导览点，确保点位及时显示
+                    refreshMapData()
                 } else {
                     KLog.w(TAG, "地图图片解析失败 #$seq: url=$url, bytes=${bytes.size}, 总耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
                     _uiState.update { it.copy(isMapLoading = false) }
