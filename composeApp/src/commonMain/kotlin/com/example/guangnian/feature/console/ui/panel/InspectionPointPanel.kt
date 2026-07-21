@@ -314,6 +314,9 @@ private fun InspectionPointEditDialog(
     var pointType by remember(initialPoint) { mutableStateOf(initialPoint?.pointType ?: 0) }
     var stayTime by remember(initialPoint) { mutableStateOf(initialPoint?.stayTime?.toString() ?: "0.0") }
     var needRotate by remember(initialPoint) { mutableStateOf(initialPoint?.needRotate ?: false) }
+    var armId by remember(initialPoint) { mutableStateOf(initialPoint?.armId ?: "") }
+    var skipAllowed by remember(initialPoint) { mutableStateOf(initialPoint?.skipAllowed ?: true) }
+    var playPriority by remember(initialPoint) { mutableStateOf(initialPoint?.playPriority?.toString() ?: "0") }
 
     var showTypeMenu by remember { mutableStateOf(false) }
 
@@ -411,12 +414,30 @@ private fun InspectionPointEditDialog(
                     )
                 }
 
-                // 3. 停留时间与开关
+                // 3. 停留时间与优先级
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = stayTime,
                         onValueChange = { stayTime = it },
                         label = { Text("停留时间 (s)") },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                    )
+                    OutlinedTextField(
+                        value = playPriority,
+                        onValueChange = { playPriority = it },
+                        label = { Text("播放优先级") },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                    )
+                }
+
+                // 4. 手臂动作与开关
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = armId,
+                        onValueChange = { armId = it },
+                        label = { Text("关联手臂动作ID") },
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
@@ -426,10 +447,14 @@ private fun InspectionPointEditDialog(
                             Checkbox(checked = needRotate, onCheckedChange = { needRotate = it }, colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)))
                             Text("需要旋转", color = Color.Black, fontSize = 12.sp)
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = skipAllowed, onCheckedChange = { skipAllowed = it }, colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)))
+                            Text("允许跳过", color = Color.Black, fontSize = 12.sp)
+                        }
                     }
                 }
 
-                // 4. 广播内容
+                // 5. 广播内容
                 OutlinedTextField(
                     value = broadcastContent,
                     onValueChange = { broadcastContent = it },
@@ -438,7 +463,7 @@ private fun InspectionPointEditDialog(
                     colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                 )
 
-                // 5. 动作开关
+                // 6. 动作开关
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Switch(checked = playOnArrival, onCheckedChange = { playOnArrival = it }, colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF007AFF)))
@@ -473,7 +498,10 @@ private fun InspectionPointEditDialog(
                                 photoOnArrival = photoOnArrival,
                                 pointType = pointType,
                                 stayTime = stayTime.toDoubleOrNull() ?: 0.0,
-                                needRotate = needRotate
+                                needRotate = needRotate,
+                                armId = armId.ifEmpty { null },
+                                skipAllowed = skipAllowed,
+                                playPriority = playPriority.toIntOrNull() ?: 0
                             )
                             onConfirm(updated)
                         },

@@ -319,6 +319,10 @@ class ConsoleViewModel(
     }
 
     fun addInspectionPoint(point: InspectionPointBean) {
+        if (point.point_id.isNotEmpty()) {
+            updateInspectionPoint(point)
+            return
+        }
         executeTask("添加导航点失败", point) {
             navigationApi.addInspectionPoint(point)
             fetchInspectionPoints()

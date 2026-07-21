@@ -290,33 +290,38 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 创建导航点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =
         request<BaseBean>("slam/point_add", mapOf(
-            //"point_id" to point.point_id,
-            "name" to point.name,
+            "point_name" to point.name,
             "x" to (point.position?.x ?: point.x),
             "y" to (point.position?.y ?: point.y),
             "yaw" to (point.position?.yaw ?: point.yaw),
-            "broadcastContent" to point.broadcastContent,
-            "playOnArrival" to point.playOnArrival,
-            "photoOnArrival" to point.photoOnArrival,
-            "pointType" to point.pointType,
-            "stayTime" to point.stayTime,
-            "needRotate" to point.needRotate
+            "description" to point.broadcastContent,
+            "play_on_arrival" to point.playOnArrival,
+            "photo_on_arrival" to point.photoOnArrival,
+            "point_type" to point.pointType,
+            "stay_time" to point.stayTime,
+            "need_rotate" to point.needRotate,
+            "arm_id" to (point.armId ?: ""),
+            "skip_allowed" to point.skipAllowed,
+            "play_priority" to point.playPriority
         ))
 
     // 更新导航点
     override suspend fun updateInspectionPoint(point: InspectionPointBean) =
-        request<BaseBean>("slam/point_add", mapOf(
+        request<BaseBean>("slam/point_update", mapOf(
             "point_id" to point.point_id,
-            "name" to point.name,
+            "point_name" to point.name,
             "x" to (point.position?.x ?: point.x),
             "y" to (point.position?.y ?: point.y),
             "yaw" to (point.position?.yaw ?: point.yaw),
-            "broadcastContent" to point.broadcastContent,
-            "playOnArrival" to point.playOnArrival,
-            "photoOnArrival" to point.photoOnArrival,
-            "pointType" to point.pointType,
-            "stayTime" to point.stayTime,
-            "needRotate" to point.needRotate
+            "description" to point.broadcastContent,
+            "play_on_arrival" to point.playOnArrival,
+            "photo_on_arrival" to point.photoOnArrival,
+            "point_type" to point.pointType,
+            "stay_time" to point.stayTime,
+            "need_rotate" to point.needRotate,
+            "arm_id" to (point.armId ?: ""),
+            "skip_allowed" to point.skipAllowed,
+            "play_priority" to point.playPriority
         ))
 
     // 删除导航点

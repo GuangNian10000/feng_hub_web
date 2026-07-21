@@ -151,9 +151,9 @@ class MapViewModel(
                     )
                 } catch (e: Exception) {
                     KLog.w(TAG, "机器人位置同步失败 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
-                    delay(3000) //500
+                    delay(1000)
                 }
-                delay(3000) //200
+                delay(200)
             }
         }
 
@@ -217,7 +217,7 @@ class MapViewModel(
                 } catch (e: Exception) {
                     KLog.w(TAG, "路径数据同步异常 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 }
-                delay(3000)
+                delay(500)
             }
         }
 
