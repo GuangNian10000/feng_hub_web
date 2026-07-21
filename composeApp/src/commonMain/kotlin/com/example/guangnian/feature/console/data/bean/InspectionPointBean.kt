@@ -32,7 +32,8 @@ data class InspectionPointBean(
     val skipAllowed: Boolean = true, // 是否允许跳过
     @SerialName("play_priority")
     val playPriority: Int = 0, // 播放优先级
-    val position: PointPosition? = null // 点位序列位置
+    val position: PointPosition? = null, // 点位序列位置
+    val arm_name: String  = "" // 动作名称
 )
 
 @Serializable
