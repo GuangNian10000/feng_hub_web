@@ -9,6 +9,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.time.Clock
 
 abstract class BaseTcpApi {
@@ -108,7 +109,13 @@ abstract class BaseTcpApi {
             )
             result
         } catch (e: Exception) {
-            KLog.e("BaseTcpApi", "响应解析异常 [$routeName]: id=$messageId, error=${e.message}")
+            val rawMsg = msgElement.toString()
+            KLog.e("BaseTcpApi", "响应解析异常 [$routeName]: id=$messageId, error=${e.message}, msg原始内容=$rawMsg, 完整响应=$responseJson")
+            
+            // 如果 msg 本身是一个字符串（而非预期的对象），说明服务端可能直接返回了错误描述
+            if (msgElement is JsonPrimitive && msgElement.isString) {
+                throw Exception("服务端返回错误: ${msgElement.content}")
+            }
             throw e
         }
     }
