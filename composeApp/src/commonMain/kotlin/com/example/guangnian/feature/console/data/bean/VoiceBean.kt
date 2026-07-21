@@ -19,5 +19,6 @@ data class VoiceBean(
 @Serializable
 enum class SourceType{
     MICROSOFT,
-    VOLCANO
+    VOLCANO,
+    AIUI
 }
