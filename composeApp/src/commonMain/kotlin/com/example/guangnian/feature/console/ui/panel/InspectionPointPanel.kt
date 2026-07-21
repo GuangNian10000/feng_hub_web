@@ -51,6 +51,7 @@ fun InspectionPointPanel(
     onUpdateRoute: (RouteBean) -> Unit,
     onRetryClick: () -> Unit,
     onSetAddAction: (String, () -> Unit) -> Unit,
+    armActions: List<com.example.guangnian.feature.console.data.bean.ArmActionBean> = emptyList(),
     pendingPoint: InspectionPointBean? = null,
     onClearPendingPoint: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -97,6 +98,7 @@ fun InspectionPointPanel(
     if (showEditDialog != null) {
         InspectionPointEditDialog(
             initialPoint = showEditDialog,
+            armActions = armActions,
             onConfirm = { point ->
                 if (point.point_id.isEmpty()) {
                     onAddCurrentPosition(point)
@@ -300,6 +302,7 @@ private fun Double.format(digits: Int): String {
 @Composable
 private fun InspectionPointEditDialog(
     initialPoint: InspectionPointBean?,
+    armActions: List<com.example.guangnian.feature.console.data.bean.ArmActionBean>,
     onConfirm: (InspectionPointBean) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -315,10 +318,14 @@ private fun InspectionPointEditDialog(
     var stayTime by remember(initialPoint) { mutableStateOf(initialPoint?.stayTime?.toString() ?: "0.0") }
     var needRotate by remember(initialPoint) { mutableStateOf(initialPoint?.needRotate ?: false) }
     var armId by remember(initialPoint) { mutableStateOf(initialPoint?.armId ?: "") }
+    var armName by remember(initialPoint, armActions) { 
+        mutableStateOf(armActions.find { it.arm_id == initialPoint?.armId }?.arm_name ?: initialPoint?.arm_name ?: "") 
+    }
     var skipAllowed by remember(initialPoint) { mutableStateOf(initialPoint?.skipAllowed ?: true) }
     var playPriority by remember(initialPoint) { mutableStateOf(initialPoint?.playPriority?.toString() ?: "0") }
 
     var showTypeMenu by remember { mutableStateOf(false) }
+    var showArmMenu by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -434,13 +441,42 @@ private fun InspectionPointEditDialog(
 
                 // 4. 手臂动作与开关
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = armId,
-                        onValueChange = { armId = it },
-                        label = { Text("关联手臂动作ID") },
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = armName.ifEmpty { if(armId.isNotEmpty()) "动作ID: $armId" else "无关联动作" },
+                            onValueChange = {},
+                            label = { Text("关联手臂动作") },
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Color.Black) },
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        )
+                        Box(modifier = Modifier.matchParentSize().clickable { showArmMenu = true })
+                        DropdownMenu(
+                            expanded = showArmMenu,
+                            onDismissRequest = { showArmMenu = false },
+                            modifier = Modifier.background(Color.White).fillMaxWidth(0.4f).heightIn(max = 300.dp)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("无关联动作", color = Color.Gray) },
+                                onClick = {
+                                    armId = ""
+                                    armName = ""
+                                    showArmMenu = false
+                                }
+                            )
+                            armActions.forEach { action ->
+                                DropdownMenuItem(
+                                    text = { Text(action.arm_name, color = Color.Black) },
+                                    onClick = {
+                                        armId = action.arm_id
+                                        armName = action.arm_name
+                                        showArmMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -500,6 +536,7 @@ private fun InspectionPointEditDialog(
                                 stayTime = stayTime.toDoubleOrNull() ?: 0.0,
                                 needRotate = needRotate,
                                 armId = armId.ifEmpty { null },
+                                arm_name = armName,
                                 skipAllowed = skipAllowed,
                                 playPriority = playPriority.toIntOrNull() ?: 0
                             )

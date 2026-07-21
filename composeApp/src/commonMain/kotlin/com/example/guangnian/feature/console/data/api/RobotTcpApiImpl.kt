@@ -41,7 +41,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         "loopCount" to route.loopCount
     ))
 
-    override suspend fun updateRoute(route: RouteBean) = request<BaseBean>("slam/route_add", mapOf(
+    override suspend fun updateRoute(route: RouteBean) = request<BaseBean>("slam/route_update", mapOf(
         "route_id" to (route.route_id ?: ""),
         "route_name" to route.route_name,
         "description" to route.description,

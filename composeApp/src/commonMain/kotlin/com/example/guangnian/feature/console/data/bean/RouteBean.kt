@@ -15,7 +15,9 @@ data class RouteBean(
     val isActive: Boolean = true,
     val createTime: Long? = null,
     val updateTime: Long? = null,
-    val loopCount: Int = 1 // 循环次数
+    val loopCount: Int = 1, // 循环次数
+    val loop_enabled : Boolean = true, //是否循环
+
 )
 
 @Serializable

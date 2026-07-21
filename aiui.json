@@ -1,0 +1,749 @@
+{
+  "voices": [
+    {
+      "id": "x6_lingxiaoyue_pro",
+      "name": "聆小玥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingfeiyi_pro",
+      "name": "聆飞逸",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingyuyan_pro",
+      "name": "聆玉言",
+      "latitude": "中文"
+    },
+    {
+      "id": "x5_lingxiaotang_flow",
+      "name": "聆小糖",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingxiaoxuan_pro",
+      "name": "聆小璇",
+      "latitude": "中文"
+    },
+    {
+      "id": "x5_lingyuzhao_flow",
+      "name": "聆玉昭",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingxiaoying_pro",
+      "name": "聆小颖",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingfeibo_pro",
+      "name": "聆飞博",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_gaolengnanshen_pro",
+      "name": "高冷男神",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_waiguodashu_pro",
+      "name": "外国人大叔",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_dongmanshaonv_pro",
+      "name": "动漫少女",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_wennuancixingnansheng_mini",
+      "name": "温暖磁性男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_xiaonaigoudidi_mini",
+      "name": "小奶狗弟弟",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_shibingnvsheng_mini",
+      "name": "士兵女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_kongbunvsheng_mini",
+      "name": "恐怖女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_yulexinwennvsheng_mini",
+      "name": "娱乐新闻女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_wenrounansheng_mini",
+      "name": "温柔男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_jingqudaolannvsheng_mini",
+      "name": "景区导览女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_daqixuanchuanpiannansheng_mi",
+      "name": "大气宣传片男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_cuishounvsheng_pro",
+      "name": "催收女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_yingxiaonv_pro",
+      "name": "营销女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_huanleimianbao_pro",
+      "name": "海绵宝宝",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_xiangruiyingyu_pro",
+      "name": "商务殷语",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_taiqiangnuannan_pro",
+      "name": "台湾腔 温柔男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_wumeinv_pro",
+      "name": "妩媚姐姐",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingbosong_pro",
+      "name": "聆伯松",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_dudulibao_pro",
+      "name": "少女可莉",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_huajidama_pro",
+      "name": "滑稽大妈",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_huoposhaonian_pro",
+      "name": "活泼少年",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingxiaoxue_pr",
+      "name": "聆小雪",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_gufengxianv_mir",
+      "name": "古风侠女",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_wuyediantai_mini",
+      "name": "午夜电台",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_tiexinnanyou_mini",
+      "name": "贴心男友",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingxiaozhen_pro",
+      "name": "聆小琪",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingyouyou_pro",
+      "name": "聆佑佑",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_gufengpangbai_pro",
+      "name": "古风旁白",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_ganliannvxing_pro",
+      "name": "干练女性",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_pangbainan1_pro",
+      "name": "旁白男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "6_pangbainv1_pro",
+      "name": "旁白女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingfeihan_pro",
+      "name": "聆飞瀚",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingfeihao_pro",
+      "name": "聆飞皓",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingyufei_pro",
+      "name": "聆玉菲",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_ruyadashu_pro",
+      "name": "儒雅大叔",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingxiaoyun_pro",
+      "name": "聆小芸",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingyuaner_pro",
+      "name": "聆园儿",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingxiaoshan_pro",
+      "name": "聆小珊",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_feizheChat_pro",
+      "name": "聆飞哲",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_lingxiaoli_pro",
+      "name": "聆小璃",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_xiaoqiChat_pro",
+      "name": "聆小琪",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_youxinanshibing_pro",
+      "name": "士兵男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_zhuanyenvzhuchi_pro",
+      "name": "大会主持女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_zuixianlibai_pro",
+      "name": "醉仙李白",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_shiwangxiaoxin_pro",
+      "name": "奶凶辛巴",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_bokenansheng_pro",
+      "name": "播客男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_zhuanyenanzhuchi_pro",
+      "name": "大会主持男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_ranzhinvdazi_pro",
+      "name": "运动陪练女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_zhantingnanjiedai_pro",
+      "name": "展厅接待男声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_zhantingnvjiedai",
+      "name": "展厅接待女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x6_huifangnv_pro",
+      "name": "回访女声",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingxiaoqi_oral",
+      "name": "聆小琪",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingyuzhao_oral",
+      "name": "聆玉昭",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingxiaoxuan_oral",
+      "name": "聆小璇",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingfeizhe_oral",
+      "name": "聆飞哲",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingyouyou_oral",
+      "name": "聆佑佑",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingfeiyi_oral",
+      "name": "聆飞逸",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingyuyan_oral",
+      "name": "聆玉言",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingxiaoyue_oral",
+      "name": "聆小玥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingxiaoli_oral",
+      "name": "聆小璃",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_zijin_oral",
+      "name": "子津",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_ziyang_oral",
+      "name": "子阳",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_EnUs_Lila_emo",
+      "name": "Lila",
+      "latitude": "英文"
+    },
+    {
+      "id": "x4_EnUs_Grant_emo",
+      "name": "Grant",
+      "latitude": "英文"
+    },
+    {
+      "id": "x4_lingxiaoying_em_v2",
+      "name": "聆小樱",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingxiaoxuan_chat  x2_xiaojuan",
+      "name": "聆小璇 小娟",
+      "latitude": "中文"
+    },
+    {
+      "id": "x_dangdang",
+      "name": "小姐姐",
+      "latitude": "中文"
+    },
+    {
+      "id": "x_qige",
+      "name": "小哥哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoyuan",
+      "name": "小媛",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 xiaoxi",
+      "name": "水哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_chongchong",
+      "name": "虫虫",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoxue",
+      "name": "小雪",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_pengfei",
+      "name": "小鹏",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_yifei",
+      "name": "一菲",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_chaoge",
+      "name": "超哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_qige",
+      "name": "七哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaofang",
+      "name": "芳芳",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_nannan",
+      "name": "楠楠",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_wanshu",
+      "name": "万叔",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaofeng",
+      "name": "晓峰",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaozhang",
+      "name": "刚哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_yezi",
+      "name": "小露",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_qianqian",
+      "name": "倩倩",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoshi_cts",
+      "name": "小师",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoya",
+      "name": "小雅",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaomo",
+      "name": "小莫",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 xiaolan",
+      "name": "小兰",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_john",
+      "name": "John",
+      "latitude": "英文"
+    },
+    {
+      "id": "x2_xiaowanzi",
+      "name": "小桃丸",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoxin",
+      "name": "萌小新",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_ningning",
+      "name": "宁宁",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_qianxue",
+      "name": "千雪",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoguo",
+      "name": "小果",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 xiaowan",
+      "name": "小婉",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 SuhCn XiXi",
+      "name": "苏小曦",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoqian",
+      "name": "晓倩",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaorong",
+      "name": "小蓉",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoying",
+      "name": "小莹",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoqiang",
+      "name": "小强",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaokun",
+      "name": "小坤",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaodong",
+      "name": "小东",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaowang",
+      "name": "小王",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 xiaohou",
+      "name": "小侯",
+      "latitude": "中文"
+    },
+    {
+      "id": "x4_lingxiaowan_boytalk",
+      "name": "聆万万",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 xiaofei",
+      "name": "小肥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaobao",
+      "name": "小包",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_catherine",
+      "name": "凯瑟琳",
+      "latitude": "英文"
+    },
+    {
+      "id": "x2_yifeng",
+      "name": "一峰",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_qianxue2",
+      "name": "千雪-情感",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_yuanye",
+      "name": "易阳泽 (原野)",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaoding",
+      "name": "小丁",
+      "latitude": "中文"
+    },
+    {
+      "id": "x_mengmengneutral",
+      "name": "讯飞萌萌- 中立",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 xiaoxuan",
+      "name": "晓璇",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_dahuilang",
+      "name": "康铭 (大灰狼)",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_yiping",
+      "name": "一萍",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_guange",
+      "name": "管哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_mingge",
+      "name": "明哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_tiange",
+      "name": "天哥",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 chunchun",
+      "name": "春春",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_dangdang",
+      "name": "当当",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_xiaozhong",
+      "name": "小忠",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2 xiaoai novel",
+      "name": "诺诺",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_sgron_dkar",
+      "name": "达娃",
+      "latitude": "藏语"
+    },
+    {
+      "id": "x2_xiaoyue",
+      "name": "小月",
+      "latitude": "中文"
+    },
+    {
+      "id": "x2_abha",
+      "name": "艾伯哈",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2_miya",
+      "name": "miya",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2_keshu",
+      "name": "keshu",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2 Irina",
+      "name": "Irina",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2_felisa",
+      "name": "felisa",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2 natali",
+      "name": "natali",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2 mariane",
+      "name": "玛丽安",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2_suparut",
+      "name": "suparut",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2_zhongcun",
+      "name": "zhongcun",
+      "latitude": "日语"
+    },
+    {
+      "id": "x2_malayrole",
+      "name": "malayrole",
+      "latitude": "马来语"
+    },
+    {
+      "id": "x2 christiane",
+      "name": "christiane",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2 annakz",
+      "name": "annakz",
+      "latitude": "外语"
+    },
+    {
+      "id": "x2 mohamed",
+      "name": "mohamed",
+      "latitude": "阿拉伯语"
+    },
+    {
+      "id": "x4_enuk_ashleigh_assist",
+      "name": "ashleigh",
+      "latitude": "英文"
+    },
+    {
+      "id": "x4 enuk amanda education",
+      "name": "amanda",
+      "latitude": "英文"
+    },
+    {
+      "id": "x4 enus luna assist",
+      "name": "luna",
+      "latitude": "英文"
+    },
+    {
+      "id": "x4_enus_gavin_assist",
+      "name": "gavin",
+      "latitude": "英文"
+    }
+  ]
+}

@@ -82,6 +82,7 @@ fun InteractionScreen(
             "动作" -> consoleViewModel.fetchArmList()
             "地图管理" -> consoleViewModel.fetchMaps()
             "导览管理" -> {
+                consoleViewModel.fetchArmList() // 编辑点位需要动作列表进行名称映射
                 if (inspectionTab == "导览点") {
                     consoleViewModel.fetchInspectionPoints()
                 } else {
@@ -318,6 +319,7 @@ fun InteractionScreen(
                                 addActionText = text
                                 onAddClickAction = action
                             },
+                            armActions = uiState.armActions,
                             pendingPoint = pendingPoint,
                             onClearPendingPoint = { consoleViewModel.clearPendingPoint() }
                         )
