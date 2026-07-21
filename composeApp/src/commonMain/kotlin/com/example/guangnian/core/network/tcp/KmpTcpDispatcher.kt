@@ -68,16 +68,20 @@ object KmpTcpDispatcher {
                     if (id.isNotEmpty()) {
                         val deferred = mutex.withLock { pendingRequests.remove(id) }
                         if (deferred != null) {
-                            // 主动请求的响应，BaseTcpApi 已经打过成功日志了，这里可以保持静默或打个简报
+                            // 主动请求的响应，BaseTcpApi 已经打过成功日志了，这里保持静默
                             deferred.complete(json)
                         } else {
                             // id 存在但无匹配请求，视为需要回复的被动消息
-                            KLog.d("KmpTcpDispatcher", "收到回复请求 [$routeName]: id=$id")
+                            if (!TcpLogFormatter.isQuiet(routeName)) {
+                                KLog.d("KmpTcpDispatcher", "收到回复请求 [$routeName]: id=$id")
+                            }
                             handlePassiveRequest(routePath, json)
                         }
                     } else {
                         // 无 id 消息，视为单向推送
-                        KLog.d("KmpTcpDispatcher", "收到被动推送 [$routeName]")
+                        if (!TcpLogFormatter.isQuiet(routeName)) {
+                            KLog.d("KmpTcpDispatcher", "收到被动推送 [$routeName]")
+                        }
                         handlePassiveRequest(routePath, json)
                     }
                 } catch (e: Exception) {
@@ -94,7 +98,6 @@ object KmpTcpDispatcher {
             val handler = mutex.withLock { routeHandlers[routePath] }
             if (handler != null) {
                 try {
-                    KLog.d("KmpTcpDispatcher", "路由处理开始 [$routeName]: id=$replyId")
                     // 执行业务回调
                     val resultElement = handler.invoke(requestJson)
 
@@ -110,16 +113,18 @@ object KmpTcpDispatcher {
                             put("id", replyId)
                             put("msg", resultElement)
                         }
-                        KLog.d("KmpTcpDispatcher", "路由处理完成并回复 [$routeName]: id=$replyId")
+                        if (!TcpLogFormatter.isQuiet(routeName)) {
+                            KLog.d("KmpTcpDispatcher", "路由处理完成并回复 [$routeName]: id=$replyId")
+                        }
                         KmpTcpClient.send(responseJson.toString())
-                    } else {
-                        KLog.d("KmpTcpDispatcher", "路由处理完成(无需回复) [$routeName]: id=$replyId")
                     }
                 } catch (e: Exception) {
                     KLog.w("KmpTcpDispatcher", "路由处理异常 [$routePath]: ${e.message}", e)
                 }
             } else {
-                KLog.d("KmpTcpDispatcher", "未注册 handler，转发为 serverEvent [$routeName]: id=$replyId")
+                if (!TcpLogFormatter.isQuiet(routeName)) {
+                    KLog.d("KmpTcpDispatcher", "未注册 handler，转发为 serverEvent [$routeName]: id=$replyId")
+                }
                 _serverEventFlow.emit(requestJson)
             }
         }

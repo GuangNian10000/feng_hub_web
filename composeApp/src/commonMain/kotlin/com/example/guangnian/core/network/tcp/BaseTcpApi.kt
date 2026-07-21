@@ -33,6 +33,7 @@ abstract class BaseTcpApi {
         val routeName = TcpLogFormatter.routeOf(type, topic)
         val startTime = Clock.System.now().toEpochMilliseconds()
         val payloadKeys = msgPayload?.keys?.joinToString(prefix = "[", postfix = "]") ?: "[]"
+        val isQuietRoute = TcpLogFormatter.isQuiet(route)
 
         val requestElement = buildJsonObject {
             // ... (保持原有的 buildJsonObject 内容)
@@ -80,39 +81,57 @@ abstract class BaseTcpApi {
 
         if (T::class == Unit::class) {
             KmpTcpClient.send(requestElement.toString())
-            KLog.d(
-                "BaseTcpApi",
-                "请求入队成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-            )
+            if (!isQuietRoute) {
+                KLog.d(
+                    "BaseTcpApi",
+                    "请求入队成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                )
+            }
             return Unit as T
         }
 
         val responseJson = KmpTcpDispatcher.request(requestElement.toString(), messageId)
             ?: run {
-                KLog.w(
-                    "BaseTcpApi",
-                    "请求超时或失败 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-                )
+                if (isQuietRoute) {
+                    KLog.e("BaseTcpApi", "请求超时 [$routeName]: id=$messageId, 发送内容=$requestElement")
+                } else {
+                    KLog.w(
+                        "BaseTcpApi",
+                        "请求超时或失败 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                    )
+                }
                 throw Exception("TCP请求超时: $route")
             }
 
         val msgElement = responseJson["msg"] ?: run {
-            KLog.w("BaseTcpApi", "响应数据为空 [$routeName]: id=$messageId")
+            if (isQuietRoute) {
+                KLog.e("BaseTcpApi", "响应缺少msg [$routeName]: id=$messageId, 发送内容=$requestElement")
+                KLog.e("BaseTcpApi", "原始响应日志 [$routeName]: $responseJson")
+            } else {
+                KLog.w("BaseTcpApi", "响应数据为空 [$routeName]: id=$messageId")
+            }
             throw Exception("TCP响应缺少 msg 字段: $route")
         }
 
         return try {
             val result = json.decodeFromJsonElement<T>(msgElement)
-            KLog.d(
-                "BaseTcpApi",
-                "请求执行成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-            )
+            if (!isQuietRoute) {
+                KLog.d(
+                    "BaseTcpApi",
+                    "请求执行成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                )
+            }
             result
         } catch (e: Exception) {
-            val rawMsg = msgElement.toString()
-            KLog.e("BaseTcpApi", "完整响应:[$routeName]: $responseJson")
-           // KLog.e("BaseTcpApi", "响应解析异常 [$routeName]: id=$messageId, error=${e.message}, msg原始内容=$rawMsg")
-            
+            if (isQuietRoute) {
+                KLog.e("BaseTcpApi", "请求解析异常 [$routeName]: id=$messageId, 发送内容=$requestElement")
+                KLog.e("BaseTcpApi", "原始响应日志 [$routeName]: $responseJson")
+            } else {
+                val rawMsg = msgElement.toString()
+                KLog.e("BaseTcpApi", "完整响应:[$routeName]: $responseJson")
+                // KLog.e("BaseTcpApi", "响应解析异常 [$routeName]: id=$messageId, error=${e.message}, msg原始内容=$rawMsg")
+            }
+
             // 如果 msg 本身是一个字符串（而非预期的对象），说明服务端可能直接返回了错误描述
             if (msgElement is JsonPrimitive && msgElement.isString) {
                 throw Exception("服务端返回错误: ${msgElement.content}")

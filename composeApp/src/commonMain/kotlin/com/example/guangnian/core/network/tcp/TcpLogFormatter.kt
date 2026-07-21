@@ -30,6 +30,16 @@ object TcpLogFormatter {
         return "${type.ifEmpty { "unknown" }}/${topic.ifEmpty { "unknown" }}"
     }
 
+    /**
+     * 判断是否为高频且需静默的路由 (如 SLAM 位置和点云)
+     * 支持传入原始 JSON 字符串或格式化后的路由路径 (type/topic)
+     */
+    fun isQuiet(input: String): Boolean {
+        val trimmed = input.trimStart()
+        val route = if (trimmed.startsWith("{")) routeOf(trimmed) else input.trim('/')
+        return route == "slam/get_position" || route == "slam/position" || route == "slam/point_cloud"
+    }
+
     fun shortId(id: String): String {
         return id.take(8).ifEmpty { "none" }
     }

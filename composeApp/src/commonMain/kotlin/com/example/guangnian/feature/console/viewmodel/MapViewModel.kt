@@ -133,7 +133,7 @@ class MapViewModel(
                     val savedIp = settings.getString("saved_ip", "192.168.1.100")
                     val fixedUrl = config.getFixedImageUrl(savedIp)
                     val needLoadImage = _uiState.value.mapConfig == null || _uiState.value.isMapping
-                    
+
                     // 如果是第一次加载或者正在建图模式，持续更新配置和图片
                     if (needLoadImage) {
                         _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
@@ -170,10 +170,6 @@ class MapViewModel(
                 try {
                     val pos = navigationApi.getPosition()
                     _uiState.update { it.copy(robotPosition = pos) }
-                    KLog.d(
-                        TAG,
-                        "机器人位置同步成功 #$seq: x=${pos.x}, y=${pos.y}, yaw=${pos.yaw}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-                    )
                 } catch (e: Exception) {
                     KLog.w(TAG, "机器人位置同步失败 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                     delay(1000)
@@ -239,10 +235,6 @@ class MapViewModel(
                                 globalPath = globalPath,
                                 localPath = localPath
                             ) }
-                            KLog.d(
-                                TAG,
-                                "路径数据同步完成 #$seq: pointCloud=${pointCloud.size}, globalPath=${globalPath.size}, localPath=${localPath.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-                            )
                         }
                     }
                 } catch (e: Exception) {

@@ -76,7 +76,11 @@ object KmpTcpClient {
             while (true) {
                 val line = readChannel?.readUTF8Line() ?: break
                 if (line.isNotBlank()) {
-                    KLog.d(TAG, TcpLogFormatter.message("收到消息", line))
+                    val route = TcpLogFormatter.routeOf(line)
+                    // 仅对非 SLAM 高频同步数据打印原始接收日志
+                    if (!TcpLogFormatter.isQuiet(route)) {
+                        KLog.d(TAG, TcpLogFormatter.message("收到消息", line))
+                    }
                     _messageFlow.emit(line)
                 }
             }
@@ -96,7 +100,12 @@ object KmpTcpClient {
             for (msg in channel) {
                 if (_connectionState.value != TcpState.CONNECTED) break
                 writeChannel?.writeStringUtf8(msg)
-                KLog.d(TAG, TcpLogFormatter.message("发送成功", msg))
+                
+                // 仅对非 SLAM 高频请求打印发送成功日志
+                val route = TcpLogFormatter.routeOf(msg)
+                if (!TcpLogFormatter.isQuiet(route)) {
+                    KLog.d(TAG, TcpLogFormatter.message("发送成功", msg))
+                }
             }
         } catch (e: Exception) {
             KLog.w(TAG, "发送消息异常断开: ${e.message}")
@@ -115,8 +124,10 @@ object KmpTcpClient {
         }
         val finalMsg = if (msg.endsWith("\n")) msg else "$msg\n"
 
-        // 记录准备发送的原始消息内容
-        KLog.d(TAG, "准备发送: ${finalMsg.trim()}")
+        // 仅针对非 SLAM 高频数据打印发送日志
+        if (!TcpLogFormatter.isQuiet(finalMsg)) {
+            KLog.d(TAG, "准备发送: ${finalMsg.trim()}")
+        }
 
         // 核心改进：非阻塞操作。只负责把指令塞进 Channel 队列，极其轻量
         val result = sendChannel?.trySend(finalMsg)
