@@ -6,6 +6,7 @@ import com.example.guangnian.core.network.tcp.BaseTcpApi
 import com.example.guangnian.core.network.tcp.TcpNode
 import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.data.bean.AgentListResponse
+import com.example.guangnian.feature.console.data.bean.AgentStatusBean
 import com.example.guangnian.feature.console.data.bean.HeartbeatStatusBean
 import com.example.guangnian.feature.console.data.bean.InspectionPointBean
 import com.example.guangnian.feature.console.data.bean.MapConfigBean
@@ -27,6 +28,25 @@ import com.example.guangnian.feature.console.data.bean.RouteBean
 import com.example.guangnian.feature.console.data.bean.RouteStatusBean
 
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
+    override suspend fun getAgentStatus() =
+        request<AgentStatusBean>("/agent/get_agent_status/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setAgentStatus(status: AgentStatusBean) =
+        request<Unit>(
+            route = "/agent/set_agent_status/",
+            msgPayload = mapOf(
+                "isWakeUp" to status.isWakeUp,
+                "isAsrEnabled" to status.isAsrEnabled
+            ),
+            targetNode = TcpNode.TABLET
+        )
+
+    override suspend fun interruptDialogue() =
+        request<Unit>("/agent/interrupt_dialogue/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setVolume(increase: Boolean) =
+        request<Unit>("/agent/set_volume/", increase, targetNode = TcpNode.TABLET)
+
     override suspend fun executeSynthesis(bean: SpeechSynthesisBean) =
         request<BaseBean>("/voice/tts_synthesis/", mapOf("ttsBean" to Json.encodeToString(bean)),targetNode= TcpNode.TABLET)
 

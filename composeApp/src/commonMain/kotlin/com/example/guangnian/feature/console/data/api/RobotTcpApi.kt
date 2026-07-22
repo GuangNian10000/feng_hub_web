@@ -6,6 +6,7 @@ interface RobotTcpApi :
     VoiceApi, 
     RouteApi, 
     AgentManagerApi, 
+    AgentControlApi,
     KnowledgeApi, 
     MotionControlApi, 
     NavigationApi, 

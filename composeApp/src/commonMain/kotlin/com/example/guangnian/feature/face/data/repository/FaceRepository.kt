@@ -25,7 +25,7 @@ class FaceRepository(
     }
 
     private val baseUrl: String
-        get() = "http://${connectionManager.ip.value}:8000"
+        get() = "http://${connectionManager.ip.value}:5001"
 
     suspend fun getFaceList(): List<FaceData> {
         val startTime = Clock.System.now().toEpochMilliseconds()

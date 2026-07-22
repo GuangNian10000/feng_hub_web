@@ -13,8 +13,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.utils.KLog
+import com.example.guangnian.core.utils.VolumeKeyInterceptor
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.ui.panel.*
 import com.example.guangnian.feature.teach.ui.TeachActionPanel
@@ -38,6 +40,20 @@ fun InteractionScreen(
 
     val mapViewModel: MapViewModel = koinViewModel()
     val mapUiState by mapViewModel.uiState.collectAsState()
+
+    val volumeKeyHandler = remember(consoleViewModel) {
+        { increase: Boolean -> consoleViewModel.setAgentVolume(increase) }
+    }
+
+    DisposableEffect(volumeKeyHandler) {
+        VolumeKeyInterceptor.register(volumeKeyHandler)
+        onDispose { VolumeKeyInterceptor.unregister(volumeKeyHandler) }
+    }
+
+    LifecycleResumeEffect(Unit) {
+        consoleViewModel.fetchAgentStatus()
+        onPauseOrDispose { }
+    }
 
     val pendingPoint = uiState.pendingPoint
     val deleteConfirmPoint = uiState.deleteConfirmPoint
@@ -194,6 +210,16 @@ fun InteractionScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 64.dp, end = 24.dp)
+        )
+
+        AgentControlPanel(
+            status = uiState.agentStatus,
+            onWakeUpToggle = consoleViewModel::toggleAgentWakeUp,
+            onAsrToggle = consoleViewModel::toggleAgentAsr,
+            onInterruptClick = consoleViewModel::interruptDialogue,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 64.dp, start = 24.dp)
         )
 
         BottomActionBar(

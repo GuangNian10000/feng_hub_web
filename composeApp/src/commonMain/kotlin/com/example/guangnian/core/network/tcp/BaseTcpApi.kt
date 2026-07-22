@@ -3,14 +3,33 @@ package com.example.guangnian.core.network.tcp
 import com.benasher44.uuid.uuid4
 import com.example.guangnian.core.utils.KLog
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.JsonPrimitive
 import kotlin.time.Clock
+
+@PublishedApi
+internal fun Any?.toTcpJsonElement(): JsonElement = when (this) {
+    null -> JsonNull
+    is JsonElement -> this
+    is String -> JsonPrimitive(this)
+    is Number -> JsonPrimitive(this)
+    is Boolean -> JsonPrimitive(this)
+    is Map<*, *> -> buildJsonObject {
+        this@toTcpJsonElement.forEach { (key, value) ->
+            put(key.toString(), value.toTcpJsonElement())
+        }
+    }
+    is Iterable<*> -> buildJsonArray {
+        this@toTcpJsonElement.forEach { value -> add(value.toTcpJsonElement()) }
+    }
+    else -> JsonPrimitive(toString())
+}
 
 abstract class BaseTcpApi {
     val json = Json {
@@ -22,7 +41,7 @@ abstract class BaseTcpApi {
     // 增加 targetNode 参数，默认发往 ARM
     protected suspend inline fun <reified T> request(
         route: String,
-        msgPayload: Map<String, Any>? = null,
+        msgPayload: Any? = null,
         targetNode: String = TcpNode.ARM
     ): T {
         val parts = route.trim('/').split("/")
@@ -32,48 +51,16 @@ abstract class BaseTcpApi {
         val messageId = uuid4().toString().replace("-", "")
         val routeName = TcpLogFormatter.routeOf(type, topic)
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val payloadKeys = msgPayload?.keys?.joinToString(prefix = "[", postfix = "]") ?: "[]"
         val isQuietRoute = TcpLogFormatter.isQuiet(route)
 
         val requestElement = buildJsonObject {
-            // ... (保持原有的 buildJsonObject 内容)
             put("from", TcpNode.PHONE)
             put("to", targetNode)
             put("id", messageId)
             put("type", type)
             put("topic", topic)
             if (msgPayload != null) {
-                put("msg", buildJsonObject {
-                    msgPayload.forEach { (k, v) ->
-                        when (v) {
-                            is String -> put(k, v)
-                            is Number -> put(k, v)
-                            is Boolean -> put(k, v)
-                            is Map<*, *> -> put(k, buildJsonObject {
-                                v.forEach { (mk, mv) ->
-                                    val key = mk.toString()
-                                    when (mv) {
-                                        is String -> put(key, mv)
-                                        is Number -> put(key, mv)
-                                        is Boolean -> put(key, mv)
-                                        else -> put(key, mv.toString())
-                                    }
-                                }
-                            })
-                            is Iterable<*> -> put(k, buildJsonArray {
-                                v.forEach { item ->
-                                    when (item) {
-                                        is String -> add(item)
-                                        is Number -> add(item)
-                                        is Boolean -> add(item)
-                                        else -> add(item.toString())
-                                    }
-                                }
-                            })
-                            else -> put(k, v.toString())
-                        }
-                    }
-                })
+                put("msg", msgPayload.toTcpJsonElement())
             }
         }
 

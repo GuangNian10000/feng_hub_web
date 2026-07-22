@@ -6,6 +6,7 @@ import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.api.MotionControlApi
 import com.example.guangnian.feature.console.data.api.NavigationApi
 import com.example.guangnian.feature.console.data.api.RouteApi
+import com.example.guangnian.feature.console.data.api.AgentControlApi
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
@@ -32,6 +33,7 @@ data class ConsoleUiState(
     val routes: List<RouteBean> = emptyList(),
     val maps: List<MapBean> = emptyList(),
     val robotNavStatus: RobotNavStatusBean = RobotNavStatusBean(),
+    val agentStatus: AgentStatusBean? = null,
     val isInspectionPaused: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -45,6 +47,7 @@ class ConsoleViewModel(
     private val motionControlApi: MotionControlApi,
     private val navigationApi: NavigationApi,
     private val routeApi: RouteApi,
+    private val agentControlApi: AgentControlApi,
     private val eventBus: RobotEventBus
 ) : ViewModel() {
     private companion object {
@@ -102,6 +105,24 @@ class ConsoleViewModel(
                 null
             }
         }
+
+        viewModelScope.launch {
+            KmpTcpDispatcher.registerHandler("/state/get_status/") { requestJson ->
+                try {
+                    requestJson["msg"]?.let { msgElement ->
+                        val status = json.decodeFromJsonElement<AgentStatusBean>(msgElement)
+                        _uiState.update { it.copy(agentStatus = status) }
+                        KLog.d(
+                            TAG,
+                            "收到智能体状态推送: isWakeUp=${status.isWakeUp}, isAsrEnabled=${status.isAsrEnabled}"
+                        )
+                    }
+                } catch (e: Exception) {
+                    KLog.w(TAG, "解析智能体状态推送失败: ${e.message}, raw=$requestJson", e)
+                }
+                null
+            }
+        }
     }
 
     private fun observeConnectionState() {
@@ -116,6 +137,62 @@ class ConsoleViewModel(
         super.onCleared()
         viewModelScope.launch {
             KmpTcpDispatcher.unregisterHandler("/slam/nav_status/")
+            KmpTcpDispatcher.unregisterHandler("/state/get_status/")
+        }
+    }
+
+    fun fetchAgentStatus() {
+        viewModelScope.launch {
+            try {
+                val status = agentControlApi.getAgentStatus()
+                _uiState.update { it.copy(agentStatus = status) }
+                KLog.i(
+                    TAG,
+                    "获取智能体状态成功: isWakeUp=${status.isWakeUp}, isAsrEnabled=${status.isAsrEnabled}"
+                )
+            } catch (e: Exception) {
+                KLog.e(TAG, "获取智能体状态失败: ${e.message}")
+            }
+        }
+    }
+
+    fun toggleAgentWakeUp() {
+        val status = _uiState.value.agentStatus ?: return
+        sendAgentStatus(status.copy(isWakeUp = !status.isWakeUp))
+    }
+
+    fun toggleAgentAsr() {
+        val status = _uiState.value.agentStatus ?: return
+        sendAgentStatus(status.copy(isAsrEnabled = !status.isAsrEnabled))
+    }
+
+    private fun sendAgentStatus(status: AgentStatusBean) {
+        viewModelScope.launch {
+            try {
+                agentControlApi.setAgentStatus(status)
+            } catch (e: Exception) {
+                KLog.e(TAG, "设置智能体状态失败: ${e.message}")
+            }
+        }
+    }
+
+    fun interruptDialogue() {
+        viewModelScope.launch {
+            try {
+                agentControlApi.interruptDialogue()
+            } catch (e: Exception) {
+                KLog.e(TAG, "打断智能体对话失败: ${e.message}")
+            }
+        }
+    }
+
+    fun setAgentVolume(increase: Boolean) {
+        viewModelScope.launch {
+            try {
+                agentControlApi.setVolume(increase)
+            } catch (e: Exception) {
+                KLog.e(TAG, "调节智能体音量失败: ${e.message}")
+            }
         }
     }
 
