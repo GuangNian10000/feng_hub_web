@@ -444,7 +444,7 @@ private fun VoiceSelectionDialog(
     var tempSelectedVoice by remember { mutableStateOf(currentVoice) }
 
     // 分类与分页状态
-    val categories = listOf("全部", "火山", "微软", "中文", "日文", "英文", "方言")
+    val categories = listOf("全部", "火山", "讯飞", "微软", "中文", "日文", "英文", "方言")
     var selectedCategory by remember { mutableStateOf("全部") }
     var currentPage by remember { mutableIntStateOf(0) }
     val pageSize = 20
@@ -457,6 +457,7 @@ private fun VoiceSelectionDialog(
             val sourceStr = voice.source.toString()
             when (selectedCategory) {
                 "火山" -> sourceStr.contains("VOLCANO")
+                "讯飞" -> sourceStr.contains("AIUI")
                 "微软" -> sourceStr.contains("MICROSOFT")
                 "中文" -> lang.contains("中") || lang.contains("粤") || lang.contains("台") || lang.contains("吴")
                 "日文" -> lang.contains("日")
