@@ -60,6 +60,7 @@ val appModule = module {
             navigationApi = get(),
             routeApi = get(),
             agentControlApi = get(),
+            robotStatusApi = get(),
             eventBus = get()
         ) 
     }

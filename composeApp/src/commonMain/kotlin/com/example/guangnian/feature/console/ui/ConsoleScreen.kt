@@ -175,6 +175,7 @@ fun InteractionScreen(
 
         TopStatusBar(
             navStatus = uiState.robotNavStatus,
+            systemInfo = uiState.systemInfo,
             connectionState = connectionState,
             connectionError = connectionError,
             latency = latency,

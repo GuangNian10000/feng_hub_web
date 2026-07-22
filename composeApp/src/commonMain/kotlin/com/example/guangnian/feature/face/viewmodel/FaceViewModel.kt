@@ -111,14 +111,14 @@ class FaceViewModel(
         }
     }
 
-    fun uploadFaceImage(name: String, imageBytes: ByteArray, description: String? = null) {
+    fun uploadFaceImage(name: String, imageBytes: ByteArray, description: String = "") {
         safeLaunch(action = "上传人脸图片:$name", showLoading = true) {
             repository.uploadFaceImage(name, description, imageBytes)
             _faces.value = repository.getFaceList()
         }
     }
 
-    fun captureFromRobotFrame(name: String, description: String? = null) {
+    fun captureFromRobotFrame(name: String, description: String = "") {
         safeLaunch(action = "从机器人画面采集人脸:$name", showLoading = true) {
             val frame = repository.getCurrentFrame()
             repository.uploadFaceImage(name, description, frame)

@@ -7,6 +7,7 @@ import com.example.guangnian.feature.console.data.api.MotionControlApi
 import com.example.guangnian.feature.console.data.api.NavigationApi
 import com.example.guangnian.feature.console.data.api.RouteApi
 import com.example.guangnian.feature.console.data.api.AgentControlApi
+import com.example.guangnian.feature.console.data.api.RobotStatusApi
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
@@ -34,6 +35,7 @@ data class ConsoleUiState(
     val maps: List<MapBean> = emptyList(),
     val robotNavStatus: RobotNavStatusBean = RobotNavStatusBean(),
     val agentStatus: AgentStatusBean? = null,
+    val systemInfo: SystemInfo? = null,
     val isInspectionPaused: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -48,6 +50,7 @@ class ConsoleViewModel(
     private val navigationApi: NavigationApi,
     private val routeApi: RouteApi,
     private val agentControlApi: AgentControlApi,
+    private val robotStatusApi: RobotStatusApi,
     private val eventBus: RobotEventBus
 ) : ViewModel() {
     private companion object {
@@ -65,9 +68,11 @@ class ConsoleViewModel(
     val errorEvents = _errorEvents.asSharedFlow()
     private var taskSeq = 0L
     private var joystickSeq = 0L
+    private var systemInfoSeq = 0L
 
     init {
         observeConnectionState()
+        startSystemInfoPolling()
         // 监听来自 Map 或其他组件的事件
         viewModelScope.launch {
             eventBus.events.collect { event ->
@@ -129,6 +134,25 @@ class ConsoleViewModel(
         viewModelScope.launch {
             KmpTcpClient.connectionState.collect { state ->
                 _uiState.update { it.copy(isConnected = state == TcpState.CONNECTED) }
+            }
+        }
+    }
+
+    private fun startSystemInfoPolling() {
+        viewModelScope.launch {
+            while (isActive) {
+                if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
+                    delay(2000)
+                    continue
+                }
+                systemInfoSeq++
+                try {
+                    val info = robotStatusApi.getSystemInfo()
+                    _uiState.update { it.copy(systemInfo = info) }
+                } catch (e: Exception) {
+                    KLog.w(TAG, "获取系统信息失败 #$systemInfoSeq: ${e.message}")
+                }
+                delay(3000)
             }
         }
     }

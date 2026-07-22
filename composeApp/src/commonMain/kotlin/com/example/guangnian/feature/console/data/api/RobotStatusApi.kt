@@ -6,6 +6,7 @@ interface RobotStatusApi {
     suspend fun startRobot(): StartupHeartbeatBean
     suspend fun sendHeartbeat(timestamp: Long): HeartbeatStatusBean
     suspend fun getBattery(): BatteryBean
+    suspend fun getSystemInfo(): SystemInfo
     suspend fun getOfflineState(): OfflineStateBean
     suspend fun notifyTcpDisconnected()
     suspend fun sendTts(text: String)

@@ -65,7 +65,7 @@ class FaceRepository(
         }
     }
 
-    suspend fun uploadFaceImage(name: String, description: String?, imageBytes: ByteArray): CommonResponse {
+    suspend fun uploadFaceImage(name: String, description: String ="", imageBytes: ByteArray): CommonResponse {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
             KLog.d(TAG, "开始上传人脸图片(JSON): name=$name, desc=${description.orEmpty()}, bytes=${imageBytes.size}")
@@ -75,7 +75,7 @@ class FaceRepository(
             
             val request = FaceAddRequest(
                 name = name,
-                desc = description ?: "",
+                desc = if(description == "") name else description,
                 image_b64 = base64Image
             )
 

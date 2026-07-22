@@ -20,10 +20,12 @@ import com.example.guangnian.core.designsystem.components.GlassBox
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.data.bean.RobotNavState
 import com.example.guangnian.feature.console.data.bean.RobotNavStatusBean
+import com.example.guangnian.feature.console.data.bean.SystemInfo
 
 @Composable
 fun TopStatusBar(
     navStatus: RobotNavStatusBean,
+    systemInfo: SystemInfo?,
     connectionState: TcpState,
     connectionError: String?,
     latency: Long?,
@@ -52,8 +54,23 @@ fun TopStatusBar(
                     modifier = Modifier.clickable { onBackClick() }.padding(end = 4.dp)
                 )
                 HorizontalDivider(modifier = Modifier.fillMaxHeight(0.5f).width(1.dp), color = Color.Gray)
-                Text("BAT 85%", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Text("TEMP 42°C", color = Color.White, fontSize = 12.sp)
+                
+                val battery = systemInfo?.battery ?: 0
+                val batteryColor = when {
+                    battery >= 40 -> Color(0xFF4CAF50) // 40-100 绿色
+                    battery >= 20 -> Color(0xFFFF9800) // 20-40 黄色
+                    else -> Color(0xFFE53935) // 20以下 红色
+                }
+                Text("BAT $battery%", color = batteryColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                
+                val temp = systemInfo?.temperature ?: 0.0
+                val tempColor = when {
+                    temp > 60.0 -> Color(0xFFE53935) // 60以上 红色
+                    temp >= 40.0 -> Color(0xFFFF9800) // 40-60 黄色
+                    else -> Color(0xFF4CAF50) // 40以下 绿色
+                }
+                // 使用 toInt() 显示整数温度，保持 UI 整洁
+                Text("TEMP ${temp.toInt()}°C", color = tempColor, fontSize = 12.sp)
             }
         }
 

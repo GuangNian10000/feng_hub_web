@@ -26,6 +26,7 @@ import kotlinx.serialization.json.Json
 
 import com.example.guangnian.feature.console.data.bean.RouteBean
 import com.example.guangnian.feature.console.data.bean.RouteStatusBean
+import com.example.guangnian.feature.console.data.bean.SystemInfo
 
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun getAgentStatus() =
@@ -368,6 +369,9 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 获取机器人电量
     override suspend fun getBattery() = request<BatteryBean>("state/get_battery")
+
+    // 获取系统状态 get_system_info
+    override suspend fun getSystemInfo() = request<SystemInfo>("state/get_system_info")
 
     // 发送文本播报请求（state/tts）
     override suspend fun sendTts(text: String) =
