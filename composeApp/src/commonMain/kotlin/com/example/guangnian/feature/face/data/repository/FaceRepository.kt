@@ -122,9 +122,20 @@ class FaceRepository(
     suspend fun getCurrentFrame(): ByteArray {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            val frame: ByteArray = httpClient.get("$baseUrl/current_frame").body()
-            KLog.d(TAG, "获取当前画面成功: bytes=${frame.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
-            frame
+            val response = httpClient.get("$baseUrl/face/camera/snapshot.jpg")
+            val bytes: ByteArray = response.body()
+
+            // 校验返回的数据大小。日志显示异常时只有 22 字节，这通常是错误 JSON
+            if (bytes.size < 200) {
+                val content = bytes.decodeToString()
+                if (content.contains("error") || content.startsWith("{")) {
+                    KLog.w(TAG, "获取画面失败，机器人返回错误: $content")
+                    throw Exception("机器人画面未就绪: $content")
+                }
+            }
+
+            KLog.d(TAG, "获取当前画面成功: bytes=${bytes.size}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+            bytes
         } catch (e: Exception) {
             KLog.w(TAG, "获取当前画面失败: error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
             throw e

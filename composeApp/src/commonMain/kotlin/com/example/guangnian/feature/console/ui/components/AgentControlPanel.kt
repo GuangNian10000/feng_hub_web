@@ -30,16 +30,16 @@ fun AgentControlPanel(
             modifier = Modifier.padding(6.dp)
         ) {
             ControlButton(
-                text = if (status?.isWakeUp == true) "休眠" else "唤醒",
-                bgColor = if (status?.isWakeUp == true) Color(0xFFC2185B) else Color(0xFF388E3C),
+                text = if (status?.isWakeUp != true) "休眠" else "唤醒",
+                bgColor = if (status?.isWakeUp != true) Color(0xFFC2185B) else Color(0xFF388E3C),
                 modifier = Modifier.fillMaxWidth().height(36.dp),
                 enabled = hasStatus,
                 onClick = onWakeUpToggle
             )
 
             ControlButton(
-                text = if (status?.isAsrEnabled == true) "关麦" else "开麦",
-                bgColor = if (status?.isAsrEnabled == true) Color(0xFFC2185B) else Color(0xFF388E3C),
+                text = if (status?.isAsrEnabled != true) "关麦" else "开麦",
+                bgColor = if (status?.isAsrEnabled != true) Color(0xFFC2185B) else Color(0xFF388E3C),
                 modifier = Modifier.fillMaxWidth().height(36.dp),
                 enabled = hasStatus,
                 onClick = onAsrToggle
