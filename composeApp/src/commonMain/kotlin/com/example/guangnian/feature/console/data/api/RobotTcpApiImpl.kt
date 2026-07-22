@@ -202,6 +202,9 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun getTeachStatus() =
         request<TeachStatusBean>("teach/record_status")
 
+    override suspend fun setAesKey(key: String) =
+        request<Unit>("webrtc/aes_set", mapOf("aes_key" to key))
+
     // 开始建图（协议约定字段名为 msg）
     override suspend fun startMapping(mapName: String) =
         request<Unit>("slam/start_mapping", mapOf("msg" to mapName))

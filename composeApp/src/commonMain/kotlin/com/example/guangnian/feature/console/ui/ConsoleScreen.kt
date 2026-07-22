@@ -48,10 +48,12 @@ fun InteractionScreen(
     var inspectionTab by remember { mutableStateOf("导览点") }
     var onAddClickAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var addActionText by remember { mutableStateOf("") }
+    var customHeaderActions by remember { mutableStateOf<@Composable (() -> Unit)?>(null) }
 
     LaunchedEffect(activeFragment) {
         onAddClickAction = null
         addActionText = ""
+        customHeaderActions = null
     }
 
     // 动作执行确认弹窗状态
@@ -265,7 +267,7 @@ fun InteractionScreen(
                 tabs = if (activeFragment == "导览管理") listOf("导览点", "路线") else emptyList(),
                 selectedTab = inspectionTab,
                 onTabChange = { inspectionTab = it },
-                actionButton = if (onAddClickAction != null) {
+                actionButton = customHeaderActions ?: if (onAddClickAction != null) {
                     { PanelAddButton(text = addActionText, onClick = { onAddClickAction?.invoke() }) }
                 } else null,
                 content = {
@@ -288,10 +290,12 @@ fun InteractionScreen(
                             onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id.toString(), name, true) },
                             onRetryClick = { consoleViewModel.fetchArmList() }
                         )
-                        "示教动作" -> TeachActionPanel(onSetAddAction = { text, action ->
-                            addActionText = text
-                            onAddClickAction = action
-                        })
+                        "示教动作" -> {
+                            val onSetActions: (@Composable () -> Unit) -> Unit = remember {
+                                { actions -> customHeaderActions = actions }
+                            }
+                            TeachActionPanel(onSetActions = onSetActions)
+                        }
                         "导览管理" -> InspectionPointPanel(
                             endpoints = uiState.endpoints,
                             routes = uiState.routes,

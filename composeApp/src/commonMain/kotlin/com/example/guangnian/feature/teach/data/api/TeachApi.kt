@@ -11,4 +11,5 @@ interface TeachApi {
     suspend fun getTeachActionList(): List<TeachActionBean>
     suspend fun executeTeach(name: String)
     suspend fun getTeachStatus(): TeachStatusBean
+    suspend fun setAesKey(key: String)
 }

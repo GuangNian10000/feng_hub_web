@@ -20,7 +20,8 @@ import kotlin.time.Clock
 data class TeachUiState(
     val actionList: List<TeachActionBean> = emptyList(),
     val teachStatus: TeachStatusBean = TeachStatusBean(),
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val showAesKeyDialog: Boolean = false
 )
 
 class TeachViewModel(private val api: TeachApi) : ViewModel() {
@@ -107,5 +108,18 @@ class TeachViewModel(private val api: TeachApi) : ViewModel() {
             api.executeTeach(name)
             _toastEvent.emit("开始执行动作: $name")
         }
+    }
+
+    fun setAesKey(key: String) {
+        executeTask("设置密钥异常") {
+            api.setAesKey(key)
+            _toastEvent.emit("密钥设置成功")
+            fetchTeachList()
+            setShowAesKeyDialog(false)
+        }
+    }
+
+    fun setShowAesKeyDialog(show: Boolean) {
+        _uiState.update { it.copy(showAesKeyDialog = show) }
     }
 }

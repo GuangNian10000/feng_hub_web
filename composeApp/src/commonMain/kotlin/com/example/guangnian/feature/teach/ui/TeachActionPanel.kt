@@ -18,12 +18,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.TeachActionBean
+import com.example.guangnian.feature.console.ui.components.PanelAddButton
 import com.example.guangnian.feature.teach.viewmodel.TeachViewModel
+import com.example.guangnian.core.utils.KLog
 import kotlinx.coroutines.delay
 
 @Composable
 fun TeachActionPanel(
-    onSetAddAction: (String, () -> Unit) -> Unit,
+    onSetActions: (@Composable () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TeachViewModel = koinViewModel()
 ) {
@@ -31,6 +33,7 @@ fun TeachActionPanel(
     val actionList = uiState.actionList
     val status = uiState.teachStatus
     val isLoading = uiState.isLoading
+    val showAesKeyDialog = uiState.showAesKeyDialog
 
     val isRecording = status.recording || status.teach.recording
 
@@ -46,14 +49,37 @@ fun TeachActionPanel(
         viewModel.fetchTeachList()
     }
 
-    LaunchedEffect(isRecording) {
-        if (isRecording) {
-            onSetAddAction("结束录制") {
-                viewModel.stopTeach()
-            }
-        } else {
-            onSetAddAction("开始录制") {
-                showStartRecordDialog = true
+    LaunchedEffect(isRecording, onSetActions) {
+        KLog.d("TeachActionPanel", "注册顶部按钮, isRecording=$isRecording")
+        onSetActions {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!isRecording) {
+                    Button(
+                        onClick = {
+                            KLog.d("TeachActionPanel", "密钥按钮被点击")
+                            viewModel.setShowAesKeyDialog(true)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text("密钥", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                PanelAddButton(
+                    text = if (isRecording) "结束录制" else "开始录制",
+                    onClick = {
+                        KLog.d("TeachActionPanel", "录制按钮被点击, 当前isRecording=$isRecording")
+                        if (isRecording) {
+                            viewModel.stopTeach()
+                        } else {
+                            showStartRecordDialog = true
+                        }
+                    }
+                )
             }
         }
     }
@@ -211,6 +237,35 @@ fun TeachActionPanel(
                 },
                 dismissButton = {
                     TextButton(onClick = { showExecuteConfirm = null }) { Text("取消", color = Color.Gray) }
+                }
+            )
+        }
+
+        if (showAesKeyDialog) {
+            KLog.d("TeachActionPanel", "渲染密钥弹窗")
+            var aesKey by remember { mutableStateOf("") }
+            AlertDialog(
+                onDismissRequest = { viewModel.setShowAesKeyDialog(false) },
+                title = { Text("设置密钥", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+                text = {
+                    OutlinedTextField(
+                        value = aesKey,
+                        onValueChange = { aesKey = it },
+                        label = { Text("请输入密钥") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                containerColor = Color.White,
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (aesKey.isNotBlank()) {
+                            viewModel.setAesKey(aesKey)
+                        }
+                    }) { Text("确定", color = Color(0xFF007AFF)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.setShowAesKeyDialog(false) }) { Text("取消", color = Color.Gray) }
                 }
             )
         }
