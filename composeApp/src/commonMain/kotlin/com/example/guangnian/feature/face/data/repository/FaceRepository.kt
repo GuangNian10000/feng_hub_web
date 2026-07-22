@@ -10,10 +10,9 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.util.encodeBase64
 import kotlin.time.Clock
 
 class FaceRepository(
@@ -69,25 +68,26 @@ class FaceRepository(
     suspend fun uploadFaceImage(name: String, description: String?, imageBytes: ByteArray): CommonResponse {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            KLog.d(TAG, "开始上传人脸图片: name=$name, descLength=${description.orEmpty().length}, bytes=${imageBytes.size}")
+            KLog.d(TAG, "开始上传人脸图片(JSON): name=$name, desc=${description.orEmpty()}, bytes=${imageBytes.size}")
+            
+            // 将图片转为 Base64
+            val base64Image = imageBytes.encodeBase64()
+            
+            val request = FaceAddRequest(
+                name = name,
+                desc = description ?: "",
+                image_b64 = base64Image
+            )
+
             val response: CommonResponse = httpClient.post("$baseUrl/add_person") {
-                setBody(
-                    MultiPartFormDataContent(
-                        formData {
-                            append("name", name)
-                            description?.let { append("desc", it) }
-                            append("file", imageBytes, Headers.build {
-                                append(HttpHeaders.ContentType, "image/jpeg")
-                                append(HttpHeaders.ContentDisposition, "filename=\"face_image.jpg\"")
-                            })
-                        }
-                    )
-                )
+                contentType(ContentType.Application.Json)
+                setBody(request)
             }.body()
+            
             KLog.d(TAG, "上传人脸图片成功: name=$name, status=${response.status}, message=${response.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             response
         } catch (e: Exception) {
-            KLog.w(TAG, "上传人脸图片失败: name=$name, bytes=${imageBytes.size}, error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+            KLog.w(TAG, "上传人脸图片失败: name=$name, error=${e.message}", e)
             throw e
         }
     }
