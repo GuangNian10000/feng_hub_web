@@ -1,18 +1,18 @@
 package com.example.guangnian.feature.face.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.*
@@ -21,10 +21,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -35,6 +36,10 @@ import com.example.guangnian.feature.face.data.bean.FaceData
 import com.example.guangnian.feature.face.data.bean.FaceConfig
 import com.example.guangnian.feature.face.viewmodel.FaceViewModel
 import com.example.guangnian.core.utils.rememberImagePicker
+import com.example.guangnian.core.designsystem.components.ModernDialogColors
+import com.example.guangnian.core.designsystem.components.ModernDialogScaffold
+import com.example.guangnian.core.designsystem.components.ModernDialogSection
+import com.example.guangnian.core.designsystem.components.modernOutlinedTextFieldColors
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -52,8 +57,6 @@ fun FaceScreen(
     var editingFaceName by remember { mutableStateOf("") }
     var previewImageUrl by remember { mutableStateOf<String?>(null) }
     var showLivePreview by remember { mutableStateOf(false) }
-    var isSearching by remember { mutableStateOf(false) }
-    val searchQuery by viewModel.searchQuery.collectAsState()
     val currentFrame by viewModel.currentFrame.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
@@ -74,100 +77,92 @@ fun FaceScreen(
     }
 
     Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
         scaffoldState = scaffoldState,
         topBar = {
-            TopAppBar(
-                title = {
-                    if (isSearching) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.onSearchQueryChanged(it) },
-                            placeholder = { Text("搜索人脸姓名...") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.textFieldColors(
-                                backgroundColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            singleLine = true
-                        )
-                    } else {
-                        Text("人脸管理", fontWeight = FontWeight.SemiBold)
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (isSearching) {
-                            isSearching = false
-                            viewModel.onSearchQueryChanged("")
-                        } else {
-                            onBack()
-                        }
-                    }) {
-                        Icon(
-                            if (isSearching) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = if (isSearching) "关闭搜索" else "返回"
-                        )
-                    }
-                },
-                actions = {
-                    if (!isSearching) {
-                        IconButton(onClick = { isSearching = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "搜索")
-                        }
-                    }
-                    IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "刷新")
-                    }
-                },
-                backgroundColor = Color.White,
-                contentColor = Color.Black,
-                elevation = 0.dp
+            FaceTopBar(
+                faceCount = faces.size,
+                loading = loading,
+                onBack = onBack,
+                onRefresh = viewModel::refresh
             )
-        }
+        },
+        backgroundColor = ModernDialogColors.Canvas
     ) { padding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(Color.White)
+                .background(ModernDialogColors.Canvas)
+                .padding(16.dp)
         ) {
-            FaceConfigPanel(
-                config = config,
-                onThresholdChange = viewModel::updateThreshold,
-                onFlipChange = viewModel::toggleCameraFlip,
-                onOnlyKnownChange = viewModel::toggleOnlyKnown,
-                onAddFace = {
-                    editingFaceName = ""
-                    showAddDialog = true
-                },
-                onShowLivePreview = { showLivePreview = true }
-            )
+            val isWideLayout = maxWidth >= 760.dp
+            val openAddDialog = {
+                editingFaceName = ""
+                showAddDialog = true
+            }
 
-            if (loading && faces.isEmpty()) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            if (isWideLayout) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    FaceConfigPanel(
+                        config = config,
+                        faceCount = faces.size,
+                        compact = false,
+                        onThresholdChange = viewModel::updateThreshold,
+                        onFlipChange = viewModel::toggleCameraFlip,
+                        onOnlyKnownChange = viewModel::toggleOnlyKnown,
+                        onAddFace = openAddDialog,
+                        onShowLivePreview = { showLivePreview = true },
+                        modifier = Modifier.width(268.dp).fillMaxHeight()
+                    )
+
+                    FaceDirectory(
+                        faces = faces,
+                        loading = loading,
+                        onAddFace = openAddDialog,
+                        onDelete = { selectedFaceForDelete = it },
+                        onEdit = {
+                            editingFaceName = it.username
+                            showAddDialog = true
+                        },
+                        onImageClick = { previewImageUrl = it },
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    )
                 }
             } else {
-                if (loading) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
-                }
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                Column(
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(viewModel.filteredFaces) { face ->
-                        FaceItem(
-                            face = face,
-                            onDelete = { selectedFaceForDelete = face },
-                            onEdit = {
-                                editingFaceName = face.username
-                                showAddDialog = true
-                            },
-                            onImageClick = { url -> previewImageUrl = url }
-                        )
-                    }
+                    FaceConfigPanel(
+                        config = config,
+                        faceCount = faces.size,
+                        compact = true,
+                        onThresholdChange = viewModel::updateThreshold,
+                        onFlipChange = viewModel::toggleCameraFlip,
+                        onOnlyKnownChange = viewModel::toggleOnlyKnown,
+                        onAddFace = openAddDialog,
+                        onShowLivePreview = { showLivePreview = true },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    FaceDirectory(
+                        faces = faces,
+                        loading = loading,
+                        onAddFace = openAddDialog,
+                        onDelete = { selectedFaceForDelete = it },
+                        onEdit = {
+                            editingFaceName = it.username
+                            showAddDialog = true
+                        },
+                        onImageClick = { previewImageUrl = it },
+                        modifier = Modifier.weight(1f).fillMaxWidth()
+                    )
                 }
             }
         }
@@ -195,22 +190,12 @@ fun FaceScreen(
     }
 
     selectedFaceForDelete?.let { face ->
-        AlertDialog(
-            onDismissRequest = { selectedFaceForDelete = null },
-            title = { Text("确认删除") },
-            text = { Text("是否确定删除用户 [${face.username}] 的人脸数据？此操作不可恢复。") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteFace(face)
-                    selectedFaceForDelete = null
-                }) {
-                    Text("删除", color = Color.Red)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { selectedFaceForDelete = null }) {
-                    Text("取消")
-                }
+        DeleteFaceDialog(
+            face = face,
+            onDismiss = { selectedFaceForDelete = null },
+            onConfirm = {
+                viewModel.deleteFace(face)
+                selectedFaceForDelete = null
             }
         )
     }
@@ -235,91 +220,106 @@ fun FaceScreen(
 }
 
 @Composable
+private fun FaceTopBar(
+    faceCount: Int,
+    loading: Boolean,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    Surface(color = ModernDialogColors.Surface, elevation = 0.dp) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "返回",
+                        tint = ModernDialogColors.PrimaryText
+                    )
+                }
+                Column(modifier = Modifier.padding(start = 4.dp)) {
+                    Text(
+                        "人脸识别",
+                        color = ModernDialogColors.PrimaryText,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "共 $faceCount 个人脸样本",
+                        color = ModernDialogColors.SecondaryText,
+                        fontSize = 11.sp
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = onRefresh, enabled = !loading) {
+                    if (loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = ModernDialogColors.Accent)
+                    } else {
+                        Icon(Icons.Default.Refresh, contentDescription = "刷新", tint = ModernDialogColors.SecondaryText, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+            Divider(color = ModernDialogColors.Divider)
+        }
+    }
+}
+
+@Composable
 fun FaceConfigPanel(
     config: FaceConfig,
+    faceCount: Int,
+    compact: Boolean,
     onThresholdChange: (Float) -> Unit,
     onFlipChange: (Boolean) -> Unit,
     onOnlyKnownChange: (Boolean) -> Unit,
     onAddFace: () -> Unit,
-    onShowLivePreview: () -> Unit
+    onShowLivePreview: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(12.dp),
-        backgroundColor = Color.White.copy(alpha = 0.5f)
+    Surface(
+        modifier = modifier.border(1.dp, ModernDialogColors.Border, RoundedCornerShape(8.dp)),
+        shape = RoundedCornerShape(8.dp),
+        color = ModernDialogColors.Surface,
+        elevation = 0.dp
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ConfigToggle(
-                label = "摄像头翻转",
-                checked = config.camera_flip,
-                onCheckedChange = onFlipChange
-            )
-
-            ConfigToggle(
-                label = "仅识别已知人脸",
-                checked = config.only_known,
-                onCheckedChange = onOnlyKnownChange
-            )
-
+        if (compact) {
             Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("阈值", fontSize = 12.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                var thresholdText by remember(config.threshold) { mutableStateOf(config.threshold.toString()) }
-                BasicTextField(
-                    value = thresholdText,
-                    onValueChange = {
-                        thresholdText = it
-                        it.toFloatOrNull()?.let { value ->
-                            if (value in 0f..1f) onThresholdChange(value)
-                        }
-                    },
-                    modifier = Modifier.width(36.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        color = Color.Blue,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    ),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                Text("识别配置", color = ModernDialogColors.PrimaryText, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                ConfigToggle("翻转", config.camera_flip, onFlipChange, Modifier.width(130.dp))
+                ConfigToggle("仅已知", config.only_known, onOnlyKnownChange, Modifier.width(130.dp))
+                ThresholdControl(
+                    threshold = config.threshold,
+                    onThresholdChange = onThresholdChange,
+                    modifier = Modifier.width(160.dp)
                 )
+                FaceActionButton("画面", Icons.Default.Videocam, false, onShowLivePreview)
+                FaceActionButton("录入", Icons.Default.PersonAdd, true, onAddFace)
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            OutlinedButton(
-                onClick = onShowLivePreview,
-                modifier = Modifier.height(32.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("实时画面", fontSize = 12.sp)
-            }
-
-            Button(
-                onClick = onAddFace,
-                modifier = Modifier.height(32.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("新增人脸", fontSize = 12.sp)
+        } else {
+            Column(modifier = Modifier.fillMaxSize().padding(14.dp).verticalScroll(rememberScrollState())) {
+                Text("识别配置", color = ModernDialogColors.PrimaryText, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text("人脸样本: $faceCount", color = ModernDialogColors.SecondaryText, fontSize = 11.sp)
+                Spacer(Modifier.height(16.dp))
+                ModernDialogSection("匹配阈值")
+                Spacer(Modifier.height(6.dp))
+                ThresholdControl(config.threshold, onThresholdChange, Modifier.fillMaxWidth())
+                Spacer(Modifier.height(14.dp))
+                ModernDialogSection("识别行为")
+                Spacer(Modifier.height(6.dp))
+                ConfigToggle("摄像头画面翻转", config.camera_flip, onFlipChange, Modifier.fillMaxWidth())
+                Spacer(Modifier.height(6.dp))
+                ConfigToggle("仅识别已知人脸", config.only_known, onOnlyKnownChange, Modifier.fillMaxWidth())
+                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.height(16.dp))
+                FaceActionButton("查看实时画面", Icons.Default.Videocam, false, onShowLivePreview, Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                FaceActionButton("录入新的人脸", Icons.Default.PersonAdd, true, onAddFace, Modifier.fillMaxWidth())
             }
         }
     }
@@ -329,32 +329,179 @@ fun FaceConfigPanel(
 fun ConfigToggle(
     label: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+        modifier = modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(6.dp))
             .clickable { onCheckedChange(!checked) }
-            .background(
-                if (checked) Color.Blue.copy(alpha = 0.1f) 
-                else Color.White,
-                RoundedCornerShape(8.dp)
-            )
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .background(ModernDialogColors.Canvas)
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = if (checked) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = if (checked) Color.Blue else Color.Gray
-        )
-        Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = label,
-            fontSize = 12.sp,
-            color = if (checked) Color.Blue else Color.Gray
+            fontSize = 11.sp,
+            color = ModernDialogColors.PrimaryText,
+            modifier = Modifier.weight(1f)
         )
+        Spacer(Modifier.width(4.dp))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.scale(0.8f),
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = ModernDialogColors.Accent,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color(0xFFADB3BD)
+            )
+        )
+    }
+}
+
+@Composable
+private fun ThresholdControl(
+    threshold: Float,
+    onThresholdChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var sliderValue by remember(threshold) { mutableFloatStateOf(threshold.coerceIn(0f, 1f)) }
+
+    Column(modifier = modifier) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("相似度", color = ModernDialogColors.SecondaryText, fontSize = 12.sp, modifier = Modifier.weight(1f))
+            Text(
+                "${(sliderValue * 100).toInt()}%",
+                color = ModernDialogColors.Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        Slider(
+            value = sliderValue,
+            onValueChange = { sliderValue = it },
+            onValueChangeFinished = { onThresholdChange(sliderValue) },
+            valueRange = 0f..1f,
+            colors = SliderDefaults.colors(
+                thumbColor = ModernDialogColors.Accent,
+                activeTrackColor = ModernDialogColors.Accent,
+                inactiveTrackColor = ModernDialogColors.Border
+            )
+        )
+    }
+}
+
+@Composable
+private fun FaceActionButton(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    primary: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (primary) {
+        Button(
+            onClick = onClick,
+            modifier = modifier.height(38.dp),
+            shape = RoundedCornerShape(6.dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = ModernDialogColors.Accent,
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.elevation(defaultElevation = 0.dp, pressedElevation = 0.dp)
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(15.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(text, fontSize = 11.sp)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier.height(38.dp),
+            shape = RoundedCornerShape(6.dp),
+            border = BorderStroke(1.dp, ModernDialogColors.Border),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = ModernDialogColors.PrimaryText,
+                backgroundColor = Color.White
+            )
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(15.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(text, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun FaceDirectory(
+    faces: List<FaceData>,
+    loading: Boolean,
+    onAddFace: () -> Unit,
+    onDelete: (FaceData) -> Unit,
+    onEdit: (FaceData) -> Unit,
+    onImageClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(36.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("人脸列表", color = ModernDialogColors.PrimaryText, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.width(8.dp))
+            Text("${faces.size}", color = ModernDialogColors.SecondaryText, fontSize = 11.sp)
+        }
+        if (loading) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().height(2.dp),
+                color = ModernDialogColors.Accent,
+                backgroundColor = ModernDialogColors.Divider
+            )
+        } else {
+            Divider(color = ModernDialogColors.Divider, thickness = 1.dp)
+            Spacer(Modifier.height(4.dp))
+        }
+
+        if (faces.isEmpty()) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = null,
+                        tint = ModernDialogColors.Border,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "人脸库为空",
+                        color = ModernDialogColors.SecondaryText,
+                        fontSize = 12.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    FaceActionButton("录入人脸", Icons.Default.PersonAdd, true, onAddFace)
+                }
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(280.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(top = 4.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(faces, key = { it.faceId ?: "${it.id}-${it.username}" }) { face ->
+                    FaceItem(
+                        face = face,
+                        onDelete = { onDelete(face) },
+                        onEdit = { onEdit(face) },
+                        onImageClick = onImageClick
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -366,23 +513,22 @@ fun FaceItem(
     onImageClick: (String) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().height(100.dp).border(1.dp, ModernDialogColors.Border, RoundedCornerShape(8.dp)),
+        shape = RoundedCornerShape(8.dp),
         backgroundColor = Color.White,
-        elevation = 1.dp
+        elevation = 0.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(10.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray)
-                    .border(2.dp, Color.Gray.copy(alpha = 0.2f), CircleShape)
+                    .size(width = 64.dp, height = 80.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(ModernDialogColors.Canvas)
                     .clickable(enabled = !face.imageUrl.isNullOrEmpty()) {
                         face.imageUrl?.let { onImageClick(it) }
                     },
@@ -399,36 +545,52 @@ fun FaceItem(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(32.dp)
+                        tint = ModernDialogColors.SecondaryText,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = face.username, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = face.username,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ModernDialogColors.PrimaryText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 face.description?.takeIf { it.isNotBlank() }?.let { desc ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = desc, fontSize = 12.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = desc,
+                        fontSize = 11.sp,
+                        color = ModernDialogColors.SecondaryText,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
-            IconButton(onClick = onEdit) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = "编辑",
-                    tint = Color.Blue
-                )
-            }
-
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "删除",
-                    tint = Color.Red
-                )
+            Row {
+                IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "编辑",
+                        tint = ModernDialogColors.Accent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "删除",
+                        tint = Color(0xFFD14343),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -444,68 +606,165 @@ fun AddFaceDialog(
 ) {
     var name by remember(initialName) { mutableStateOf(initialName) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initialName.isEmpty()) "录入新人脸" else "编辑人脸") },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("姓名") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("选择录入方式", fontSize = 12.sp, color = Color.Gray)
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { if (name.isNotBlank()) onUploadImage(name) },
-                            modifier = Modifier.weight(1f),
-                            enabled = name.isNotBlank(),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("相册选取")
-                        }
-                        OutlinedButton(
-                            onClick = { if (name.isNotBlank()) onTakePhoto(name) },
-                            modifier = Modifier.weight(1f),
-                            enabled = name.isNotBlank(),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("拍照上传")
-                        }
-                    }
-
-                    Button(
-                        onClick = { if (name.isNotBlank()) onCaptureRobotFrame(name) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = name.isNotBlank(),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("获取机器人当前帧")
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
+    ModernDialogScaffold(
+        title = if (initialName.isEmpty()) "录入人脸" else "更新人脸",
+        onDismiss = onDismiss,
+        maxWidth = 560.dp,
+        maxHeight = 480.dp,
+        actions = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text("取消", color = ModernDialogColors.SecondaryText, fontSize = 13.sp)
             }
         }
-    )
+    ) {
+        ModernDialogSection("身份信息")
+
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("姓名 (必填)", fontSize = 12.sp) },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            singleLine = true,
+            shape = RoundedCornerShape(6.dp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+            colors = modernOutlinedTextFieldColors()
+        )
+
+        Spacer(Modifier.height(8.dp))
+        ModernDialogSection("录入来源")
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            FaceCaptureSourceButton(
+                text = "相册选取",
+                icon = Icons.Default.PhotoLibrary,
+                enabled = name.isNotBlank(),
+                onClick = { onUploadImage(name) },
+                modifier = Modifier.weight(1f)
+            )
+            FaceCaptureSourceButton(
+                text = "拍照上传",
+                icon = Icons.Default.CameraAlt,
+                enabled = name.isNotBlank(),
+                onClick = { onTakePhoto(name) },
+                modifier = Modifier.weight(1f)
+            )
+            FaceCaptureSourceButton(
+                text = "机器人画面",
+                icon = Icons.Default.CenterFocusStrong,
+                enabled = name.isNotBlank(),
+                primary = true,
+                onClick = { onCaptureRobotFrame(name) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FaceCaptureSourceButton(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    primary: Boolean = false
+) {
+    val content: @Composable RowScope.() -> Unit = {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(17.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(text, fontSize = 11.sp, maxLines = 1)
+    }
+
+    if (primary) {
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = modifier.height(48.dp),
+            shape = RoundedCornerShape(6.dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = ModernDialogColors.Accent,
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.elevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
+            content = content
+        )
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = modifier.height(48.dp),
+            shape = RoundedCornerShape(6.dp),
+            border = BorderStroke(1.dp, ModernDialogColors.Border),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = ModernDialogColors.PrimaryText,
+                backgroundColor = Color.White
+            ),
+            content = content
+        )
+    }
+}
+
+@Composable
+private fun DeleteFaceDialog(
+    face: FaceData,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    ModernDialogScaffold(
+        title = "确认删除",
+        onDismiss = onDismiss,
+        maxWidth = 420.dp,
+        maxHeight = 280.dp,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消", color = ModernDialogColors.SecondaryText, fontSize = 13.sp)
+            }
+            Spacer(Modifier.width(12.dp))
+            Button(
+                onClick = onConfirm,
+                shape = RoundedCornerShape(6.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(0xFFD14343),
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.elevation(defaultElevation = 0.dp, pressedElevation = 0.dp)
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(15.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("删除", fontSize = 13.sp)
+            }
+        }
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                modifier = Modifier.size(36.dp),
+                shape = CircleShape,
+                color = Color(0xFFFFE8E8)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFD14343), modifier = Modifier.size(20.dp))
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "确定删除 \"${face.username}\" 吗？",
+                    color = ModernDialogColors.PrimaryText,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "删除后将无法恢复该数据。",
+                    color = ModernDialogColors.SecondaryText,
+                    fontSize = 12.sp
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -515,21 +774,24 @@ fun ImagePreviewDialog(
 ) {
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.9f))
-                .clickable { onDismiss() },
+            modifier = Modifier.fillMaxSize().background(Color(0xFF101216)),
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
                 model = imageUrl,
-                contentDescription = "Full Image",
-                modifier = Modifier.fillMaxSize(0.9f),
+                contentDescription = "人脸原图",
+                modifier = Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 36.dp),
                 contentScale = ContentScale.Fit
             )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0x99000000), CircleShape)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "关闭预览", tint = Color.White)
+            }
         }
     }
 }
@@ -552,79 +814,65 @@ fun LivePreviewDialog(
         }
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-            backgroundColor = Color.White
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+    ModernDialogScaffold(
+        title = "实时画面",
+        onDismiss = onDismiss,
+        maxWidth = 520.dp,
+        maxHeight = 520.dp,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭", color = ModernDialogColors.SecondaryText, fontSize = 13.sp)
+            }
+            Spacer(Modifier.width(12.dp))
+            OutlinedButton(
+                onClick = onRefresh,
+                shape = RoundedCornerShape(6.dp),
+                border = BorderStroke(1.dp, ModernDialogColors.Border),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = ModernDialogColors.PrimaryText,
+                    backgroundColor = Color.White
+                )
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "实时画面预览",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Surface(
-                        color = Color.Blue.copy(alpha = 0.1f),
-                        shape = CircleShape,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = countdown.toString(),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Blue
-                            )
-                        }
-                    }
-                }
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("立即刷新", fontSize = 13.sp)
+            }
+        }
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(6.dp).background(Color(0xFF28A745), CircleShape))
+            Spacer(Modifier.width(6.dp))
+            Text("机器人实时画面同步中", color = ModernDialogColors.SecondaryText, fontSize = 11.sp)
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = "${countdown}s",
+                color = ModernDialogColors.Accent,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(4f / 3f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.LightGray),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (currentFrame != null) {
-                        AsyncImage(
-                            model = currentFrame,
-                            contentDescription = "Current Frame",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
-                        )
-                    } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("正在获取画面...", fontSize = 12.sp)
-                        }
-                    }
-                }
-
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("关闭")
-                }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(4f / 3f)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFF171A1F)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (currentFrame != null) {
+                AsyncImage(
+                    model = currentFrame,
+                    contentDescription = "机器人当前画面",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(28.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
             }
         }
     }

@@ -31,9 +31,6 @@ class FaceViewModel(
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
     private val _config = MutableStateFlow(FaceConfig())
     val config: StateFlow<FaceConfig> = _config.asStateFlow()
 
@@ -100,10 +97,6 @@ class FaceViewModel(
         updateConfig(_config.value.copy(only_known = value))
     }
 
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
-    }
-
     fun deleteFace(face: FaceData) {
         safeLaunch(action = "删除人脸:${face.username}", showLoading = true) {
             repository.deleteFace(face.username)
@@ -135,14 +128,4 @@ class FaceViewModel(
     fun clearCurrentFrame() {
         _currentFrame.value = null
     }
-
-    val filteredFaces: List<FaceData>
-        get() = if (searchQuery.value.isEmpty()) {
-            faces.value
-        } else {
-            faces.value.filter { 
-                it.username.contains(searchQuery.value, ignoreCase = true) || 
-                (it.description?.contains(searchQuery.value, ignoreCase = true) == true)
-            }
-        }
 }

@@ -136,20 +136,29 @@ fun InspectionPointPanel(
     if (showDeleteConfirm != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
-            title = { Text("确认删除", color = Color.Black, fontWeight = FontWeight.Bold) },
-            text = { Text("确定要删除导览点 “${showDeleteConfirm?.name}” 吗？", color = Color.DarkGray) },
-            backgroundColor = Color.White,
+            title = { Text("确认删除", color = ModernDialogColors.PrimaryText, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            text = { Text("确定要删除导览点 “${showDeleteConfirm?.name}” 吗？", color = ModernDialogColors.SecondaryText, fontSize = 14.sp) },
+            backgroundColor = ModernDialogColors.Surface,
+            shape = RoundedCornerShape(8.dp),
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteConfirm?.let { onDeletePoint(it.point_id) }
-                    showDeleteConfirm = null
-                }) {
-                    Text("删除", color = Color(0xFFFF5252))
+                Button(
+                    onClick = {
+                        showDeleteConfirm?.let { onDeletePoint(it.point_id) }
+                        showDeleteConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFFFF5252),
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text("删除", fontSize = 14.sp)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = null }) {
-                    Text("取消", color = Color.Gray)
+                    Text("取消", color = ModernDialogColors.SecondaryText, fontSize = 14.sp)
                 }
             }
         )
@@ -158,20 +167,29 @@ fun InspectionPointPanel(
     if (showRouteDeleteConfirm != null) {
         AlertDialog(
             onDismissRequest = { showRouteDeleteConfirm = null },
-            title = { Text("确认删除路线", color = Color.Black, fontWeight = FontWeight.Bold) },
-            text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.route_name}” 吗？", color = Color.DarkGray) },
-            backgroundColor = Color.White,
+            title = { Text("确认删除路线", color = ModernDialogColors.PrimaryText, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.route_name}” 吗？", color = ModernDialogColors.SecondaryText, fontSize = 14.sp) },
+            backgroundColor = ModernDialogColors.Surface,
+            shape = RoundedCornerShape(8.dp),
             confirmButton = {
-                TextButton(onClick = {
-                    showRouteDeleteConfirm?.route_id?.let { onDeleteRoute(it) }
-                    showRouteDeleteConfirm = null
-                }) {
-                    Text("删除", color = Color(0xFFFF5252))
+                Button(
+                    onClick = {
+                        showRouteDeleteConfirm?.route_id?.let { onDeleteRoute(it) }
+                        showRouteDeleteConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFFFF5252),
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text("删除", fontSize = 14.sp)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRouteDeleteConfirm = null }) {
-                    Text("取消", color = Color.Gray)
+                    Text("取消", color = ModernDialogColors.SecondaryText, fontSize = 14.sp)
                 }
             }
         )
@@ -679,13 +697,16 @@ private fun RouteEditDialog(
                         fontSize = 13.sp,
                         modifier = Modifier.weight(1f)
                     )
-                    OutlinedButton(
+                    Button(
                         onClick = { showPointSelector = true },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ModernDialogColors.Accent),
-                        border = BorderStroke(1.dp, ModernDialogColors.Accent),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = ModernDialogColors.Accent,
+                            contentColor = Color.White
+                        ),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                         modifier = Modifier.height(36.dp),
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(6.dp),
+                        elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
@@ -755,58 +776,103 @@ private fun PointSelectionDialog(
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight()
+                .fillMaxWidth(0.85f)
+                .heightIn(max = 600.dp)
                 .padding(vertical = 20.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color.White
+            color = ModernDialogColors.Surface
         ) {
             Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
-                Text("选择导览点 (可多选)", color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                
-                availablePoints.forEach { point ->
-                    val isSelected = selectedIds.contains(point.point_id)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) Color(0x33007AFF) else Color(0x0A000000))
-                            .clickable {
-                                if (isSelected) selectedIds.remove(point.point_id) else selectedIds.add(point.point_id)
-                            }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = {
-                                if (it == true) selectedIds.add(point.point_id) else selectedIds.remove(point.point_id)
-                            },
-                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(point.name, color = Color.Black, fontSize = 15.sp)
+                // Header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp)
+                ) {
+                    Text(
+                        "选择导览点 (可多选)",
+                        color = ModernDialogColors.PrimaryText,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Divider(color = ModernDialogColors.Divider)
+
+                // List
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(ModernDialogColors.Canvas)
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    availablePoints.forEach { point ->
+                        val isSelected = selectedIds.contains(point.point_id)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(ModernDialogColors.Surface)
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) ModernDialogColors.Accent else ModernDialogColors.Border,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable {
+                                    if (isSelected) selectedIds.remove(point.point_id) else selectedIds.add(point.point_id)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    if (it == true) selectedIds.add(point.point_id) else selectedIds.remove(point.point_id)
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = ModernDialogColors.Accent,
+                                    uncheckedColor = ModernDialogColors.Border
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(point.name, color = ModernDialogColors.PrimaryText, fontSize = 15.sp)
+                        }
                     }
                 }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
-                    Spacer(modifier = Modifier.width(12.dp))
+
+                Divider(color = ModernDialogColors.Divider)
+
+                // Footer
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("取消", color = ModernDialogColors.SecondaryText)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
                     Button(
                         onClick = { onConfirm(selectedIds.toList()) },
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF007AFF),
+                            backgroundColor = ModernDialogColors.Accent,
                             contentColor = Color.White,
-                            disabledBackgroundColor = Color(0xFF007AFF).copy(alpha = 0.4f),
+                            disabledBackgroundColor = ModernDialogColors.Accent.copy(alpha = 0.4f),
                             disabledContentColor = Color.White.copy(alpha = 0.7f)
                         ),
-                        enabled = selectedIds.isNotEmpty()
+                        modifier = Modifier.height(40.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        enabled = selectedIds.isNotEmpty(),
+                        elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp)
                     ) {
-                        Text("添加选定 (${selectedIds.size})")
+                        Text("添加选定 (${selectedIds.size})", fontWeight = FontWeight.Medium)
                     }
                 }
             }

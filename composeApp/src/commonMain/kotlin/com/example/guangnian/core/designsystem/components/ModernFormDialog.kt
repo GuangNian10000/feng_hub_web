@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -62,6 +64,43 @@ fun ModernFormDialog(
     confirmEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    ModernDialogScaffold(
+        title = title,
+        onDismiss = onDismiss,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消", color = ModernDialogColors.SecondaryText)
+            }
+            Spacer(Modifier.width(12.dp))
+            Button(
+                onClick = onConfirm,
+                enabled = confirmEnabled,
+                modifier = Modifier.height(40.dp),
+                shape = RoundedCornerShape(6.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = ModernDialogColors.Accent,
+                    contentColor = Color.White,
+                    disabledBackgroundColor = ModernDialogColors.Accent.copy(alpha = 0.35f),
+                    disabledContentColor = Color.White.copy(alpha = 0.75f)
+                ),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp)
+            ) {
+                Text(confirmText, fontWeight = FontWeight.Medium)
+            }
+        },
+        content = content
+    )
+}
+
+@Composable
+fun ModernDialogScaffold(
+    title: String,
+    onDismiss: () -> Unit,
+    maxWidth: Dp = 920.dp,
+    maxHeight: Dp = 680.dp,
+    actions: @Composable RowScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -74,9 +113,9 @@ fun ModernFormDialog(
         ) {
             Surface(
                 modifier = Modifier
-                    .widthIn(max = 920.dp)
+                    .widthIn(max = maxWidth)
                     .fillMaxWidth()
-                    .heightIn(max = 680.dp),
+                    .heightIn(max = maxHeight),
                 shape = RoundedCornerShape(8.dp),
                 color = ModernDialogColors.Surface,
                 elevation = 20.dp
@@ -133,27 +172,7 @@ fun ModernFormDialog(
                             .padding(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text("取消", color = ModernDialogColors.SecondaryText)
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Button(
-                            onClick = onConfirm,
-                            enabled = confirmEnabled,
-                            modifier = Modifier.height(40.dp),
-                            shape = RoundedCornerShape(6.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = ModernDialogColors.Accent,
-                                contentColor = Color.White,
-                                disabledBackgroundColor = ModernDialogColors.Accent.copy(alpha = 0.35f),
-                                disabledContentColor = Color.White.copy(alpha = 0.75f)
-                            ),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp)
-                        ) {
-                            Text(confirmText, fontWeight = FontWeight.Medium)
-                        }
-                    }
+                    ) { actions() }
                 }
             }
         }
