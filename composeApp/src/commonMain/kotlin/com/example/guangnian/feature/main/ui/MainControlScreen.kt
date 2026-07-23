@@ -1,5 +1,6 @@
 package com.example.guangnian.feature.main.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -197,89 +198,98 @@ fun TopConnectionBar(
     onAutoConnectClick: () -> Unit = {}
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(54.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 连接按钮
+        val isConnected = connectionState == TcpState.CONNECTED
+        val btnColor = if (isConnected) Color(0xFF16A34A) else Color(0xFF3B82F6)
         Button(
             onClick = onConnectClick,
             enabled = canConnect,
-            modifier = Modifier.height(44.dp).wrapContentWidth(),
+            modifier = Modifier.height(46.dp).wrapContentWidth().align(Alignment.Bottom),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = if (connectionState == TcpState.CONNECTED) Color(0xFF00C853) else Color(0xFF2962FF),
-                disabledBackgroundColor = Color.Black.copy(alpha = 0.5f),
+                backgroundColor = btnColor,
+                disabledBackgroundColor = Color(0xFF1E293B),
                 contentColor = Color.White,
-                disabledContentColor = Color.LightGray
+                disabledContentColor = Color.Gray
             ),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(6.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
             Text(
                 text = when (connectionState) {
                     TcpState.CONNECTING  -> "连接中..."
                     TcpState.CONNECTED   -> "已连接"
-                    TcpState.DISCONNECTED -> "连接设备"
+                    TcpState.DISCONNECTED -> "手动连接"
                 },
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                fontSize = 12.sp,
                 style = TextStyle(shadow = DefaultTextShadow)
             )
         }
 
         // 自动连接按钮（BLE，仅 Android 显示）
         if (isBleSupported) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Button(
                 onClick = onAutoConnectClick,
-                modifier = Modifier.height(44.dp).wrapContentWidth(),
+                modifier = Modifier.height(46.dp).wrapContentWidth().align(Alignment.Bottom),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFF1A2A4A),
-                    contentColor = Color(0xFF40C4FF)
+                    backgroundColor = Color(0xFF0F172A).copy(alpha = 0.6f),
+                    contentColor = Color(0xFF00E5FF)
                 ),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp)
+                shape = RoundedCornerShape(6.dp),
+                border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f)),
+                contentPadding = PaddingValues(horizontal = 14.dp)
             ) {
                 Text(
                     text = "自动连接",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+                    fontSize = 11.sp,
                     style = TextStyle(shadow = DefaultTextShadow)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
-        //设置半透明背景以隔离底层图像
+        Spacer(modifier = Modifier.width(20.dp))
+        
+        // IP 参数
         OutlinedTextField(
             value = ip,
             onValueChange = onIpChange,
-            label = { Text("IP", color = Color(0xFFB0BEC5), fontSize = 12.sp) },
-            modifier = Modifier.weight(2f).fillMaxHeight(),
+            label = { Text("IP 地址", color = Color(0xFF00E5FF).copy(alpha = 0.8f), fontSize = 11.sp) },
+            modifier = Modifier.weight(2f).height(56.dp),
             singleLine = true,
-            textStyle = TextStyle(fontSize = 14.sp, shadow = DefaultTextShadow),
+            textStyle = TextStyle(fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold, shadow = DefaultTextShadow),
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 textColor = Color.White,
-                focusedBorderColor = Color(0xFF40C4FF),
-                unfocusedBorderColor = Color.Gray.copy(alpha = 0.7f),
-                backgroundColor = Color.Black.copy(alpha = 0.3f)
+                focusedBorderColor = Color(0xFF00E5FF),
+                unfocusedBorderColor = Color(0xFF00E5FF).copy(alpha = 0.5f),
+                backgroundColor = Color(0xFF020617).copy(alpha = 0.6f),
+                cursorColor = Color(0xFF00E5FF)
             ),
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(6.dp)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        
+        Spacer(modifier = Modifier.width(10.dp))
+        
+        // Port 参数
         OutlinedTextField(
             value = port,
             onValueChange = onPortChange,
-            label = { Text("Port", color = Color(0xFFB0BEC5), fontSize = 12.sp) },
-            modifier = Modifier.weight(1f).fillMaxHeight(),
+            label = { Text("端口", color = Color(0xFF00E5FF).copy(alpha = 0.8f), fontSize = 11.sp) },
+            modifier = Modifier.weight(1f).height(56.dp),
             singleLine = true,
-            textStyle = TextStyle(fontSize = 14.sp, shadow = DefaultTextShadow),
+            textStyle = TextStyle(fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold, shadow = DefaultTextShadow),
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 textColor = Color.White,
-                focusedBorderColor = Color(0xFF40C4FF),
-                unfocusedBorderColor = Color.Gray.copy(alpha = 0.7f),
-                backgroundColor = Color.Black.copy(alpha = 0.3f)
+                focusedBorderColor = Color(0xFF00E5FF),
+                unfocusedBorderColor = Color(0xFF00E5FF).copy(alpha = 0.5f),
+                backgroundColor = Color(0xFF020617).copy(alpha = 0.6f),
+                cursorColor = Color(0xFF00E5FF)
             ),
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(6.dp)
         )
     }
 }
@@ -290,7 +300,8 @@ fun FunctionGrid(
     controlType: ControlType,
     onNavigateToInteraction: () -> Unit,
     onNavigateToFace: () -> Unit,
-    onNavigateToBle: () -> Unit = {}
+    onNavigateToBle: () -> Unit = {},
+    onNavigateToRemoteDesktop: () -> Unit = {}
 ) {
     val isDog = controlType == ControlType.DOG
     val targetIconSize = if (isDog) 160.dp else 140.dp
@@ -305,7 +316,7 @@ fun FunctionGrid(
         MenuCard(
             title = "总控制",
             icon = Res.drawable.ic_control,
-            modifier = Modifier.fillMaxHeight().wrapContentWidth(),
+            modifier = Modifier.weight(1f, fill = false).fillMaxHeight(),
             targetIconSize = targetIconSize,
             fontSize = fontSize,
             onClick = onNavigateToInteraction
@@ -313,12 +324,15 @@ fun FunctionGrid(
 
         if (controlType == ControlType.ROBOT) {
             Spacer(modifier = Modifier.width(spacerWidth))
-            MenuCard("人脸识别", Res.drawable.ic_face, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize, onClick = onNavigateToFace)
+            MenuCard("人脸识别", Res.drawable.ic_face, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize, onClick = onNavigateToFace)
+            
+            Spacer(modifier = Modifier.width(spacerWidth))
+            MenuCard("远程桌面", Res.drawable.ic_remote_desktop, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize, onClick = onNavigateToRemoteDesktop)
         }
 
         if (controlType == ControlType.DOG) {
             Spacer(modifier = Modifier.width(spacerWidth))
-            MenuCard("视频监控", Res.drawable.ic_video, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize)
+            MenuCard("视频监控", Res.drawable.ic_video, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize)
         }
 
         // BLE 管理入口（仅 Android 显示）
@@ -327,7 +341,7 @@ fun FunctionGrid(
             MenuCard(
                 title = "设备连接",
                 icon = Res.drawable.ic_device_connection,
-                modifier = Modifier.fillMaxHeight().wrapContentWidth(),
+                modifier = Modifier.weight(1f, fill = false).fillMaxHeight(),
                 targetIconSize = targetIconSize,
                 fontSize = fontSize,
                 onClick = onNavigateToBle
@@ -401,12 +415,6 @@ fun BottomStatusBar(
                 fontWeight = FontWeight.Bold,
                 style = TextStyle(shadow = DefaultTextShadow)
             )
-            Text(
-                text = "型号: ${if (controlType == ControlType.DOG) "户外导航版" else "通用机器人版"}",
-                color = Color(0xFFE0E0E0),
-                fontSize = 12.sp,
-                style = TextStyle(shadow = DefaultTextShadow)
-            )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
@@ -414,12 +422,6 @@ fun BottomStatusBar(
                 color = statusColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                style = TextStyle(shadow = DefaultTextShadow)
-            )
-            Text(
-                text = "控制核心: TCP 直连",
-                color = Color(0xFFE0E0E0),
-                fontSize = 12.sp,
                 style = TextStyle(shadow = DefaultTextShadow)
             )
         }
