@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -438,7 +440,7 @@ actual fun BleManagementScreen(onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // 左栏：连接控制
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 when (val state = bleState) {
                     is BleState.Idle, is BleState.Error -> {
                         ScanDevicePanel(
@@ -460,7 +462,11 @@ actual fun BleManagementScreen(onBack: () -> Unit) {
             }
 
             // 右栏：日志面板
-            LogPanel(logLines = logLines, onClear = viewModel::clearLog)
+            LogPanel(
+                logLines = logLines,
+                modifier = Modifier.weight(1f),
+                onClear = viewModel::clearLog
+            )
         }
     }
 }
@@ -863,13 +869,17 @@ private fun ConnectedCommandPanel(
 // ── 日志面板 ──────────────────────────────────────────────────────────────────
 
 @Composable
-private fun LogPanel(logLines: List<String>, onClear: () -> Unit) {
+private fun LogPanel(
+    logLines: List<String>,
+    modifier: Modifier = Modifier,
+    onClear: () -> Unit
+) {
     val listState = rememberLazyListState()
     LaunchedEffect(logLines.size) {
         if (logLines.isNotEmpty()) listState.animateScrollToItem(logLines.lastIndex)
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically
