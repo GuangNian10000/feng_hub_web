@@ -14,12 +14,15 @@ import com.example.guangnian.feature.main.ui.MainControlScreen
 import org.koin.compose.KoinApplication
 
 import com.example.guangnian.feature.face.ui.FaceScreen
+import com.example.guangnian.feature.map.MapEditScreen
+import com.example.guangnian.feature.console.data.bean.MapBean
 
 // 定义应用层级路由枚举。
 enum class AppRoute {
     MAIN_CONTROL,
     INTERACTION,
-    FACE_MANAGEMENT
+    FACE_MANAGEMENT,
+    MAP_EDIT
 }
 
 @Composable
@@ -28,6 +31,7 @@ fun App() {
         modules(appModule)
     }) {
         var currentRoute by remember { mutableStateOf(AppRoute.MAIN_CONTROL) }
+        var editingMap by remember { mutableStateOf<MapBean?>(null) }
 
         MaterialTheme(colors = darkColors()) {
             // 使用 Crossfade 增加切换时的渐变动画过渡。
@@ -41,13 +45,25 @@ fun App() {
                     }
                     AppRoute.INTERACTION -> {
                         InteractionScreen(
-                            onBackClick = { currentRoute = AppRoute.MAIN_CONTROL }
+                            onBackClick = { currentRoute = AppRoute.MAIN_CONTROL },
+                            onEditMap = { map ->
+                                editingMap = map
+                                currentRoute = AppRoute.MAP_EDIT
+                            }
                         )
                     }
                     AppRoute.FACE_MANAGEMENT -> {
                         FaceScreen(
                             onBack = { currentRoute = AppRoute.MAIN_CONTROL }
                         )
+                    }
+                    AppRoute.MAP_EDIT -> {
+                        editingMap?.let { map ->
+                            MapEditScreen(
+                                mapBean = map,
+                                onBack = { currentRoute = AppRoute.INTERACTION }
+                            )
+                        }
                     }
                 }
             }

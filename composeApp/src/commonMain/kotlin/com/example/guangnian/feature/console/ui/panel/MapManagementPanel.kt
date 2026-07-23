@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -36,6 +37,7 @@ fun MapManagementPanel(
     maps: List<MapBean>,
     onDeleteMap: (String) -> Unit,
     onSwitchMap: (String) -> Unit,
+    onEditMap: (MapBean) -> Unit,
     onStartMapping: (String) -> Unit,
     onSetAddAction: (String, () -> Unit) -> Unit,
     onRetryClick: () -> Unit,
@@ -163,6 +165,7 @@ fun MapManagementPanel(
                     MapItem(
                         map = map,
                         onDeleteClick = { showDeleteConfirm = map },
+                        onEditClick = { onEditMap(map) },
                         onClick = {
                             if (!map.is_active) {
                                 showSwitchConfirm = map
@@ -179,6 +182,7 @@ fun MapManagementPanel(
 private fun MapItem(
     map: MapBean,
     onDeleteClick: () -> Unit,
+    onEditClick: () -> Unit,
     onClick: () -> Unit
 ) {
     val httpClient = koinInject<HttpClient>()
@@ -260,6 +264,15 @@ private fun MapItem(
                     }
                 }
             }
+        }
+
+        IconButton(onClick = onEditClick, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "编辑",
+                tint = Color(0xFF007AFF),
+                modifier = Modifier.size(20.dp)
+            )
         }
 
         IconButton(onClick = onDeleteClick, modifier = Modifier.size(32.dp)) {

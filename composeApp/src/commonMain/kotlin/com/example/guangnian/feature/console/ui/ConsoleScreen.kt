@@ -28,7 +28,8 @@ import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun InteractionScreen(
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onEditMap: (com.example.guangnian.feature.console.data.bean.MapBean) -> Unit = {}
 ) {
     val consoleViewModel: ConsoleViewModel = koinViewModel()
     val uiState by consoleViewModel.uiState.collectAsState()
@@ -374,6 +375,7 @@ fun InteractionScreen(
                             onSwitchMap = { mapUid ->
                                 consoleViewModel.switchMap(mapUid)
                             },
+                            onEditMap = onEditMap,
                             onStartMapping = { name ->
                                 consoleViewModel.startMapping(name)
                             },
