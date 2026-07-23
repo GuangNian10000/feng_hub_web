@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +25,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.viewmodel.AgentViewModel
 import kotlinx.coroutines.delay
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -170,7 +170,6 @@ fun AgentSettingsPanel(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AgentItemBox(
     agent: AgentEntity,
@@ -196,17 +195,15 @@ private fun AgentItemBox(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 选中指示器
-            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                RadioButton(
-                    selected = isSelected,
-                    onClick = onSelect,
-                    colors = RadioButtonDefaults.colors(
-                        selectedColor = Color(0xFF007AFF),
-                        unselectedColor = Color.LightGray
-                    ),
-                    modifier = Modifier.scale(0.8f)
-                )
-            }
+            RadioButton(
+                selected = isSelected,
+                onClick = onSelect,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = Color(0xFF007AFF),
+                    unselectedColor = Color.LightGray
+                ),
+                modifier = Modifier.scale(0.8f)
+            )
 
             // 信息区
             Column(modifier = Modifier.weight(1f).padding(horizontal = 6.dp)) {
@@ -266,7 +263,7 @@ private fun ConfirmDialog(
         onDismissRequest = onDismiss,
         title = { Text(title, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
         text = { Text(content, color = Color.DarkGray, fontSize = 14.sp) },
-        containerColor = Color.White,
+        backgroundColor = Color.White,
         confirmButton = {
             TextButton(onClick = onConfirm) { Text("确定", color = Color(0xFF007AFF)) }
         },
@@ -333,9 +330,8 @@ private fun AgentEditDialog(
                         label = { Text("智能体名称") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            textColor = Color.Black,
                             focusedLabelColor = Color.Gray,
                             unfocusedLabelColor = Color.Gray
                         )
@@ -349,9 +345,8 @@ private fun AgentEditDialog(
                             label = { Text("音色配置") },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black,
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                textColor = Color.Black,
                                 focusedLabelColor = Color.Gray,
                                 unfocusedLabelColor = Color.Gray
                             )
@@ -374,9 +369,8 @@ private fun AgentEditDialog(
                         .fillMaxWidth()
                         .heightIn(min = 150.dp), // 增加提示词输入框高度
                     maxLines = 15,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.Black,
                         focusedLabelColor = Color.Gray,
                         unfocusedLabelColor = Color.Gray
                     )
@@ -407,7 +401,7 @@ private fun AgentEditDialog(
                             }
                             onConfirm(resultAgent)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text("保存配置", color = Color.White)
@@ -610,7 +604,7 @@ private fun VoiceSelectionDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = { onSelect(tempSelectedVoice) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF))
                         ) {
                             Text("确定选择", color = Color.White)
                         }

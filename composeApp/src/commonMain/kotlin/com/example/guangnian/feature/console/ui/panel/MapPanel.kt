@@ -8,9 +8,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +26,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.CircularProgressIndicator
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.core.designsystem.components.GlassBox
@@ -252,11 +250,10 @@ private fun MapLoadingOverlay(progress: Float, stage: String) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
-                        progress = { progress },
+                        progress = progress,
                         modifier = Modifier.size(56.dp),
                         color = Color(0xFF007AFF),
                         strokeWidth = 4.dp,
-                        trackColor = Color.White.copy(alpha = 0.1f),
                     )
                     Text(
                         text = "${(progress * 100).toInt()}%",
@@ -456,14 +453,14 @@ private fun MapControlOverlays(
                         fontSize = 14.sp,
                         modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onSelectCreatePoint() }.padding(12.dp)
                     )
-                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Divider(color = Color.White.copy(alpha = 0.1f))
                     Text(
                         "设置机器人位置",
                         color = Color.White,
                         fontSize = 14.sp,
                         modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onSelectSetRobotPosition() }.padding(12.dp)
                     )
-                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Divider(color = Color.White.copy(alpha = 0.1f))
                     Text(
                         "去此处",
                         color = Color.White,
@@ -504,7 +501,7 @@ private fun MapControlOverlays(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable { mapViewModel.clearInteraction() }.padding(vertical = 12.dp, horizontal = 8.dp)
                     )
-                    VerticalDivider(modifier = Modifier.height(20.dp).width(1.dp), color = Color.White.copy(alpha = 0.2f))
+                    Divider(modifier = Modifier.height(20.dp).width(1.dp), color = Color.White.copy(alpha = 0.2f))
                     Text(
                         "确认",
                         color = Color(0xFF4CAF50),
@@ -587,21 +584,21 @@ private fun MapControlOverlays(
                         fontSize = 13.sp,
                         modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onGoToPoint() }.padding(10.dp)
                     )
-                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Divider(color = Color.White.copy(alpha = 0.1f))
                     Text(
                         "修改信息",
                         color = Color.White,
                         fontSize = 13.sp,
                         modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onEditPoint() }.padding(10.dp)
                     )
-                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Divider(color = Color.White.copy(alpha = 0.1f))
                     Text(
                         "重设位置",
                         color = Color.White,
                         fontSize = 13.sp,
                         modifier = Modifier.fillMaxWidth().clickable { mapViewModel.onResetPointPosition() }.padding(10.dp)
                     )
-                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Divider(color = Color.White.copy(alpha = 0.1f))
                     Text(
                         "删除点位",
                         color = Color(0xFFFF5252),

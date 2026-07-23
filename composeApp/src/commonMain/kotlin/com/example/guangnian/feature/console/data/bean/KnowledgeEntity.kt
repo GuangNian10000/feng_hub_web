@@ -1,7 +1,7 @@
 package com.example.guangnian.feature.console.data.bean
 
 import kotlinx.serialization.Serializable
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 @Serializable
 data class KnowledgeListResponse(val list: List<KnowledgeEntity> = emptyList())

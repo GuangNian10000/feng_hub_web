@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +59,7 @@ fun TeachActionPanel(
                             KLog.d("TeachActionPanel", "密钥按钮被点击")
                             viewModel.setShowAesKeyDialog(true)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE)),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF6200EE)),
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         modifier = Modifier.height(32.dp)
@@ -160,7 +160,7 @@ fun TeachActionPanel(
                             modifier = Modifier.fillMaxWidth()
                         )
                     },
-                    containerColor = Color.White,
+                    backgroundColor = Color.White,
                     confirmButton = {
                         TextButton(onClick = {
                             if (name.isNotBlank()) {
@@ -190,7 +190,7 @@ fun TeachActionPanel(
                         modifier = Modifier.fillMaxWidth()
                     )
                 },
-                containerColor = Color.White,
+                backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         if (newName.isNotBlank() && newName != action.name) {
@@ -210,7 +210,7 @@ fun TeachActionPanel(
                 onDismissRequest = { showDeleteConfirm = null },
                 title = { Text("确认删除", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
                 text = { Text("确定要删除示教动作 “${action.name}” 吗？", color = Color.DarkGray, fontSize = 14.sp) },
-                containerColor = Color.White,
+                backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.deleteTeach(action.name)
@@ -228,7 +228,7 @@ fun TeachActionPanel(
                 onDismissRequest = { showExecuteConfirm = null },
                 title = { Text("确认执行", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
                 text = { Text("确定要执行示教动作 “${action.name}” 吗？", color = Color.DarkGray, fontSize = 14.sp) },
-                containerColor = Color.White,
+                backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.executeTeach(action.name)
@@ -256,7 +256,7 @@ fun TeachActionPanel(
                         modifier = Modifier.fillMaxWidth()
                     )
                 },
-                containerColor = Color.White,
+                backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         if (aesKey.isNotBlank()) {

@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,10 +74,12 @@ fun MainControlPanel(
                         tabs.forEachIndexed { index, tab ->
                             val isSelected = tab == selectedTab
                             Surface(
-                                onClick = { onTabChange(tab) },
                                 color = if (isSelected) Color.White.copy(alpha = 0.15f) else Color.Transparent,
                                 shape = RoundedCornerShape(4.dp),
-                                modifier = Modifier.padding(horizontal = 2.dp)
+                                modifier = Modifier
+                                    .padding(horizontal = 2.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable { onTabChange(tab) }
                             ) {
                                 Text(
                                     text = tab,
@@ -101,7 +103,7 @@ fun MainControlPanel(
                 actionButton?.invoke()
             }
 
-            HorizontalDivider(
+            Divider(
                 color = Color.White.copy(alpha = 0.1f),
                 modifier = Modifier.padding(vertical = 4.dp)
             )
@@ -125,7 +127,7 @@ fun PanelAddButton(
 ) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
         shape = RoundedCornerShape(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
         modifier = Modifier.height(32.dp)

@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 data class MapUiState(
     val mapConfig: MapConfigBean? = null,

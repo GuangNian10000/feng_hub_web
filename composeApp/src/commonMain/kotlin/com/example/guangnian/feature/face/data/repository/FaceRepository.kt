@@ -13,7 +13,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.util.encodeBase64
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 class FaceRepository(
     private val httpClient: HttpClient,

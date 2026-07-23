@@ -12,7 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 // ==========================================
 // 1. ViewModel 与本地存储逻辑
@@ -262,7 +262,7 @@ fun SpeechSynthesisPanel(
                 onDismissRequest = { showConfirmExecute = null },
                 title = { Text("确认合成", color = Color.Black, fontWeight = FontWeight.Bold) },
                 text = { Text("确定要执行语料 “${showConfirmExecute?.text}” 的合成吗？", color = Color.DarkGray) },
-                containerColor = Color.White,
+                backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         showConfirmExecute?.let { viewModel.executeSynthesis(it) }
@@ -337,7 +337,7 @@ fun SynthesisItemBox(
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Button(
                     onClick = onExecute,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
                     modifier = Modifier.height(28.dp)
                 ) {
@@ -401,7 +401,7 @@ fun SynthesisEditDialog(
                     label = { Text("播报文本 (必填)") },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                     maxLines = 10,
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                    colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.White)
                 )
 
                 Row(
@@ -416,7 +416,7 @@ fun SynthesisEditDialog(
                             label = { Text("指定音色 (可选)") },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.White)
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showVoiceSelection = true })
                         if (selectedVoice != null) {
@@ -435,7 +435,7 @@ fun SynthesisEditDialog(
                             label = { Text("指定动作 (可选)") },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.White)
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showActionSelection = true })
                         if (selectedAction != null) {
@@ -474,7 +474,7 @@ fun SynthesisEditDialog(
                             onConfirm(result)
                         },
                         enabled = text.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF))
                     ) {
                         Text("保存", color = Color.White)
                     }
@@ -681,7 +681,7 @@ fun SynthesisVoiceSelectionDialog(
                     Row {
                         TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
                         Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = { onSelect(tempSelectedVoice) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))) { Text("确定选择", color = Color.White) }
+                        Button(onClick = { onSelect(tempSelectedVoice) }, colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF))) { Text("确定选择", color = Color.White) }
                     }
                 }
             }

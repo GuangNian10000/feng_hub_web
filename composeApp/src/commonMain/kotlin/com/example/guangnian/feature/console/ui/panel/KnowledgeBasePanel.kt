@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,7 +23,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.KnowledgeEntity
 import com.example.guangnian.feature.console.viewmodel.KnowledgeViewModel
 import kotlinx.coroutines.delay
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -213,7 +213,7 @@ private fun ConfirmDialog(
         onDismissRequest = onDismiss,
         title = { Text(title, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
         text = { Text(content, color = Color.DarkGray, fontSize = 14.sp) },
-        containerColor = Color.White,
+        backgroundColor = Color.White,
         confirmButton = {
             TextButton(onClick = onConfirm) { Text("确定", color = Color(0xFF007AFF)) }
         },
@@ -267,9 +267,8 @@ private fun KnowledgeEditDialog(
                     onValueChange = { question = it },
                     label = { Text("问题 (Question)") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.Black,
                         focusedLabelColor = Color.Gray,
                         unfocusedLabelColor = Color.Gray
                     )
@@ -283,9 +282,8 @@ private fun KnowledgeEditDialog(
                         .fillMaxWidth()
                         .heightIn(min = 120.dp),
                     maxLines = 10,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.Black,
                         focusedLabelColor = Color.Gray,
                         unfocusedLabelColor = Color.Gray
                     )
@@ -312,7 +310,7 @@ private fun KnowledgeEditDialog(
                             }
                             onConfirm(result)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text("保存", color = Color.White)

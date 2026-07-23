@@ -22,7 +22,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.*
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 data class ConsoleUiState(
     val postures: List<PostureBean> = emptyList(),

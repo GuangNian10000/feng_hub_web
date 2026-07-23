@@ -5,7 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -134,7 +134,7 @@ fun InteractionScreen(
                 onDismissRequest = { consoleViewModel.clearDeleteConfirmPoint() },
                 title = { Text("确认删除", color = Color.Black, fontWeight = FontWeight.Bold) },
                 text = { Text("确定要删除导览点 “${deleteConfirmPoint.name}” 吗？", color = Color.DarkGray) },
-                containerColor = Color.White,
+                backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         consoleViewModel.deleteInspectionPoint(deleteConfirmPoint.point_id)
@@ -156,7 +156,7 @@ fun InteractionScreen(
                 onDismissRequest = { confirmActionPayload = null },
                 title = { Text("确认执行", color = Color.Black, fontWeight = FontWeight.Bold) },
                 text = { Text("确定要执行 “${confirmActionPayload?.first}” 吗？", color = Color.DarkGray) },
-                containerColor = Color.White,
+                backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
                         confirmActionPayload?.second?.invoke()

@@ -13,10 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
@@ -36,7 +37,6 @@ import com.example.guangnian.feature.face.viewmodel.FaceViewModel
 import com.example.guangnian.core.utils.rememberImagePicker
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FaceScreen(
     onBack: () -> Unit
@@ -57,11 +57,11 @@ fun FaceScreen(
     val currentFrame by viewModel.currentFrame.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val scaffoldState = rememberScaffoldState()
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            scaffoldState.snackbarHostState.showSnackbar(it)
             viewModel.clearError()
         }
     }
@@ -74,24 +74,22 @@ fun FaceScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        scaffoldState = scaffoldState,
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = {
                     if (isSearching) {
                         TextField(
                             value = searchQuery,
                             onValueChange = { viewModel.onSearchQueryChanged(it) },
-                            placeholder = { Text("搜索人脸姓名...", style = MaterialTheme.typography.bodyMedium) },
+                            placeholder = { Text("搜索人脸姓名...") },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
+                            colors = TextFieldDefaults.textFieldColors(
+                                backgroundColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
                             ),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium
+                            singleLine = true
                         )
                     } else {
                         Text("人脸管理", fontWeight = FontWeight.SemiBold)
@@ -121,7 +119,10 @@ fun FaceScreen(
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "刷新")
                     }
-                }
+                },
+                backgroundColor = Color.White,
+                contentColor = Color.Black,
+                elevation = 0.dp
             )
         }
     ) { padding ->
@@ -129,7 +130,7 @@ fun FaceScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(Color.White)
         ) {
             FaceConfigPanel(
                 config = config,
@@ -203,7 +204,7 @@ fun FaceScreen(
                     viewModel.deleteFace(face)
                     selectedFaceForDelete = null
                 }) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text("删除", color = Color.Red)
                 }
             },
             dismissButton = {
@@ -247,7 +248,7 @@ fun FaceConfigPanel(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        backgroundColor = Color.White.copy(alpha = 0.5f)
     ) {
         Row(
             modifier = Modifier
@@ -272,10 +273,10 @@ fun FaceConfigPanel(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                    .background(Color.White, RoundedCornerShape(8.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                Text("阈值", style = MaterialTheme.typography.labelMedium)
+                Text("阈值", fontSize = 12.sp)
                 Spacer(modifier = Modifier.width(8.dp))
                 var thresholdText by remember(config.threshold) { mutableStateOf(config.threshold.toString()) }
                 BasicTextField(
@@ -287,8 +288,8 @@ fun FaceConfigPanel(
                         }
                     },
                     modifier = Modifier.width(36.dp),
-                    textStyle = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.primary,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = Color.Blue,
                         fontWeight = FontWeight.Bold,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     ),
@@ -303,12 +304,11 @@ fun FaceConfigPanel(
                 onClick = onShowLivePreview,
                 modifier = Modifier.height(32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                shape = RoundedCornerShape(8.dp),
-                border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.dp)
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("实时画面", style = MaterialTheme.typography.labelMedium)
+                Text("实时画面", fontSize = 12.sp)
             }
 
             Button(
@@ -319,7 +319,7 @@ fun FaceConfigPanel(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("新增人脸", style = MaterialTheme.typography.labelMedium)
+                Text("新增人脸", fontSize = 12.sp)
             }
         }
     }
@@ -337,8 +337,8 @@ fun ConfigToggle(
             .clip(RoundedCornerShape(8.dp))
             .clickable { onCheckedChange(!checked) }
             .background(
-                if (checked) MaterialTheme.colorScheme.primaryContainer 
-                else MaterialTheme.colorScheme.surface,
+                if (checked) Color.Blue.copy(alpha = 0.1f) 
+                else Color.White,
                 RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -347,13 +347,13 @@ fun ConfigToggle(
             imageVector = if (checked) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            tint = if (checked) Color.Blue else Color.Gray
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (checked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+            fontSize = 12.sp,
+            color = if (checked) Color.Blue else Color.Gray
         )
     }
 }
@@ -368,8 +368,8 @@ fun FaceItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        backgroundColor = Color.White,
+        elevation = 1.dp
     ) {
         Row(
             modifier = Modifier
@@ -381,8 +381,8 @@ fun FaceItem(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                    .background(Color.LightGray)
+                    .border(2.dp, Color.Gray.copy(alpha = 0.2f), CircleShape)
                     .clickable(enabled = !face.imageUrl.isNullOrEmpty()) {
                         face.imageUrl?.let { onImageClick(it) }
                     },
@@ -399,7 +399,7 @@ fun FaceItem(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = Color.Gray,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -408,10 +408,10 @@ fun FaceItem(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = face.username, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(text = face.username, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 face.description?.takeIf { it.isNotBlank() }?.let { desc ->
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = desc, fontSize = 12.sp, color = Color.Gray)
                 }
             }
 
@@ -419,7 +419,7 @@ fun FaceItem(
                 Icon(
                     Icons.Default.Edit,
                     contentDescription = "编辑",
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = Color.Blue
                 )
             }
 
@@ -427,7 +427,7 @@ fun FaceItem(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = Color.Red
                 )
             }
         }
@@ -464,7 +464,7 @@ fun AddFaceDialog(
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("选择录入方式", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("选择录入方式", fontSize = 12.sp, color = Color.Gray)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -562,7 +562,7 @@ fun LivePreviewDialog(
                 .wrapContentHeight()
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            backgroundColor = Color.White
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -576,20 +576,20 @@ fun LivePreviewDialog(
                 ) {
                     Text(
                         "实时画面预览",
-                        style = MaterialTheme.typography.titleLarge,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                        color = Color.Blue.copy(alpha = 0.1f),
                         shape = CircleShape,
                         modifier = Modifier.size(32.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = countdown.toString(),
-                                style = MaterialTheme.typography.bodyMedium,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = Color.Blue
                             )
                         }
                     }
@@ -600,7 +600,7 @@ fun LivePreviewDialog(
                         .fillMaxWidth()
                         .aspectRatio(4f / 3f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(Color.LightGray),
                     contentAlignment = Alignment.Center
                 ) {
                     if (currentFrame != null) {
@@ -614,7 +614,7 @@ fun LivePreviewDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(modifier = Modifier.size(32.dp))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("正在获取画面...", style = MaterialTheme.typography.bodySmall)
+                            Text("正在获取画面...", fontSize = 12.sp)
                         }
                     }
                 }

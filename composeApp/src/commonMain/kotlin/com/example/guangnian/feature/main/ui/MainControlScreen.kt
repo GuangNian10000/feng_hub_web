@@ -4,7 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -182,8 +182,8 @@ fun TopConnectionBar(
             enabled = canConnect,
             modifier = Modifier.height(44.dp).wrapContentWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (connectionState == TcpState.CONNECTED) Color(0xFF00C853) else Color(0xFF2962FF),
-                disabledContainerColor = Color.Black.copy(alpha = 0.5f),
+                backgroundColor = if (connectionState == TcpState.CONNECTED) Color(0xFF00C853) else Color(0xFF2962FF),
+                disabledBackgroundColor = Color.Black.copy(alpha = 0.5f),
                 contentColor = Color.White,
                 disabledContentColor = Color.LightGray
             ),
@@ -211,13 +211,11 @@ fun TopConnectionBar(
             modifier = Modifier.weight(2f).fillMaxHeight(),
             singleLine = true,
             textStyle = TextStyle(fontSize = 14.sp, shadow = DefaultTextShadow),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                textColor = Color.White,
                 focusedBorderColor = Color(0xFF40C4FF),
                 unfocusedBorderColor = Color.Gray.copy(alpha = 0.7f),
-                focusedContainerColor = Color.Black.copy(alpha = 0.4f),
-                unfocusedContainerColor = Color.Black.copy(alpha = 0.3f)
+                backgroundColor = Color.Black.copy(alpha = 0.3f)
             ),
             shape = RoundedCornerShape(8.dp)
         )
@@ -229,13 +227,11 @@ fun TopConnectionBar(
             modifier = Modifier.weight(1f).fillMaxHeight(),
             singleLine = true,
             textStyle = TextStyle(fontSize = 14.sp, shadow = DefaultTextShadow),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                textColor = Color.White,
                 focusedBorderColor = Color(0xFF40C4FF),
                 unfocusedBorderColor = Color.Gray.copy(alpha = 0.7f),
-                focusedContainerColor = Color.Black.copy(alpha = 0.4f),
-                unfocusedContainerColor = Color.Black.copy(alpha = 0.3f)
+                backgroundColor = Color.Black.copy(alpha = 0.3f)
             ),
             shape = RoundedCornerShape(8.dp)
         )

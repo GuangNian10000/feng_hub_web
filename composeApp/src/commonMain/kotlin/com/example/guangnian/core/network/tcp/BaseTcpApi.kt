@@ -11,7 +11,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 @PublishedApi
 internal fun Any?.toTcpJsonElement(): JsonElement = when (this) {

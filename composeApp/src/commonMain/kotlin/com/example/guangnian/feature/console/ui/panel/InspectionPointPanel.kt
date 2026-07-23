@@ -22,7 +22,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -132,7 +132,7 @@ fun InspectionPointPanel(
             onDismissRequest = { showDeleteConfirm = null },
             title = { Text("确认删除", color = Color.Black, fontWeight = FontWeight.Bold) },
             text = { Text("确定要删除导览点 “${showDeleteConfirm?.name}” 吗？", color = Color.DarkGray) },
-            containerColor = Color.White,
+            backgroundColor = Color.White,
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm?.let { onDeletePoint(it.point_id) }
@@ -154,7 +154,7 @@ fun InspectionPointPanel(
             onDismissRequest = { showRouteDeleteConfirm = null },
             title = { Text("确认删除路线", color = Color.Black, fontWeight = FontWeight.Bold) },
             text = { Text("确定要删除路线 “${showRouteDeleteConfirm?.route_name}” 吗？", color = Color.DarkGray) },
-            containerColor = Color.White,
+            backgroundColor = Color.White,
             confirmButton = {
                 TextButton(onClick = {
                     showRouteDeleteConfirm?.route_id?.let { onDeleteRoute(it) }
@@ -364,7 +364,7 @@ private fun InspectionPointEditDialog(
                         onValueChange = { name = it },
                         label = { Text("点位名称") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
 
                     Box(modifier = Modifier.weight(1f)) {
@@ -375,7 +375,7 @@ private fun InspectionPointEditDialog(
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Color.Black) },
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showTypeMenu = true })
                         DropdownMenu(
@@ -385,12 +385,13 @@ private fun InspectionPointEditDialog(
                         ) {
                             listOf(0, 1, 2).forEach { type ->
                                 DropdownMenuItem(
-                                    text = { Text(getPointTypeLabel(type), color = Color.Black) },
                                     onClick = {
                                         pointType = type
                                         showTypeMenu = false
                                     }
-                                )
+                                ) {
+                                    Text(getPointTypeLabel(type), color = Color.Black)
+                                }
                             }
                         }
                     }
@@ -403,21 +404,21 @@ private fun InspectionPointEditDialog(
                         onValueChange = { x = it },
                         label = { Text("X 坐标") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                     OutlinedTextField(
                         value = y,
                         onValueChange = { y = it },
                         label = { Text("Y 坐标") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                     OutlinedTextField(
                         value = yaw,
                         onValueChange = { yaw = it },
                         label = { Text("角度 (Yaw)") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                 }
 
@@ -428,14 +429,14 @@ private fun InspectionPointEditDialog(
                         onValueChange = { stayTime = it },
                         label = { Text("停留时间 (s)") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                     OutlinedTextField(
                         value = playPriority,
                         onValueChange = { playPriority = it },
                         label = { Text("播放优先级") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                 }
 
@@ -449,7 +450,7 @@ private fun InspectionPointEditDialog(
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Color.Black) },
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showArmMenu = true })
                         DropdownMenu(
@@ -458,22 +459,24 @@ private fun InspectionPointEditDialog(
                             modifier = Modifier.background(Color.White).fillMaxWidth(0.4f).heightIn(max = 300.dp)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("无关联动作", color = Color.Gray) },
                                 onClick = {
                                     armId = ""
                                     armName = ""
                                     showArmMenu = false
                                 }
-                            )
+                            ) {
+                                Text("无关联动作", color = Color.Gray)
+                            }
                             armActions.forEach { action ->
                                 DropdownMenuItem(
-                                    text = { Text(action.arm_name, color = Color.Black) },
                                     onClick = {
                                         armId = action.arm_id
                                         armName = action.arm_name
                                         showArmMenu = false
                                     }
-                                )
+                                ) {
+                                    Text(action.arm_name, color = Color.Black)
+                                }
                             }
                         }
                     }
@@ -496,7 +499,7 @@ private fun InspectionPointEditDialog(
                     onValueChange = { broadcastContent = it },
                     label = { Text("广播内容") },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                    colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                 )
 
                 // 6. 动作开关
@@ -544,9 +547,9 @@ private fun InspectionPointEditDialog(
                         },
                         enabled = name.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF007AFF),
+                            backgroundColor = Color(0xFF007AFF),
                             contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF007AFF).copy(alpha = 0.4f),
+                            disabledBackgroundColor = Color(0xFF007AFF).copy(alpha = 0.4f),
                             disabledContentColor = Color.White.copy(alpha = 0.7f)
                         ),
                         shape = RoundedCornerShape(6.dp)
@@ -672,7 +675,7 @@ private fun RouteEditDialog(
                     onValueChange = { route_name = it },
                     label = { Text("路线名称") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                    colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                 )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -681,14 +684,14 @@ private fun RouteEditDialog(
                         onValueChange = { loopCount = it },
                         label = { Text("循环次数") },
                         modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
                         label = { Text("路线描述") },
                         modifier = Modifier.weight(2f),
-                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.Black, unfocusedTextColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
                     )
                 }
 
@@ -763,9 +766,9 @@ private fun RouteEditDialog(
                         },
                         enabled = route_name.isNotEmpty() && selectedPointIds.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF007AFF),
+                            backgroundColor = Color(0xFF007AFF),
                             contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF007AFF).copy(alpha = 0.4f),
+                            disabledBackgroundColor = Color(0xFF007AFF).copy(alpha = 0.4f),
                             disabledContentColor = Color.White.copy(alpha = 0.7f)
                         ),
                         shape = RoundedCornerShape(6.dp)
@@ -836,9 +839,9 @@ private fun PointSelectionDialog(
                     Button(
                         onClick = { onConfirm(selectedIds.toList()) },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF007AFF),
+                            backgroundColor = Color(0xFF007AFF),
                             contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF007AFF).copy(alpha = 0.4f),
+                            disabledBackgroundColor = Color(0xFF007AFF).copy(alpha = 0.4f),
                             disabledContentColor = Color.White.copy(alpha = 0.7f)
                         ),
                         enabled = selectedIds.isNotEmpty()

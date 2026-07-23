@@ -6,8 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +52,7 @@ fun TopStatusBar(
                     fontSize = 12.sp,
                     modifier = Modifier.clickable { onBackClick() }.padding(end = 4.dp)
                 )
-                HorizontalDivider(modifier = Modifier.fillMaxHeight(0.5f).width(1.dp), color = Color.Gray)
+                Divider(modifier = Modifier.fillMaxHeight(0.5f).width(1.dp), color = Color.Gray)
                 
                 val battery = systemInfo?.battery ?: 0
                 val batteryColor = when {
@@ -61,7 +60,7 @@ fun TopStatusBar(
                     battery >= 20 -> Color(0xFFFF9800) // 20-40 黄色
                     else -> Color(0xFFE53935) // 20以下 红色
                 }
-                Text("BAT $battery%", color = batteryColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("电量 $battery%", color = batteryColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 
                 val temp = systemInfo?.temperature ?: 0.0
                 val tempColor = when {
@@ -70,7 +69,7 @@ fun TopStatusBar(
                     else -> Color(0xFF4CAF50) // 40以下 绿色
                 }
                 // 使用 toInt() 显示整数温度，保持 UI 整洁
-                Text("TEMP ${temp.toInt()}°C", color = tempColor, fontSize = 12.sp)
+                Text("温度 ${temp.toInt()}°C", color = tempColor, fontSize = 12.sp)
             }
         }
 

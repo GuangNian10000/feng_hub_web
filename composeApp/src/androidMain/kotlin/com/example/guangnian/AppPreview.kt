@@ -1,7 +1,7 @@
 package com.example.guangnian
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.darkColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.guangnian.core.network.tcp.TcpState
@@ -15,7 +15,7 @@ import com.example.guangnian.feature.main.viewmodel.ControlType
 )
 @Composable
 fun AppLandscapePreview() {
-    MaterialTheme(colorScheme = darkColorScheme()) {
+    MaterialTheme(colors = darkColors()) {
         MainControlContent(
             ip = "192.168.3.100",
             port = "8080",

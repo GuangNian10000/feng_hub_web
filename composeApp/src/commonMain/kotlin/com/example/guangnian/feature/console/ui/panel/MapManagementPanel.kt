@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material3.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,7 +70,7 @@ fun MapManagementPanel(
                     )
                 }
             },
-            containerColor = Color.White,
+            backgroundColor = Color.White,
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -97,7 +97,7 @@ fun MapManagementPanel(
             onDismissRequest = { showDeleteConfirm = null },
             title = { Text("确认删除", color = Color.Black, fontWeight = FontWeight.Bold) },
             text = { Text("确定要删除地图 “${showDeleteConfirm?.map_name}” 吗？", color = Color.DarkGray) },
-            containerColor = Color.White,
+            backgroundColor = Color.White,
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm?.let { onDeleteMap(it.map_uid) }
@@ -119,7 +119,7 @@ fun MapManagementPanel(
             onDismissRequest = { showSwitchConfirm = null },
             title = { Text("确认切换地图", color = Color.Black, fontWeight = FontWeight.Bold) },
             text = { Text("确定要切换到地图 “${showSwitchConfirm?.map_name}” 吗？", color = Color.DarkGray) },
-            containerColor = Color.White,
+            backgroundColor = Color.White,
             confirmButton = {
                 TextButton(onClick = {
                     showSwitchConfirm?.let { onSwitchMap(it.map_uid) }
