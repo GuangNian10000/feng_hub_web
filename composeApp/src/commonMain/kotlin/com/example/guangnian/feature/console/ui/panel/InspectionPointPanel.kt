@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.text.style.TextOverflow
 import kotlin.math.pow
 import kotlin.math.round
@@ -33,6 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.guangnian.feature.console.data.bean.InspectionPointBean
 import com.example.guangnian.feature.console.data.bean.RouteBean
+import com.example.guangnian.core.designsystem.components.ModernDialogColors
+import com.example.guangnian.core.designsystem.components.ModernDialogSection
+import com.example.guangnian.core.designsystem.components.ModernFormDialog
+import com.example.guangnian.core.designsystem.components.ModernToggleOption
+import com.example.guangnian.core.designsystem.components.modernOutlinedTextFieldColors
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -327,44 +333,47 @@ private fun InspectionPointEditDialog(
     var showTypeMenu by remember { mutableStateOf(false) }
     var showArmMenu by remember { mutableStateOf(false) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+    val isEdit = initialPoint?.point_id?.isNotEmpty() == true
+    ModernFormDialog(
+        title = if (isEdit) "编辑导览点" else "添加导览点",
+        confirmText = "保存配置",
+        onDismiss = onDismiss,
+        confirmEnabled = name.isNotBlank(),
+        onConfirm = {
+            val updated = (initialPoint ?: InspectionPointBean()).copy(
+                name = name,
+                position = com.example.guangnian.feature.console.data.bean.PointPosition(
+                    x = x.toDoubleOrNull() ?: 0.0,
+                    y = y.toDoubleOrNull() ?: 0.0,
+                    yaw = yaw.toDoubleOrNull() ?: 0.0
+                ),
+                x = x.toDoubleOrNull() ?: 0.0,
+                y = y.toDoubleOrNull() ?: 0.0,
+                yaw = yaw.toDoubleOrNull() ?: 0.0,
+                broadcastContent = broadcastContent,
+                playOnArrival = playOnArrival,
+                photoOnArrival = photoOnArrival,
+                pointType = pointType,
+                stayTime = stayTime.toDoubleOrNull() ?: 0.0,
+                needRotate = needRotate,
+                armId = armId.ifEmpty { null },
+                arm_name = armName,
+                skipAllowed = skipAllowed,
+                playPriority = playPriority.toIntOrNull() ?: 0
+            )
+            onConfirm(updated)
+        }
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight()
-                .padding(vertical = 20.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                val isEdit = initialPoint?.point_id?.isNotEmpty() == true
-                Text(
-                    text = "《 ${if (isEdit) "编辑导览点" else "添加导览点"}",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onDismiss() }
-                        .padding(vertical = 2.dp)
-                )
+                ModernDialogSection("基本信息")
 
-                // 1. 基本信息 (名称 + 类型)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text("点位名称") },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
 
                     Box(modifier = Modifier.weight(1f)) {
@@ -374,8 +383,9 @@ private fun InspectionPointEditDialog(
                             label = { Text("点位类型") },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Color.Black) },
-                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                            shape = RoundedCornerShape(6.dp),
+                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = ModernDialogColors.SecondaryText) },
+                            colors = modernOutlinedTextFieldColors()
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showTypeMenu = true })
                         DropdownMenu(
@@ -397,50 +407,56 @@ private fun InspectionPointEditDialog(
                     }
                 }
 
-                // 2. 坐标信息 (X, Y, Yaw)
+                ModernDialogSection("位置与停留")
+
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = x,
                         onValueChange = { x = it },
                         label = { Text("X 坐标") },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = y,
                         onValueChange = { y = it },
                         label = { Text("Y 坐标") },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = yaw,
                         onValueChange = { yaw = it },
                         label = { Text("角度 (Yaw)") },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
                 }
 
-                // 3. 停留时间与优先级
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = stayTime,
                         onValueChange = { stayTime = it },
                         label = { Text("停留时间 (s)") },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = playPriority,
                         onValueChange = { playPriority = it },
                         label = { Text("播放优先级") },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
                 }
 
-                // 4. 手臂动作与开关
+                ModernDialogSection("到达行为")
+
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(modifier = Modifier.weight(1f)) {
                         OutlinedTextField(
@@ -449,8 +465,9 @@ private fun InspectionPointEditDialog(
                             label = { Text("关联手臂动作") },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = Color.Black) },
-                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                            shape = RoundedCornerShape(6.dp),
+                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = ModernDialogColors.SecondaryText) },
+                            colors = modernOutlinedTextFieldColors()
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showArmMenu = true })
                         DropdownMenu(
@@ -481,84 +498,47 @@ private fun InspectionPointEditDialog(
                         }
                     }
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = needRotate, onCheckedChange = { needRotate = it }, colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)))
-                            Text("需要旋转", color = Color.Black, fontSize = 12.sp)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = skipAllowed, onCheckedChange = { skipAllowed = it }, colors = CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)))
-                            Text("允许跳过", color = Color.Black, fontSize = 12.sp)
-                        }
-                    }
+                    ModernToggleOption(
+                        label = "需要旋转",
+                        checked = needRotate,
+                        onCheckedChange = { needRotate = it },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
-                // 5. 广播内容
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ModernToggleOption(
+                        label = "允许跳过",
+                        checked = skipAllowed,
+                        onCheckedChange = { skipAllowed = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ModernToggleOption(
+                        label = "到达播放",
+                        checked = playOnArrival,
+                        onCheckedChange = { playOnArrival = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ModernToggleOption(
+                        label = "到达拍照",
+                        checked = photoOnArrival,
+                        onCheckedChange = { photoOnArrival = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                ModernDialogSection("播报内容")
+
                 OutlinedTextField(
                     value = broadcastContent,
                     onValueChange = { broadcastContent = it },
                     label = { Text("广播内容") },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                    maxLines = 5,
+                    shape = RoundedCornerShape(6.dp),
+                    colors = modernOutlinedTextFieldColors()
                 )
 
-                // 6. 动作开关
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Switch(checked = playOnArrival, onCheckedChange = { playOnArrival = it }, colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF007AFF)))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("到达播放", color = Color.Black, fontSize = 12.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Switch(checked = photoOnArrival, onCheckedChange = { photoOnArrival = it }, colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF007AFF)))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("到达拍照", color = Color.Black, fontSize = 12.sp)
-                    }
-                }
-
-                // 底部按钮
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Button(
-                        onClick = {
-                            val updated = (initialPoint ?: InspectionPointBean()).copy(
-                                name = name,
-                                position = com.example.guangnian.feature.console.data.bean.PointPosition(
-                                    x = x.toDoubleOrNull() ?: 0.0,
-                                    y = y.toDoubleOrNull() ?: 0.0,
-                                    yaw = yaw.toDoubleOrNull() ?: 0.0
-                                ),
-                                x = x.toDoubleOrNull() ?: 0.0, // 同时更新顶层字段以保持兼容
-                                y = y.toDoubleOrNull() ?: 0.0,
-                                yaw = yaw.toDoubleOrNull() ?: 0.0,
-                                broadcastContent = broadcastContent,
-                                playOnArrival = playOnArrival,
-                                photoOnArrival = photoOnArrival,
-                                pointType = pointType,
-                                stayTime = stayTime.toDoubleOrNull() ?: 0.0,
-                                needRotate = needRotate,
-                                armId = armId.ifEmpty { null },
-                                arm_name = armName,
-                                skipAllowed = skipAllowed,
-                                playPriority = playPriority.toIntOrNull() ?: 0
-                            )
-                            onConfirm(updated)
-                        },
-                        enabled = name.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF007AFF),
-                            contentColor = Color.White,
-                            disabledBackgroundColor = Color(0xFF007AFF).copy(alpha = 0.4f),
-                            disabledContentColor = Color.White.copy(alpha = 0.7f)
-                        ),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text("保存配置")
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -640,42 +620,33 @@ private fun RouteEditDialog(
         )
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+    val isEdit = initialRoute?.route_id?.isNotEmpty() == true
+    ModernFormDialog(
+        title = if (isEdit) "编辑路线" else "添加路线",
+        confirmText = "保存路线",
+        onDismiss = onDismiss,
+        confirmEnabled = route_name.isNotBlank() && selectedPointIds.isNotEmpty(),
+        onConfirm = {
+            val updated = (initialRoute ?: RouteBean()).copy(
+                route_name = route_name,
+                description = description,
+                loopCount = loopCount.toIntOrNull() ?: 1,
+                point_ids = selectedPointIds,
+                points = selectedPointIds.mapNotNull { id -> availablePoints.find { it.point_id == id } }
+            )
+            onConfirm(updated)
+        }
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight()
-                .padding(vertical = 20.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                val isEdit = initialRoute?.route_id?.isNotEmpty() == true
-                Text(
-                    text = "《 ${if (isEdit) "编辑路线" else "添加路线"}",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onDismiss() }
-                        .padding(vertical = 2.dp)
-                )
+                ModernDialogSection("基本信息")
 
                 OutlinedTextField(
                     value = route_name,
                     onValueChange = { route_name = it },
                     label = { Text("路线名称") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                    singleLine = true,
+                    shape = RoundedCornerShape(6.dp),
+                    colors = modernOutlinedTextFieldColors()
                 )
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -684,36 +655,54 @@ private fun RouteEditDialog(
                         onValueChange = { loopCount = it },
                         label = { Text("循环次数") },
                         modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        singleLine = true,
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
                         label = { Text("路线描述") },
                         modifier = Modifier.weight(2f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.Black, focusedLabelColor = Color.Gray, unfocusedLabelColor = Color.Gray)
+                        singleLine = true,
+                        shape = RoundedCornerShape(6.dp),
+                        colors = modernOutlinedTextFieldColors()
                     )
                 }
 
+                ModernDialogSection("路线点位")
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("路线点位序列", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text(
+                        "已选择 ${selectedPointIds.size} 个点位",
+                        color = ModernDialogColors.SecondaryText,
+                        fontSize = 13.sp,
+                        modifier = Modifier.weight(1f)
+                    )
                     OutlinedButton(
                         onClick = { showPointSelector = true },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF007AFF)),
-                        border = BorderStroke(1.dp, Color(0xFF007AFF)),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ModernDialogColors.Accent),
+                        border = BorderStroke(1.dp, ModernDialogColors.Accent),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.height(36.dp),
                         shape = RoundedCornerShape(6.dp)
                     ) {
-                        Text("+ 添加点位", fontSize = 12.sp)
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("添加点位", fontSize = 12.sp)
                     }
                 }
 
-                // 已选点位垂直列表
-                Box(modifier = Modifier.fillMaxWidth().border(1.dp, Color(0x33000000), RoundedCornerShape(8.dp)).padding(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ModernDialogColors.Surface, RoundedCornerShape(6.dp))
+                        .border(1.dp, ModernDialogColors.Border, RoundedCornerShape(6.dp))
+                        .padding(8.dp)
+                ) {
                     if (selectedPointIds.isEmpty()) {
                         Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                            Text("尚未选择点位，请点击右上方按钮添加", color = Color.Gray, fontSize = 13.sp)
+                            Text("尚未选择点位", color = ModernDialogColors.SecondaryText, fontSize = 13.sp)
                         }
                     } else {
                         Column(
@@ -725,16 +714,16 @@ private fun RouteEditDialog(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0x0A000000))
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(ModernDialogColors.Canvas)
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("${index + 1}.", color = Color(0xFF007AFF), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Text("${index + 1}.", color = ModernDialogColors.Accent, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                     Spacer(Modifier.width(12.dp))
                                     Text(
                                         text = point?.name ?: "未知点位 ($id)",
-                                        color = Color.Black,
+                                        color = ModernDialogColors.PrimaryText,
                                         fontSize = 15.sp,
                                         modifier = Modifier.weight(1f)
                                     )
@@ -749,35 +738,6 @@ private fun RouteEditDialog(
                     }
                 }
 
-                // 底部按钮
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Button(
-                        onClick = {
-                            val updated = (initialRoute ?: RouteBean()).copy(
-                                route_name = route_name,
-                                description = description,
-                                loopCount = loopCount.toIntOrNull() ?: 1,
-                                point_ids = selectedPointIds,
-                                points = selectedPointIds.mapNotNull { id -> availablePoints.find { it.point_id == id } }
-                            )
-                            onConfirm(updated)
-                        },
-                        enabled = route_name.isNotEmpty() && selectedPointIds.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF007AFF),
-                            contentColor = Color.White,
-                            disabledBackgroundColor = Color(0xFF007AFF).copy(alpha = 0.4f),
-                            disabledContentColor = Color.White.copy(alpha = 0.7f)
-                        ),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text("保存路线")
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -861,4 +821,3 @@ private fun getPointTypeLabel(type: Int): String {
         else -> "普通点"
     }
 }
-

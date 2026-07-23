@@ -8,9 +8,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.viewmodel.AgentViewModel
@@ -28,6 +27,10 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.guangnian.core.designsystem.components.ModernDialogColors
+import com.example.guangnian.core.designsystem.components.ModernDialogSection
+import com.example.guangnian.core.designsystem.components.ModernFormDialog
+import com.example.guangnian.core.designsystem.components.modernOutlinedTextFieldColors
 
 @Composable
 fun AgentSettingsPanel(
@@ -290,125 +293,81 @@ private fun AgentEditDialog(
 
     var showVoiceSelection by remember { mutableStateOf(false) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false) // 禁用平台默认宽度限制
+    ModernFormDialog(
+        title = title,
+        confirmText = "保存配置",
+        onDismiss = onDismiss,
+        confirmEnabled = name.isNotBlank(),
+        onConfirm = {
+            val resultAgent = initialAgent?.apply {
+                this.name = name
+                this.promptWord = prompt
+                this.voice = selectedVoice
+                this.updateTime = Clock.System.now().toEpochMilliseconds()
+            } ?: AgentEntity().apply {
+                this.id = Clock.System.now().toEpochMilliseconds()
+                this.name = name
+                this.promptWord = prompt
+                this.voice = selectedVoice
+            }
+            onConfirm(resultAgent)
+        }
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f) // 设置弹窗宽度为屏幕 90%
-                .wrapContentHeight()
-                .padding(vertical = 20.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White
+        ModernDialogSection("基础配置")
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "《 $title",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onDismiss() }
-                        .padding(vertical = 2.dp)
-                )
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("智能体名称") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(6.dp),
+                colors = modernOutlinedTextFieldColors()
+            )
 
-                // 名称与音色并排显示，缩小占用比例
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("智能体名称") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            textColor = Color.Black,
-                            focusedLabelColor = Color.Gray,
-                            unfocusedLabelColor = Color.Gray
-                        )
-                    )
-
-                    // 音色选择触控区
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = selectedVoice.sex.ifEmpty { "未选择" },
-                            onValueChange = {},
-                            label = { Text("音色配置") },
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
-                                textColor = Color.Black,
-                                focusedLabelColor = Color.Gray,
-                                unfocusedLabelColor = Color.Gray
-                            )
-                        )
-                        // 拦截点击事件唤起全屏选择器
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { showVoiceSelection = true }
-                        )
-                    }
-                }
-
-                // 提示词输入框，增加高度与行数
+            Box(modifier = Modifier.weight(1f)) {
                 OutlinedTextField(
-                    value = prompt,
-                    onValueChange = { prompt = it },
-                    label = { Text("系统提示词 (Prompt)") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 150.dp), // 增加提示词输入框高度
-                    maxLines = 15,
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = Color.Black,
-                        focusedLabelColor = Color.Gray,
-                        unfocusedLabelColor = Color.Gray
-                    )
-                )
-
-                // 底部操作按钮
-                Row(
+                    value = selectedVoice.sex.ifEmpty { "未选择" },
+                    onValueChange = {},
+                    label = { Text("音色配置") },
+                    readOnly = true,
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("取消", color = Color.Gray)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Button(
-                        onClick = {
-                            // 构造结果对象并回传
-                            val resultAgent = initialAgent?.apply {
-                                this.name = name
-                                this.promptWord = prompt
-                                this.voice = selectedVoice
-                                this.updateTime = Clock.System.now().toEpochMilliseconds()
-                            } ?: AgentEntity().apply {
-                                this.id = Clock.System.now().toEpochMilliseconds()
-                                this.name = name
-                                this.promptWord = prompt
-                                this.voice = selectedVoice
-                            }
-                            onConfirm(resultAgent)
-                        },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text("保存配置", color = Color.White)
-                    }
-                }
+                    shape = RoundedCornerShape(6.dp),
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "选择音色",
+                            tint = ModernDialogColors.SecondaryText
+                        )
+                    },
+                    colors = modernOutlinedTextFieldColors()
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showVoiceSelection = true }
+                )
             }
         }
+
+        ModernDialogSection("对话设定")
+
+        OutlinedTextField(
+            value = prompt,
+            onValueChange = { prompt = it },
+            label = { Text("系统提示词 (Prompt)") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 180.dp),
+            maxLines = 15,
+            shape = RoundedCornerShape(6.dp),
+            colors = modernOutlinedTextFieldColors()
+        )
     }
 
     // 全屏音色选择弹窗

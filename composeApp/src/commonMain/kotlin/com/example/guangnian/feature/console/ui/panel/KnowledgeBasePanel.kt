@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,14 +16,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.KnowledgeEntity
 import com.example.guangnian.feature.console.viewmodel.KnowledgeViewModel
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import com.example.guangnian.core.designsystem.components.ModernDialogSection
+import com.example.guangnian.core.designsystem.components.ModernFormDialog
+import com.example.guangnian.core.designsystem.components.modernOutlinedTextFieldColors
 
 @Composable
 fun KnowledgeBasePanel(
@@ -233,90 +231,48 @@ private fun KnowledgeEditDialog(
     var question by remember(initialKnowledge) { mutableStateOf(initialKnowledge?.question ?: "") }
     var answer by remember(initialKnowledge) { mutableStateOf(initialKnowledge?.answer ?: "") }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .wrapContentHeight()
-                .padding(vertical = 20.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "《 $title",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onDismiss() }
-                        .padding(vertical = 2.dp)
-                )
-
-                OutlinedTextField(
-                    value = question,
-                    onValueChange = { question = it },
-                    label = { Text("问题 (Question)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = Color.Black,
-                        focusedLabelColor = Color.Gray,
-                        unfocusedLabelColor = Color.Gray
-                    )
-                )
-
-                OutlinedTextField(
-                    value = answer,
-                    onValueChange = { answer = it },
-                    label = { Text("答案 (Answer)") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 120.dp),
-                    maxLines = 10,
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = Color.Black,
-                        focusedLabelColor = Color.Gray,
-                        unfocusedLabelColor = Color.Gray
-                    )
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("取消", color = Color.Gray)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Button(
-                        onClick = {
-                            val result = initialKnowledge?.apply {
-                                this.question = question
-                                this.answer = answer
-                                this.updateTime = Clock.System.now().toEpochMilliseconds()
-                            } ?: KnowledgeEntity().apply {
-                                this.id = Clock.System.now().toEpochMilliseconds()
-                                this.question = question
-                                this.answer = answer
-                            }
-                            onConfirm(result)
-                        },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text("保存", color = Color.White)
-                    }
-                }
+    ModernFormDialog(
+        title = title,
+        confirmText = "保存",
+        onDismiss = onDismiss,
+        confirmEnabled = question.isNotBlank() && answer.isNotBlank(),
+        onConfirm = {
+            val result = initialKnowledge?.apply {
+                this.question = question
+                this.answer = answer
+                this.updateTime = Clock.System.now().toEpochMilliseconds()
+            } ?: KnowledgeEntity().apply {
+                this.id = Clock.System.now().toEpochMilliseconds()
+                this.question = question
+                this.answer = answer
             }
+            onConfirm(result)
         }
+    ) {
+        ModernDialogSection("问答内容")
+
+        OutlinedTextField(
+            value = question,
+            onValueChange = { question = it },
+            label = { Text("问题 (Question)") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 76.dp),
+            maxLines = 3,
+            shape = RoundedCornerShape(6.dp),
+            colors = modernOutlinedTextFieldColors()
+        )
+
+        OutlinedTextField(
+            value = answer,
+            onValueChange = { answer = it },
+            label = { Text("答案 (Answer)") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 220.dp),
+            maxLines = 12,
+            shape = RoundedCornerShape(6.dp),
+            colors = modernOutlinedTextFieldColors()
+        )
     }
 }

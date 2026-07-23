@@ -13,6 +13,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +29,10 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.guangnian.core.utils.KLog
+import com.example.guangnian.core.designsystem.components.ModernDialogColors
+import com.example.guangnian.core.designsystem.components.ModernDialogSection
+import com.example.guangnian.core.designsystem.components.ModernFormDialog
+import com.example.guangnian.core.designsystem.components.modernOutlinedTextFieldColors
 import com.example.guangnian.feature.console.data.api.VoiceApi
 import com.example.guangnian.feature.console.data.bean.ArmActionBean
 import com.example.guangnian.feature.console.data.bean.SpeechSynthesisBean
@@ -371,113 +378,108 @@ fun SynthesisEditDialog(
     var showVoiceSelection by remember { mutableStateOf(false) }
     var showActionSelection by remember { mutableStateOf(false) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ModernFormDialog(
+        title = title,
+        confirmText = "保存",
+        onDismiss = onDismiss,
+        confirmEnabled = text.isNotBlank(),
+        onConfirm = {
+            val result = initialData?.let {
+                it.text = text
+                it.voice = selectedVoice
+                it.action = selectedAction
+                it
+            } ?: SpeechSynthesisBean(
+                text = text,
+                voice = selectedVoice,
+                action = selectedAction
+            )
+            onConfirm(result)
+        }
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(0.9f).wrapContentHeight().padding(vertical = 20.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = Color(0xFF2C2C2C)
+        ModernDialogSection("播报内容")
+
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            label = { Text("播报文本 (必填)") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 200.dp),
+            maxLines = 12,
+            shape = RoundedCornerShape(6.dp),
+            colors = modernOutlinedTextFieldColors()
+        )
+
+        ModernDialogSection("附加配置")
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "《 $title",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onDismiss() }
-                        .padding(vertical = 2.dp)
-                )
-
+            Box(modifier = Modifier.weight(1f)) {
                 OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = { Text("播报文本 (必填)") },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
-                    maxLines = 10,
-                    colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.White)
+                    value = selectedVoice?.sex?.ifEmpty { "已选择" } ?: "默认音色",
+                    onValueChange = {},
+                    label = { Text("指定音色") },
+                    readOnly = true,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(6.dp),
+                    colors = modernOutlinedTextFieldColors()
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // 音色选择
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = selectedVoice?.sex?.ifEmpty { "已选" } ?: "未选择 (默认音色)",
-                            onValueChange = {},
-                            label = { Text("指定音色 (可选)") },
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.White)
-                        )
-                        Box(modifier = Modifier.matchParentSize().clickable { showVoiceSelection = true })
-                        if (selectedVoice != null) {
-                            Text(
-                                "清除", color = Color(0xFFE53935), fontSize = 12.sp,
-                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).clickable { selectedVoice = null }
-                            )
-                        }
-                    }
-
-                    // 动作选择
-                    Box(modifier = Modifier.weight(1f)) {
-                        OutlinedTextField(
-                            value = selectedAction?.arm_name ?: "未选择 (无动作)",
-                            onValueChange = {},
-                            label = { Text("指定动作 (可选)") },
-                            readOnly = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.outlinedTextFieldColors(textColor = Color.White)
-                        )
-                        Box(modifier = Modifier.matchParentSize().clickable { showActionSelection = true })
-                        if (selectedAction != null) {
-                            Text(
-                                "清除", color = Color(0xFFE53935), fontSize = 12.sp,
-                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).clickable {
-                                    selectedAction = null
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("取消", color = Color.Gray)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Button(
-                        onClick = {
-                            if (text.isBlank()) return@Button
-
-                            val result = initialData?.let {
-                                it.text = text
-                                it.voice = selectedVoice
-                                it.action = selectedAction
-                                it // 返回修改后的对象
-                            } ?: SpeechSynthesisBean(
-                                text = text,
-                                voice = selectedVoice,
-                                action = selectedAction
-                            )
-                            onConfirm(result)
-                        },
-                        enabled = text.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF))
+                Box(modifier = Modifier.matchParentSize().clickable { showVoiceSelection = true })
+                if (selectedVoice != null) {
+                    IconButton(
+                        onClick = { selectedVoice = null },
+                        modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
-                        Text("保存", color = Color.White)
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "清除音色",
+                            tint = Color(0xFFD14343)
+                        )
                     }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "选择音色",
+                        tint = ModernDialogColors.SecondaryText,
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
+                    )
+                }
+            }
+
+            Box(modifier = Modifier.weight(1f)) {
+                OutlinedTextField(
+                    value = selectedAction?.arm_name ?: "无关联动作",
+                    onValueChange = {},
+                    label = { Text("指定动作") },
+                    readOnly = true,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(6.dp),
+                    colors = modernOutlinedTextFieldColors()
+                )
+                Box(modifier = Modifier.matchParentSize().clickable { showActionSelection = true })
+                if (selectedAction != null) {
+                    IconButton(
+                        onClick = { selectedAction = null },
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "清除动作",
+                            tint = Color(0xFFD14343)
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = "选择动作",
+                        tint = ModernDialogColors.SecondaryText,
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
+                    )
                 }
             }
         }
