@@ -125,6 +125,14 @@ class MapViewModel(
                     delay(2000)
                     continue
                 }
+
+                // 非建图状态且地图已加载时不请求
+                val needSyncMap = _uiState.value.mapConfig == null || _uiState.value.isMapping
+                if (!needSyncMap) {
+                    delay(5000)
+                    continue
+                }
+
                 mapConfigSeq += 1
                 val seq = mapConfigSeq
                 val startTime = Clock.System.now().toEpochMilliseconds()
@@ -132,28 +140,20 @@ class MapViewModel(
                     val config = navigationApi.getMapConfig()
                     val savedIp = settings.getString("saved_ip", "192.168.1.100")
                     val fixedUrl = config.getFixedImageUrl(savedIp)
-                    val needLoadImage = _uiState.value.mapConfig == null || _uiState.value.isMapping
 
-                    // 如果是第一次加载或者正在建图模式，持续更新配置和图片
-                    if (needLoadImage) {
-                        _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
-                        loadMapImage(fixedUrl)
-                    }
+                    _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
+                    loadMapImage(fixedUrl)
+
                     KLog.d(
                         TAG,
-                        "地图配置同步成功 #$seq: resolution=${config.resolution}, origin=${config.origin}, image=$fixedUrl, needLoadImage=$needLoadImage, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                        "地图配置同步成功 #$seq: resolution=${config.resolution}, origin=${config.origin}, image=$fixedUrl, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
                     )
                 } catch (e: Exception) {
                     KLog.w(TAG, "地图配置同步失败 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 }
                 
-                // 如果正在建图，地图刷新频率可以适当高一点（例如 3s 一次）
-                // 如果不在建图，且地图已加载，则可以停止轮询或极低频率
-                if (_uiState.value.mapConfig != null && !_uiState.value.isMapping) {
-                    delay(10000)
-                } else {
-                    delay(3000)
-                }
+                // 正在建图或初始加载时的刷新频率
+                delay(3000)
             }
         }
 
