@@ -53,6 +53,7 @@ class FaceRepository(
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
             val response: CommonResponse = httpClient.post("$baseUrl/delete_person") {
+                contentType(ContentType.MultiPart.FormData)
                 setBody(MultiPartFormDataContent(
                     formData {
                         append("name", name)
@@ -77,6 +78,7 @@ class FaceRepository(
             KLog.d(TAG, "开始上传人脸图片(Multipart): name=$name, desc=$description, bytes=${imageBytes.size}")
 
             val response: CommonResponse = httpClient.post("$baseUrl/add_person") {
+                contentType(ContentType.MultiPart.FormData)
                 setBody(MultiPartFormDataContent(
                     formData {
                         append("name", name)
