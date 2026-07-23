@@ -313,8 +313,6 @@ fun FunctionGrid(
 
         if (controlType == ControlType.ROBOT) {
             Spacer(modifier = Modifier.width(spacerWidth))
-            MenuCard("示教动作", Res.drawable.ic_teach, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize)
-            Spacer(modifier = Modifier.width(spacerWidth))
             MenuCard("人脸识别", Res.drawable.ic_face, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize, onClick = onNavigateToFace)
         }
 
@@ -327,8 +325,8 @@ fun FunctionGrid(
         if (isBleSupported) {
             Spacer(modifier = Modifier.width(spacerWidth))
             MenuCard(
-                title = "BLE 管理",
-                icon = Res.drawable.ic_control, // 复用现有图标，后续可替换
+                title = "设备连接",
+                icon = Res.drawable.ic_device_connection,
                 modifier = Modifier.fillMaxHeight().wrapContentWidth(),
                 targetIconSize = targetIconSize,
                 fontSize = fontSize,
