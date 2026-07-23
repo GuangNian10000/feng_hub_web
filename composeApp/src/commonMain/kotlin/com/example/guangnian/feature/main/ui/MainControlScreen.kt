@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.network.tcp.TcpState
+import com.example.guangnian.feature.blue.BleAutoConnectDialog
+import com.example.guangnian.feature.blue.isBleSupported
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import com.example.guangnian.feature.main.viewmodel.ControlType
 import org.jetbrains.compose.resources.painterResource
@@ -34,7 +36,8 @@ val DefaultTextShadow = Shadow(
 @Composable
 fun MainControlScreen(
     onNavigateToInteraction: () -> Unit = {},
-    onNavigateToFace: () -> Unit = {}
+    onNavigateToFace: () -> Unit = {},
+    onNavigateToBle: () -> Unit = {}
 ) {
     val viewModel: RobotViewModel = koinViewModel()
     val ip by viewModel.ip.collectAsState()
@@ -44,6 +47,7 @@ fun MainControlScreen(
     val controlType by viewModel.controlType.collectAsState()
 
     var showTypeDialog by remember { mutableStateOf(false) }
+    var showBleAutoConnect by remember { mutableStateOf(false) }
 
     MainControlContent(
         ip = ip,
@@ -56,7 +60,9 @@ fun MainControlScreen(
         onConnectClick = viewModel::connect,
         onNavigateToInteraction = onNavigateToInteraction,
         onNavigateToFace = onNavigateToFace,
-        onTypeClick = { showTypeDialog = true }
+        onNavigateToBle = onNavigateToBle,
+        onTypeClick = { showTypeDialog = true },
+        onAutoConnectClick = { showBleAutoConnect = true }
     )
 
     if (showTypeDialog) {
@@ -66,6 +72,18 @@ fun MainControlScreen(
             onSelect = {
                 viewModel.setControlType(it)
                 showTypeDialog = false
+            }
+        )
+    }
+
+    // BLE 自动连接弹窗（仅 Android 显示）
+    if (showBleAutoConnect) {
+        BleAutoConnectDialog(
+            onDismiss = { showBleAutoConnect = false },
+            onIpSelected = { ip ->
+                viewModel.onIpChanged(ip)
+                showBleAutoConnect = false
+                viewModel.connect()
             }
         )
     }
@@ -83,7 +101,9 @@ fun MainControlContent(
     onConnectClick: () -> Unit,
     onNavigateToInteraction: () -> Unit,
     onNavigateToFace: () -> Unit,
-    onTypeClick: () -> Unit
+    onNavigateToBle: () -> Unit = {},
+    onTypeClick: () -> Unit,
+    onAutoConnectClick: () -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -106,7 +126,8 @@ fun MainControlContent(
                 canConnect = canConnect,
                 onIpChange = onIpChange,
                 onPortChange = onPortChange,
-                onConnectClick = onConnectClick
+                onConnectClick = onConnectClick,
+                onAutoConnectClick = onAutoConnectClick
             )
 
             Box(
@@ -116,7 +137,8 @@ fun MainControlContent(
                 FunctionGrid(
                     controlType = controlType,
                     onNavigateToInteraction = onNavigateToInteraction,
-                    onNavigateToFace = onNavigateToFace
+                    onNavigateToFace = onNavigateToFace,
+                    onNavigateToBle = onNavigateToBle
                 )
             }
 
@@ -170,13 +192,15 @@ fun ControlTypeSelectionDialog(
 fun TopConnectionBar(
     ip: String, port: String, connectionState: TcpState,
     canConnect: Boolean,
-    onIpChange: (String) -> Unit, onPortChange: (String) -> Unit, onConnectClick: () -> Unit
+    onIpChange: (String) -> Unit, onPortChange: (String) -> Unit,
+    onConnectClick: () -> Unit,
+    onAutoConnectClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().height(54.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        //缩小按钮尺寸，移除硬编码的最小宽度限制，使其自适应文本内容
+        // 连接按钮
         Button(
             onClick = onConnectClick,
             enabled = canConnect,
@@ -192,8 +216,8 @@ fun TopConnectionBar(
         ) {
             Text(
                 text = when (connectionState) {
-                    TcpState.CONNECTING -> "连接中..."
-                    TcpState.CONNECTED -> "已连接"
+                    TcpState.CONNECTING  -> "连接中..."
+                    TcpState.CONNECTED   -> "已连接"
                     TcpState.DISCONNECTED -> "连接设备"
                 },
                 fontWeight = FontWeight.Bold,
@@ -201,8 +225,30 @@ fun TopConnectionBar(
                 style = TextStyle(shadow = DefaultTextShadow)
             )
         }
-        Spacer(modifier = Modifier.width(16.dp))
 
+        // 自动连接按钮（BLE，仅 Android 显示）
+        if (isBleSupported) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = onAutoConnectClick,
+                modifier = Modifier.height(44.dp).wrapContentWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(0xFF1A2A4A),
+                    contentColor = Color(0xFF40C4FF)
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp)
+            ) {
+                Text(
+                    text = "自动连接",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    style = TextStyle(shadow = DefaultTextShadow)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
         //设置半透明背景以隔离底层图像
         OutlinedTextField(
             value = ip,
@@ -243,7 +289,8 @@ fun FunctionGrid(
     modifier: Modifier = Modifier,
     controlType: ControlType,
     onNavigateToInteraction: () -> Unit,
-    onNavigateToFace: () -> Unit
+    onNavigateToFace: () -> Unit,
+    onNavigateToBle: () -> Unit = {}
 ) {
     val isDog = controlType == ControlType.DOG
     val targetIconSize = if (isDog) 160.dp else 140.dp
@@ -274,6 +321,19 @@ fun FunctionGrid(
         if (controlType == ControlType.DOG) {
             Spacer(modifier = Modifier.width(spacerWidth))
             MenuCard("视频监控", Res.drawable.ic_video, Modifier.fillMaxHeight().wrapContentWidth(), targetIconSize, fontSize)
+        }
+
+        // BLE 管理入口（仅 Android 显示）
+        if (isBleSupported) {
+            Spacer(modifier = Modifier.width(spacerWidth))
+            MenuCard(
+                title = "BLE 管理",
+                icon = Res.drawable.ic_control, // 复用现有图标，后续可替换
+                modifier = Modifier.fillMaxHeight().wrapContentWidth(),
+                targetIconSize = targetIconSize,
+                fontSize = fontSize,
+                onClick = onNavigateToBle
+            )
         }
     }
 }

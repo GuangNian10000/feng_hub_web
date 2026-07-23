@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.guangnian.di.appModule
+import com.example.guangnian.feature.blue.BleManagementScreen
 import com.example.guangnian.feature.console.ui.InteractionScreen
 import com.example.guangnian.feature.main.ui.MainControlScreen
 import org.koin.compose.KoinApplication
@@ -22,7 +23,8 @@ enum class AppRoute {
     MAIN_CONTROL,
     INTERACTION,
     FACE_MANAGEMENT,
-    MAP_EDIT
+    MAP_EDIT,
+    BLE_MANAGEMENT
 }
 
 @Composable
@@ -40,7 +42,8 @@ fun App() {
                     AppRoute.MAIN_CONTROL -> {
                         MainControlScreen(
                             onNavigateToInteraction = { currentRoute = AppRoute.INTERACTION },
-                            onNavigateToFace = { currentRoute = AppRoute.FACE_MANAGEMENT }
+                            onNavigateToFace = { currentRoute = AppRoute.FACE_MANAGEMENT },
+                            onNavigateToBle = { currentRoute = AppRoute.BLE_MANAGEMENT }
                         )
                     }
                     AppRoute.INTERACTION -> {
@@ -64,6 +67,9 @@ fun App() {
                                 onBack = { currentRoute = AppRoute.INTERACTION }
                             )
                         }
+                    }
+                    AppRoute.BLE_MANAGEMENT -> {
+                        BleManagementScreen(onBack = { currentRoute = AppRoute.MAIN_CONTROL })
                     }
                 }
             }
