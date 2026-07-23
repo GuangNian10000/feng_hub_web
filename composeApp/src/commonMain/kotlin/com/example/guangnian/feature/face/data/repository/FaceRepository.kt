@@ -31,7 +31,7 @@ class FaceRepository(
     suspend fun getFaceList(): List<FaceData> {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            val response: FaceListResponse = httpClient.get("$baseUrl/get_faces").body()
+            val response: FaceListResponse = httpClient.get("$baseUrl/face/get_faces").body()
             val faces = response.faces?.map {
                 FaceData(
                     username = it.name,
@@ -52,7 +52,7 @@ class FaceRepository(
     suspend fun deleteFace(name: String): CommonResponse {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            val response: CommonResponse = httpClient.post("$baseUrl/delete_person") {
+            val response: CommonResponse = httpClient.post("$baseUrl/face/delete_person") {
                 contentType(ContentType.MultiPart.FormData)
                 setBody(MultiPartFormDataContent(
                     formData {
@@ -77,7 +77,7 @@ class FaceRepository(
         return try {
             KLog.d(TAG, "开始上传人脸图片(Multipart): name=$name, desc=$description, bytes=${imageBytes.size}")
 
-            val response: CommonResponse = httpClient.post("$baseUrl/add_person") {
+            val response: CommonResponse = httpClient.post("$baseUrl/face/add_person") {
                 contentType(ContentType.MultiPart.FormData)
                 setBody(MultiPartFormDataContent(
                     formData {

@@ -133,9 +133,27 @@ class ConsoleViewModel(
     private fun observeConnectionState() {
         viewModelScope.launch {
             KmpTcpClient.connectionState.collect { state ->
-                _uiState.update { it.copy(isConnected = state == TcpState.CONNECTED) }
+                val connected = state == TcpState.CONNECTED
+                _uiState.update { it.copy(isConnected = connected) }
+                if (connected) {
+                    KLog.i(TAG, "TCP连接已建立，开始同步基础数据")
+                    refreshAllData()
+                }
             }
         }
+    }
+
+    /**
+     * 刷新所有业务基础数据
+     */
+    fun refreshAllData() {
+        fetchInspectionPoints()
+        fetchRoutes()
+        fetchMaps()
+        fetchNavStatus()
+        fetchAgentStatus()
+        fetchPostureList()
+        fetchArmList()
     }
 
     private fun startSystemInfoPolling() {
@@ -287,7 +305,8 @@ class ConsoleViewModel(
     fun switchMap(mapUid: String) {
         executeTask("切换地图失败", mapUid) {
             navigationApi.switchMap(mapUid)
-            fetchMaps()
+            // 切换地图后，点位和路线都会改变，需要全量刷新
+            refreshAllData()
         }
     }
 
@@ -302,7 +321,8 @@ class ConsoleViewModel(
         executeTask("结束建图失败") {
             navigationApi.endMapping()
             eventBus.emit(RobotEvent.MappingStateChanged(false))
-            fetchMaps() // 结束后刷新列表
+            // 结束后刷新地图列表和可能的初始点位
+            refreshAllData()
         }
     }
 
