@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -98,7 +100,12 @@ fun ModernDialogScaffold(
     onDismiss: () -> Unit,
     maxWidth: Dp = 920.dp,
     maxHeight: Dp = 680.dp,
-    actions: @Composable RowScope.() -> Unit,
+    titleFontSize: TextUnit = 20.sp,
+    showFooter: Boolean = true,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(18.dp),
+    headerHeight: Dp = 48.dp,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit
 ) {
     Dialog(
@@ -124,20 +131,20 @@ fun ModernDialogScaffold(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp)
+                            .height(headerHeight)
                             .padding(start = 24.dp, end = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(width = 4.dp, height = 22.dp)
+                                .size(width = 4.dp, height = 16.dp)
                                 .background(ModernDialogColors.Accent, RoundedCornerShape(2.dp))
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
                             text = title,
                             color = ModernDialogColors.PrimaryText,
-                            fontSize = 20.sp,
+                            fontSize = titleFontSize,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.weight(1f)
                         )
@@ -158,21 +165,23 @@ fun ModernDialogScaffold(
                             .fillMaxWidth()
                             .background(ModernDialogColors.Canvas)
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 24.dp, vertical = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                            .padding(contentPadding),
+                        verticalArrangement = verticalArrangement,
                         content = content
                     )
 
-                    Divider(color = ModernDialogColors.Divider)
+                    if (showFooter) {
+                        Divider(color = ModernDialogColors.Divider)
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(68.dp)
-                            .padding(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) { actions() }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(68.dp)
+                                .padding(horizontal = 20.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) { actions() }
+                    }
                 }
             }
         }

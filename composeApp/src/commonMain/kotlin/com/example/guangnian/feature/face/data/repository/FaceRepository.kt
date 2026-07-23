@@ -11,6 +11,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Clock
@@ -57,6 +59,10 @@ class FaceRepository(
                     }
                 ))
             }.body()
+            if (response.status.lowercase() !in listOf("success", "ok")) {
+                KLog.w(TAG, "删除人脸失败，服务器返回错误: name=$name, status=${response.status}, message=${response.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                throw Exception(response.message.ifEmpty { "删除失败: status=${response.status}" })
+            }
             KLog.d(TAG, "删除人脸成功: name=$name, status=${response.status}, message=${response.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             response
         } catch (e: Exception) {
@@ -65,25 +71,38 @@ class FaceRepository(
         }
     }
 
-    suspend fun uploadFaceImage(name: String, description: String ="", imageBytes: ByteArray): CommonResponse {
+    suspend fun uploadFaceImage(name: String, description: String, imageBytes: ByteArray): CommonResponse {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            KLog.d(TAG, "开始上传人脸图片(JSON): name=$name, desc=${description.orEmpty()}, bytes=${imageBytes.size}")
-            
-            // 将图片转为 Base64
-            val base64Image = imageBytes.encodeBase64()
-            
-            val request = FaceAddRequest(
-                name = name,
-                desc = if(description == "") name else description,
-                image_b64 = base64Image
-            )
+            KLog.d(TAG, "开始上传人脸图片(Multipart): name=$name, desc=$description, bytes=${imageBytes.size}")
 
             val response: CommonResponse = httpClient.post("$baseUrl/add_person") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
+                setBody(MultiPartFormDataContent(
+                    formData {
+                        append("name", name)
+                        if (description.isNotBlank()) {
+                            append("desc", description)
+                        }
+                        val isPng = imageBytes.size > 4 &&
+                                imageBytes[0] == 0x89.toByte() &&
+                                imageBytes[1] == 0x50.toByte() &&
+                                imageBytes[2] == 0x4E.toByte() &&
+                                imageBytes[3] == 0x47.toByte()
+                        val contentType = if (isPng) "image/png" else "image/jpeg"
+                        val extension = if (isPng) "png" else "jpg"
+
+                        append("file", imageBytes, Headers.build {
+                            append(HttpHeaders.ContentType, contentType)
+                            append(HttpHeaders.ContentDisposition, "filename=\"face.$extension\"")
+                        })
+                    }
+                ))
             }.body()
             
+            if (response.status.lowercase() !in listOf("success", "ok")) {
+                KLog.w(TAG, "上传人脸图片失败，服务器返回错误: name=$name, status=${response.status}, message=${response.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                throw Exception(response.message.ifEmpty { "上传失败: status=${response.status}" })
+            }
             KLog.d(TAG, "上传人脸图片成功: name=$name, status=${response.status}, message=${response.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             response
         } catch (e: Exception) {
@@ -95,8 +114,8 @@ class FaceRepository(
     suspend fun getConfig(): FaceConfig {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            val config: FaceConfig = httpClient.get("$baseUrl/config").body()
-            KLog.d(TAG, "获取人脸配置成功: threshold=${config.threshold}, cameraFlip=${config.camera_flip}, onlyKnown=${config.only_known}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+            val config: FaceConfig = httpClient.get("$baseUrl/face/config").body()
+            KLog.d(TAG, "获取人脸配置成功: threshold=${config.threshold}, camera_flip=${config.camera_flip}, only_known=${config.only_known}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             config
         } catch (e: Exception) {
             KLog.w(TAG, "获取人脸配置失败，使用默认配置: error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
@@ -107,10 +126,14 @@ class FaceRepository(
     suspend fun updateConfig(config: FaceConfig): CommonResponse {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            val response: CommonResponse = httpClient.post("$baseUrl/config") {
+            val response: CommonResponse = httpClient.post("$baseUrl/face/config") {
                 contentType(ContentType.Application.Json)
                 setBody(config)
             }.body()
+            if (response.status.lowercase() !in listOf("success", "ok")) {
+                KLog.w(TAG, "更新人脸配置失败，服务器返回错误: threshold=${config.threshold}, cameraFlip=${config.camera_flip}, onlyKnown=${config.only_known}, status=${response.status}, message=${response.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                throw Exception(response.message.ifEmpty { "配置更新失败: status=${response.status}" })
+            }
             KLog.d(TAG, "更新人脸配置成功: threshold=${config.threshold}, cameraFlip=${config.camera_flip}, onlyKnown=${config.only_known}, status=${response.status}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             response
         } catch (e: Exception) {

@@ -33,13 +33,6 @@ data class FaceConfig(
 )
 
 @Serializable
-data class FaceAddRequest(
-    val name: String,
-    val desc: String,
-    val image_b64: String
-)
-
-@Serializable
 data class CommonResponse(
     val status: String = "",
     val message: String = ""

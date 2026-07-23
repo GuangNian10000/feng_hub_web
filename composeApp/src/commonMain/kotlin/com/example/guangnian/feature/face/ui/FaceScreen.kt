@@ -54,7 +54,9 @@ fun FaceScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedFaceForDelete by remember { mutableStateOf<FaceData?>(null) }
     var currentActionName by remember { mutableStateOf("") }
+    var currentActionDesc by remember { mutableStateOf("") }
     var editingFaceName by remember { mutableStateOf("") }
+    var editingFaceDesc by remember { mutableStateOf("") }
     var previewImageUrl by remember { mutableStateOf<String?>(null) }
     var showLivePreview by remember { mutableStateOf(false) }
     val currentFrame by viewModel.currentFrame.collectAsState()
@@ -71,8 +73,9 @@ fun FaceScreen(
 
     val imagePicker = rememberImagePicker { bytes ->
         if (currentActionName.isNotBlank()) {
-            viewModel.uploadFaceImage(currentActionName, bytes)
+            viewModel.uploadFaceImage(currentActionName, bytes, currentActionDesc)
             currentActionName = ""
+            currentActionDesc = ""
         }
     }
 
@@ -101,6 +104,7 @@ fun FaceScreen(
             val isWideLayout = maxWidth >= 760.dp
             val openAddDialog = {
                 editingFaceName = ""
+                editingFaceDesc = ""
                 showAddDialog = true
             }
 
@@ -128,6 +132,7 @@ fun FaceScreen(
                         onDelete = { selectedFaceForDelete = it },
                         onEdit = {
                             editingFaceName = it.username
+                            editingFaceDesc = it.description ?: ""
                             showAddDialog = true
                         },
                         onImageClick = { previewImageUrl = it },
@@ -158,6 +163,7 @@ fun FaceScreen(
                         onDelete = { selectedFaceForDelete = it },
                         onEdit = {
                             editingFaceName = it.username
+                            editingFaceDesc = it.description ?: ""
                             showAddDialog = true
                         },
                         onImageClick = { previewImageUrl = it },
@@ -171,19 +177,22 @@ fun FaceScreen(
     if (showAddDialog) {
         AddFaceDialog(
             initialName = editingFaceName,
+            initialDesc = editingFaceDesc,
             onDismiss = { showAddDialog = false },
-            onUploadImage = { name ->
+            onUploadImage = { name, desc ->
                 currentActionName = name
+                currentActionDesc = desc
                 imagePicker.pickImage()
                 showAddDialog = false
             },
-            onTakePhoto = { name ->
+            onTakePhoto = { name, desc ->
                 currentActionName = name
+                currentActionDesc = desc
                 imagePicker.takePhoto()
                 showAddDialog = false
             },
-            onCaptureRobotFrame = { name ->
-                viewModel.captureFromRobotFrame(name)
+            onCaptureRobotFrame = { name, desc ->
+                viewModel.captureFromRobotFrame(name, desc)
                 showAddDialog = false
             }
         )
@@ -599,18 +608,23 @@ fun FaceItem(
 @Composable
 fun AddFaceDialog(
     initialName: String = "",
+    initialDesc: String = "",
     onDismiss: () -> Unit,
-    onUploadImage: (String) -> Unit,
-    onTakePhoto: (String) -> Unit,
-    onCaptureRobotFrame: (String) -> Unit
+    onUploadImage: (String, String) -> Unit,
+    onTakePhoto: (String, String) -> Unit,
+    onCaptureRobotFrame: (String, String) -> Unit
 ) {
     var name by remember(initialName) { mutableStateOf(initialName) }
+    var desc by remember(initialDesc) { mutableStateOf(initialDesc) }
+    val isFormValid = name.isNotBlank() && desc.isNotBlank()
 
     ModernDialogScaffold(
         title = if (initialName.isEmpty()) "录入人脸" else "更新人脸",
         onDismiss = onDismiss,
         maxWidth = 560.dp,
-        maxHeight = 480.dp,
+        maxHeight = 520.dp,
+        titleFontSize = 16.sp,
+        headerHeight = 44.dp,
         actions = {
             TextButton(onClick = onDismiss) {
                 Text("取消", color = ModernDialogColors.SecondaryText, fontSize = 13.sp)
@@ -619,16 +633,29 @@ fun AddFaceDialog(
     ) {
         ModernDialogSection("身份信息")
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("姓名 (必填)", fontSize = 12.sp) },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            singleLine = true,
-            shape = RoundedCornerShape(6.dp),
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
-            colors = modernOutlinedTextFieldColors()
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("姓名 (必填)", fontSize = 12.sp) },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                singleLine = true,
+                shape = RoundedCornerShape(6.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+                colors = modernOutlinedTextFieldColors()
+            )
+
+            OutlinedTextField(
+                value = desc,
+                onValueChange = { desc = it },
+                label = { Text("备注/描述 (必填)", fontSize = 12.sp) },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                singleLine = true,
+                shape = RoundedCornerShape(6.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+                colors = modernOutlinedTextFieldColors()
+            )
+        }
 
         Spacer(Modifier.height(8.dp))
         ModernDialogSection("录入来源")
@@ -640,23 +667,23 @@ fun AddFaceDialog(
             FaceCaptureSourceButton(
                 text = "相册选取",
                 icon = Icons.Default.PhotoLibrary,
-                enabled = name.isNotBlank(),
-                onClick = { onUploadImage(name) },
+                enabled = isFormValid,
+                onClick = { onUploadImage(name, desc) },
                 modifier = Modifier.weight(1f)
             )
             FaceCaptureSourceButton(
                 text = "拍照上传",
                 icon = Icons.Default.CameraAlt,
-                enabled = name.isNotBlank(),
-                onClick = { onTakePhoto(name) },
+                enabled = isFormValid,
+                onClick = { onTakePhoto(name, desc) },
                 modifier = Modifier.weight(1f)
             )
             FaceCaptureSourceButton(
                 text = "机器人画面",
                 icon = Icons.Default.CenterFocusStrong,
-                enabled = name.isNotBlank(),
+                enabled = isFormValid,
                 primary = true,
-                onClick = { onCaptureRobotFrame(name) },
+                onClick = { onCaptureRobotFrame(name, desc) },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -686,7 +713,9 @@ private fun FaceCaptureSourceButton(
             shape = RoundedCornerShape(6.dp),
             colors = ButtonDefaults.buttonColors(
                 backgroundColor = ModernDialogColors.Accent,
-                contentColor = Color.White
+                contentColor = Color.White,
+                disabledBackgroundColor = ModernDialogColors.Accent.copy(alpha = 0.38f),
+                disabledContentColor = Color.White.copy(alpha = 0.7f)
             ),
             elevation = ButtonDefaults.elevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
             content = content
@@ -697,10 +726,11 @@ private fun FaceCaptureSourceButton(
             enabled = enabled,
             modifier = modifier.height(48.dp),
             shape = RoundedCornerShape(6.dp),
-            border = BorderStroke(1.dp, ModernDialogColors.Border),
+            border = BorderStroke(1.dp, if (enabled) ModernDialogColors.Border else ModernDialogColors.Border.copy(alpha = 0.38f)),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = ModernDialogColors.PrimaryText,
-                backgroundColor = Color.White
+                backgroundColor = Color.White,
+                disabledContentColor = ModernDialogColors.PrimaryText.copy(alpha = 0.38f)
             ),
             content = content
         )
@@ -819,27 +849,16 @@ fun LivePreviewDialog(
         onDismiss = onDismiss,
         maxWidth = 520.dp,
         maxHeight = 520.dp,
-        actions = {
-            TextButton(onClick = onDismiss) {
-                Text("关闭", color = ModernDialogColors.SecondaryText, fontSize = 13.sp)
-            }
-            Spacer(Modifier.width(12.dp))
-            OutlinedButton(
-                onClick = onRefresh,
-                shape = RoundedCornerShape(6.dp),
-                border = BorderStroke(1.dp, ModernDialogColors.Border),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = ModernDialogColors.PrimaryText,
-                    backgroundColor = Color.White
-                )
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("立即刷新", fontSize = 13.sp)
-            }
-        }
+        titleFontSize = 14.sp,
+        headerHeight = 36.dp,
+        showFooter = false,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(modifier = Modifier.size(6.dp).background(Color(0xFF28A745), CircleShape))
             Spacer(Modifier.width(6.dp))
             Text("机器人实时画面同步中", color = ModernDialogColors.SecondaryText, fontSize = 11.sp)
@@ -847,7 +866,7 @@ fun LivePreviewDialog(
             Text(
                 text = "${countdown}s",
                 color = ModernDialogColors.Accent,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -869,7 +888,7 @@ fun LivePreviewDialog(
                 )
             } else {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(24.dp),
                     color = Color.White,
                     strokeWidth = 2.dp
                 )
