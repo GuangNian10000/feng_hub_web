@@ -101,75 +101,41 @@ fun FaceScreen(
                 .background(ModernDialogColors.Canvas)
                 .padding(16.dp)
         ) {
-            val isWideLayout = maxWidth >= 760.dp
             val openAddDialog = {
                 editingFaceName = ""
                 editingFaceDesc = ""
                 showAddDialog = true
             }
 
-            if (isWideLayout) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    FaceConfigPanel(
-                        config = config,
-                        faceCount = faces.size,
-                        compact = false,
-                        onThresholdChange = viewModel::updateThreshold,
-                        onFlipChange = viewModel::toggleCameraFlip,
-                        onOnlyKnownChange = viewModel::toggleOnlyKnown,
-                        onAddFace = openAddDialog,
-                        onShowLivePreview = { showLivePreview = true },
-                        modifier = Modifier.width(268.dp).fillMaxHeight()
-                    )
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                FaceConfigPanel(
+                    config = config,
+                    faceCount = faces.size,
+                    compact = false,
+                    onThresholdChange = viewModel::updateThreshold,
+                    onFlipChange = viewModel::toggleCameraFlip,
+                    onOnlyKnownChange = viewModel::toggleOnlyKnown,
+                    onAddFace = openAddDialog,
+                    onShowLivePreview = { showLivePreview = true },
+                    modifier = Modifier.width(268.dp).fillMaxHeight()
+                )
 
-                    FaceDirectory(
-                        faces = faces,
-                        loading = loading,
-                        onAddFace = openAddDialog,
-                        onDelete = { selectedFaceForDelete = it },
-                        onEdit = {
-                            editingFaceName = it.username
-                            editingFaceDesc = it.description ?: ""
-                            showAddDialog = true
-                        },
-                        onImageClick = { previewImageUrl = it },
-                        modifier = Modifier.weight(1f).fillMaxHeight()
-                    )
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    FaceConfigPanel(
-                        config = config,
-                        faceCount = faces.size,
-                        compact = true,
-                        onThresholdChange = viewModel::updateThreshold,
-                        onFlipChange = viewModel::toggleCameraFlip,
-                        onOnlyKnownChange = viewModel::toggleOnlyKnown,
-                        onAddFace = openAddDialog,
-                        onShowLivePreview = { showLivePreview = true },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    FaceDirectory(
-                        faces = faces,
-                        loading = loading,
-                        onAddFace = openAddDialog,
-                        onDelete = { selectedFaceForDelete = it },
-                        onEdit = {
-                            editingFaceName = it.username
-                            editingFaceDesc = it.description ?: ""
-                            showAddDialog = true
-                        },
-                        onImageClick = { previewImageUrl = it },
-                        modifier = Modifier.weight(1f).fillMaxWidth()
-                    )
-                }
+                FaceDirectory(
+                    faces = faces,
+                    loading = loading,
+                    onAddFace = openAddDialog,
+                    onDelete = { selectedFaceForDelete = it },
+                    onEdit = {
+                        editingFaceName = it.username
+                        editingFaceDesc = it.description ?: ""
+                        showAddDialog = true
+                    },
+                    onImageClick = { previewImageUrl = it },
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                )
             }
         }
     }
