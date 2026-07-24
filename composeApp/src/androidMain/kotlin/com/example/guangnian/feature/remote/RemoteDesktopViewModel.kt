@@ -68,13 +68,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _ip = MutableStateFlow("")
     val ip: StateFlow<String> = _ip.asStateFlow()
 
-    private val _resolution = MutableStateFlow(RESOLUTION_OPTIONS[0])
+    private val _resolution = MutableStateFlow(RESOLUTION_OPTIONS[1])
     val resolution: StateFlow<ResolutionOption> = _resolution.asStateFlow()
 
-    private val _bitrate = MutableStateFlow(BITRATE_OPTIONS[1])   // 默认 2Mbps
+    private val _bitrate = MutableStateFlow(BITRATE_OPTIONS[0])   // 默认 1Mbps
     val bitrate: StateFlow<BitrateOption> = _bitrate.asStateFlow()
 
-    private val _delay = MutableStateFlow(DELAY_OPTIONS[1])        // 默认 50ms
+    private val _delay = MutableStateFlow(DELAY_OPTIONS[3])        // 默认 200ms
     val delay: StateFlow<DelayOption> = _delay.asStateFlow()
 
     private val _noControl = MutableStateFlow(false)
@@ -86,7 +86,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _screenOff = MutableStateFlow(false)
     val screenOff: StateFlow<Boolean> = _screenOff.asStateFlow()
 
-    private val _audioForward = MutableStateFlow(true)
+    private val _audioForward = MutableStateFlow(false)
     val audioForward: StateFlow<Boolean> = _audioForward.asStateFlow()
 
     // 连接状态

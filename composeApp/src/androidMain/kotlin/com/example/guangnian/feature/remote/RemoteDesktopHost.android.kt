@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +41,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
 
 // ─── 设计令牌（与 BLE UI 风格统一）────────────────────────────────────────────
 
@@ -367,54 +382,137 @@ private fun ScrcpyMirrorScreen(vm: RemoteDesktopViewModel, onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize()
         )
 
-        // 返回按钮（半透明浮层，左上角）
-        Box(modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f))
-            ) {
-                Icon(Icons.Rounded.ArrowBack, "返回", tint = Color.White)
-            }
-        }
-
-        // 虚拟导航栏（仅 showNav = true 时显示）
-        if (showNav && !noControl) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                NavButton(icon = Icons.Rounded.ArrowBack, label = "返回") {
-                    scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_BACK)
-                }
-                NavButton(icon = Icons.Rounded.Home, label = "主页") {
-                    scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_HOME)
-                }
-                NavButton(icon = Icons.Rounded.Apps, label = "任务") {
-                    scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_APP_SWITCH)
-                }
-                NavButton(icon = Icons.Rounded.PowerSettingsNew, label = "电源") {
-                    scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_POWER)
-                }
-            }
-        }
+        // 悬浮菜单
+        DraggableFloatingMenu(scrcpyService = scrcpyService, onExit = onBack)
     }
 }
 
 @Composable
-private fun NavButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
-        Icon(icon, label, tint = Color.White, modifier = Modifier.size(24.dp))
+private fun DraggableFloatingMenu(scrcpyService: ScrcpyService?, onExit: () -> Unit) {
+    var offsetX by remember { mutableStateOf(50f) }
+    var offsetY by remember { mutableStateOf(50f) }
+    var expanded by remember { mutableStateOf(false) }
+    var screenWidth by remember { mutableStateOf(1000) }
+    var screenHeight by remember { mutableStateOf(2000) }
+
+    val animProgress by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        animationSpec = tween(300)
+    )
+
+    val menuItems = listOf(
+        Pair(Icons.Rounded.ArrowBack, "返回") to { scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_BACK) },
+        Pair(Icons.Rounded.Home, "主页") to { scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_HOME) },
+        Pair(Icons.Rounded.Apps, "任务") to { scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_APP_SWITCH) },
+        Pair(Icons.Rounded.PowerSettingsNew, "电源") to { scrcpyService?.sendKeyEvent(android.view.KeyEvent.KEYCODE_POWER) },
+        Pair(Icons.Rounded.Close, "退出") to onExit
+    )
+
+    val fabSizePx = with(LocalDensity.current) { 56.dp.toPx() }
+    val itemSizePx = with(LocalDensity.current) { 50.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned {
+                screenWidth = it.size.width
+                screenHeight = it.size.height
+            }
+    ) {
+        val margin = fabSizePx * 1.5f
+        val isLeftEdge = offsetX < margin
+        val isRightEdge = offsetX > screenWidth - fabSizePx - margin
+        val isTopEdge = offsetY < margin
+        val isBottomEdge = offsetY > screenHeight - fabSizePx - margin
+
+        val (startAngle, sweepAngle) = when {
+            isLeftEdge && isTopEdge -> 0.0 to PI / 2           // 左上角 -> 90度扇形
+            isLeftEdge && isBottomEdge -> 3 * PI / 2 to PI / 2 // 左下角 -> 90度扇形
+            isRightEdge && isTopEdge -> PI / 2 to PI / 2       // 右上角 -> 90度扇形
+            isRightEdge && isBottomEdge -> PI to PI / 2        // 右下角 -> 90度扇形
+            isLeftEdge -> -PI / 2 to PI                        // 左边缘 -> 180度半圆
+            isRightEdge -> PI / 2 to PI                        // 右边缘 -> 180度半圆
+            isTopEdge -> 0.0 to PI                             // 上边缘 -> 180度半圆
+            isBottomEdge -> PI to PI                           // 下边缘 -> 180度半圆
+            else -> 0.0 to 2 * PI                              // 屏幕中间 -> 360度全圆
+        }
+
+        // 全圆需要等分所有item，扇形/半圆需要留空首尾
+        val isFullCircle = sweepAngle >= 2 * PI - 0.01
+        val stepAngle = if (isFullCircle) sweepAngle / menuItems.size else sweepAngle / (menuItems.size - 1)
+        
+        // 动态调整散开半径：如果是圆或半圆，半径可以小一点(因为很分散)；如果是扇形，半径需要大一点避免重叠
+        val radiusPx = with(LocalDensity.current) { 
+            if (sweepAngle <= PI / 2 + 0.01) 140.dp.toPx() else 90.dp.toPx() 
+        }
+
+        // 渲染展开的菜单项 (直接放在最外层 Box，解决裁切消失的问题)
+        menuItems.forEachIndexed { i, (item, action) ->
+            val itemAngle = startAngle + i * stepAngle
+            val childX = animProgress * radiusPx * cos(itemAngle)
+            val childY = animProgress * radiusPx * sin(itemAngle)
+            val alpha = animProgress
+
+            if (alpha > 0.01f) {
+                // 计算基于整个屏幕的绝对坐标
+                val centerOffset = (fabSizePx - itemSizePx) / 2
+                val targetX = offsetX + centerOffset + childX
+                val targetY = offsetY + centerOffset + childY
+
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(targetX.roundToInt(), targetY.roundToInt()) }
+                        .size(50.dp)
+                        .graphicsLayer {
+                            this.alpha = alpha
+                            this.scaleX = 0.6f + 0.4f * alpha
+                            this.scaleY = 0.6f + 0.4f * alpha
+                        }
+                        .clip(CircleShape)
+                        .background(Color(0xFF283655)) // 恢复之前的深蓝色
+                        .border(1.dp, RdAccent.copy(alpha = 0.5f), CircleShape)
+                        .clickable {
+                            action()
+                            expanded = false
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(item.first, contentDescription = item.second, tint = RdAccent, modifier = Modifier.size(20.dp))
+                        Text(item.second, color = RdText, fontSize = 9.sp, fontWeight = FontWeight.Normal)
+                    }
+                }
+            }
+        }
+
+        // 渲染悬浮球本体 (直接放在最外层 Box)
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.7f))
+                .border(2.dp, RdAccent.copy(alpha = if (expanded) 1f else 0.5f), CircleShape)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            offsetX = (offsetX + dragAmount.x).coerceIn(0f, screenWidth - fabSizePx)
+                            offsetY = (offsetY + dragAmount.y).coerceIn(0f, screenHeight - fabSizePx)
+                            expanded = false
+                        }
+                    )
+                }
+                .clickable { expanded = !expanded },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                if (expanded) Icons.Rounded.Close else Icons.Rounded.MoreHoriz,
+                contentDescription = "Menu",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
     }
 }
 
