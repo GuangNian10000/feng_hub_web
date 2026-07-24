@@ -12,6 +12,7 @@ import com.example.guangnian.di.appModule
 import com.example.guangnian.feature.blue.BleManagementScreen
 import com.example.guangnian.feature.console.ui.InteractionScreen
 import com.example.guangnian.feature.main.ui.MainControlScreen
+import com.example.guangnian.feature.remote.RemoteDesktopScreen
 import org.koin.compose.KoinApplication
 
 import com.example.guangnian.feature.face.ui.FaceScreen
@@ -24,7 +25,8 @@ enum class AppRoute {
     INTERACTION,
     FACE_MANAGEMENT,
     MAP_EDIT,
-    BLE_MANAGEMENT
+    BLE_MANAGEMENT,
+    REMOTE_DESKTOP
 }
 
 @Composable
@@ -34,6 +36,7 @@ fun App() {
     }) {
         var currentRoute by remember { mutableStateOf(AppRoute.MAIN_CONTROL) }
         var editingMap by remember { mutableStateOf<MapBean?>(null) }
+        var remoteDesktopIp by remember { mutableStateOf("") }
 
         MaterialTheme(colors = darkColors()) {
             // 使用 Crossfade 增加切换时的渐变动画过渡。
@@ -43,7 +46,11 @@ fun App() {
                         MainControlScreen(
                             onNavigateToInteraction = { currentRoute = AppRoute.INTERACTION },
                             onNavigateToFace = { currentRoute = AppRoute.FACE_MANAGEMENT },
-                            onNavigateToBle = { currentRoute = AppRoute.BLE_MANAGEMENT }
+                            onNavigateToBle = { currentRoute = AppRoute.BLE_MANAGEMENT },
+                            onNavigateToRemoteDesktop = { ip ->
+                                remoteDesktopIp = ip
+                                currentRoute = AppRoute.REMOTE_DESKTOP
+                            }
                         )
                     }
                     AppRoute.INTERACTION -> {
@@ -70,6 +77,12 @@ fun App() {
                     }
                     AppRoute.BLE_MANAGEMENT -> {
                         BleManagementScreen(onBack = { currentRoute = AppRoute.MAIN_CONTROL })
+                    }
+                    AppRoute.REMOTE_DESKTOP -> {
+                        RemoteDesktopScreen(
+                            prefilledIp = remoteDesktopIp,
+                            onBack = { currentRoute = AppRoute.MAIN_CONTROL }
+                        )
                     }
                 }
             }

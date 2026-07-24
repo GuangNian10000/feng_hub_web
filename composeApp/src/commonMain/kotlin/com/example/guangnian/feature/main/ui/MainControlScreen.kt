@@ -23,6 +23,7 @@ import com.example.guangnian.feature.blue.BleAutoConnectDialog
 import com.example.guangnian.feature.blue.isBleSupported
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import com.example.guangnian.feature.main.viewmodel.ControlType
+import com.example.guangnian.feature.remote.isRemoteDesktopSupported
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
 import guangnian.composeapp.generated.resources.*
@@ -38,7 +39,8 @@ val DefaultTextShadow = Shadow(
 fun MainControlScreen(
     onNavigateToInteraction: () -> Unit = {},
     onNavigateToFace: () -> Unit = {},
-    onNavigateToBle: () -> Unit = {}
+    onNavigateToBle: () -> Unit = {},
+    onNavigateToRemoteDesktop: (String) -> Unit = {}
 ) {
     val viewModel: RobotViewModel = koinViewModel()
     val ip by viewModel.ip.collectAsState()
@@ -49,6 +51,8 @@ fun MainControlScreen(
 
     var showTypeDialog by remember { mutableStateOf(false) }
     var showBleAutoConnect by remember { mutableStateOf(false) }
+    // 远程桌面：先选 IP（BLE 弹窗），再跳转配置弹窗
+    var pendingRemoteDesktop by remember { mutableStateOf(false) }
 
     MainControlContent(
         ip = ip,
@@ -62,6 +66,11 @@ fun MainControlScreen(
         onNavigateToInteraction = onNavigateToInteraction,
         onNavigateToFace = onNavigateToFace,
         onNavigateToBle = onNavigateToBle,
+        onNavigateToRemoteDesktop = {
+            // 点击远程桌面 → 先触发 BLE 自动连接选 IP
+            pendingRemoteDesktop = true
+            showBleAutoConnect = true
+        },
         onTypeClick = { showTypeDialog = true },
         onAutoConnectClick = { showBleAutoConnect = true }
     )
@@ -80,11 +89,21 @@ fun MainControlScreen(
     // BLE 自动连接弹窗（仅 Android 显示）
     if (showBleAutoConnect) {
         BleAutoConnectDialog(
-            onDismiss = { showBleAutoConnect = false },
-            onIpSelected = { ip ->
-                viewModel.onIpChanged(ip)
+            onDismiss = {
                 showBleAutoConnect = false
-                viewModel.connect()
+                pendingRemoteDesktop = false
+            },
+            onIpSelected = { selectedIp ->
+                viewModel.onIpChanged(selectedIp)
+                showBleAutoConnect = false
+                if (pendingRemoteDesktop) {
+                    // 远程桌面流程：IP 选好后直接跳转配置页
+                    pendingRemoteDesktop = false
+                    onNavigateToRemoteDesktop(selectedIp)
+                } else {
+                    // 普通连接流程
+                    viewModel.connect()
+                }
             }
         )
     }
@@ -103,6 +122,7 @@ fun MainControlContent(
     onNavigateToInteraction: () -> Unit,
     onNavigateToFace: () -> Unit,
     onNavigateToBle: () -> Unit = {},
+    onNavigateToRemoteDesktop: () -> Unit = {},
     onTypeClick: () -> Unit,
     onAutoConnectClick: () -> Unit = {}
 ) {
@@ -139,7 +159,8 @@ fun MainControlContent(
                     controlType = controlType,
                     onNavigateToInteraction = onNavigateToInteraction,
                     onNavigateToFace = onNavigateToFace,
-                    onNavigateToBle = onNavigateToBle
+                    onNavigateToBle = onNavigateToBle,
+                    onNavigateToRemoteDesktop = onNavigateToRemoteDesktop
                 )
             }
 
@@ -325,9 +346,12 @@ fun FunctionGrid(
         if (controlType == ControlType.ROBOT) {
             Spacer(modifier = Modifier.width(spacerWidth))
             MenuCard("人脸识别", Res.drawable.ic_face, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize, onClick = onNavigateToFace)
-            
-            Spacer(modifier = Modifier.width(spacerWidth))
-            MenuCard("远程桌面", Res.drawable.ic_remote_desktop, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize, onClick = onNavigateToRemoteDesktop)
+
+            // 仅 Android 显示远程桌面入口
+            if (isRemoteDesktopSupported) {
+                Spacer(modifier = Modifier.width(spacerWidth))
+                MenuCard("远程桌面", Res.drawable.ic_remote_desktop, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize, onClick = onNavigateToRemoteDesktop)
+            }
         }
 
         if (controlType == ControlType.DOG) {

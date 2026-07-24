@@ -1,5 +1,6 @@
 package com.example.guangnian.feature.face.data.bean
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -8,6 +9,7 @@ data class FaceData(
     val faceId: String? = null,
     val username: String = "",
     val description: String? = null,
+    @SerialName("image_url")
     val imageUrl: String? = null,
     val createTime: String? = null,
     val updateTime: String? = null

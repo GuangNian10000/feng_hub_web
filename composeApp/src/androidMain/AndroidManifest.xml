@@ -29,6 +29,7 @@
 
     <application
         android:allowBackup="true"
+        android:extractNativeLibs="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -41,6 +42,12 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+
+        <!-- 远程桌面（Scrcpy）流服务 -->
+        <service
+            android:name=".feature.remote.ScrcpyService"
+            android:enabled="true"
+            android:exported="false" />
 
         <activity
             android:exported="true"

@@ -360,13 +360,6 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     override suspend fun getNavStatus() = request<com.example.guangnian.feature.console.data.bean.RobotNavStatusBean>("slam/get_status")
 
-    // --- FaceApi 实现 ---
-    override suspend fun robotCaptureFace(name: String) =
-        request<Unit>("face/add_person", mapOf("name" to name), targetNode = TcpNode.TABLET)
-
-    override suspend fun deleteFace(name: String) =
-        request<BaseBean>("face/delete_person", mapOf("name" to name), targetNode = TcpNode.TABLET)
-
     // 获取机器人电量
     override suspend fun getBattery() = request<BatteryBean>("state/get_battery")
 
