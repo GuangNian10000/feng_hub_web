@@ -8,5 +8,15 @@
 	<string>我们需要您的相机权限来拍摄人脸照片进行识别。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>我们需要您的相册权限来选择人脸照片进行识别。</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 </dict>
 </plist>
