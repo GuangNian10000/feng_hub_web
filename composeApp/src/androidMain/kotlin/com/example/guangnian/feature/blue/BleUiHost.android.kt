@@ -440,7 +440,7 @@ actual fun BleManagementScreen(onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // 左栏：连接控制
-            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Column(modifier = Modifier.weight(1f)) {
                 when (val state = bleState) {
                     is BleState.Idle, is BleState.Error -> {
                         ScanDevicePanel(
