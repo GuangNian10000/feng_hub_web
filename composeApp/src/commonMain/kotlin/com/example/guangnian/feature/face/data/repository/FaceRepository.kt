@@ -16,6 +16,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Clock
+import io.ktor.client.statement.bodyAsText
 
 class FaceRepository(
     private val httpClient: HttpClient,
@@ -31,7 +32,11 @@ class FaceRepository(
     suspend fun getFaceList(): List<FaceData> {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            val response: FaceListResponse = httpClient.get("$baseUrl/face/get_faces").body()
+            val httpResponse = httpClient.get("$baseUrl/face/get_faces")
+            val jsonText = httpResponse.bodyAsText()
+            KLog.d(TAG, "拿到服务器的人脸列表 JSON 信息: $jsonText")
+            val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
+            val response: FaceListResponse = json.decodeFromString(FaceListResponse.serializer(), jsonText)
             val faces = response.faces?.map {
                 FaceData(
                     username = it.name,

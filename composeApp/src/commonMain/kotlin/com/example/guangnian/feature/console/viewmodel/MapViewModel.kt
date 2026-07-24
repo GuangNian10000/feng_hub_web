@@ -240,7 +240,7 @@ class MapViewModel(
                 } catch (e: Exception) {
                     KLog.w(TAG, "路径数据同步异常 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 }
-                delay(500)
+                delay(5000)
             }
         }
 

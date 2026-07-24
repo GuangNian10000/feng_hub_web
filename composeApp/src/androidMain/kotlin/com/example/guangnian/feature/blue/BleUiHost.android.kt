@@ -687,7 +687,8 @@ private fun ConnectedCommandPanel(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(BleSurface)
-            .padding(14.dp),
+            .padding(14.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // 设备信息卡

@@ -221,11 +221,11 @@ private fun FaceTopBar(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Text(
-                        "共 $faceCount 个人脸样本",
-                        color = ModernDialogColors.SecondaryText,
-                        fontSize = 11.sp
-                    )
+//                    Text(
+//                        "共 $faceCount 个人脸样本",
+//                        color = ModernDialogColors.SecondaryText,
+//                        fontSize = 11.sp
+//                    )
                 }
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = onRefresh, enabled = !loading) {

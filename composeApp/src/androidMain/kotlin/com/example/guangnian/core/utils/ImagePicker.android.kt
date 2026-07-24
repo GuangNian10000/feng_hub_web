@@ -42,6 +42,16 @@ actual fun rememberImagePicker(onImagePicked: (ByteArray) -> Unit): ImagePicker 
             }
         }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch()
+        } else {
+            KLog.w("ImagePicker", "拍照权限被拒绝")
+        }
+    }
+
     return remember {
         object : ImagePicker {
             override fun pickImage() {
@@ -49,7 +59,11 @@ actual fun rememberImagePicker(onImagePicked: (ByteArray) -> Unit): ImagePicker 
             }
 
             override fun takePhoto() {
-                cameraLauncher.launch()
+                if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    cameraLauncher.launch()
+                } else {
+                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                }
             }
         }
     }
