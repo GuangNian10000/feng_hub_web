@@ -47,6 +47,7 @@ fun SideMenu(
                 val icon = when (menu) {
                     "姿态动作" -> Icons.Default.Accessibility
                     "动作" -> Icons.AutoMirrored.Filled.DirectionsRun
+                    "动作编辑" -> Icons.Default.Edit
                     "导览管理" -> Icons.Default.Explore
                     "语音合成" -> Icons.Default.RecordVoiceOver
                     "智能体设置" -> Icons.Default.SmartToy

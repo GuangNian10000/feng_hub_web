@@ -43,6 +43,7 @@ class FaceViewModel(
     init {
         refresh()
         fetchConfig()
+        fetchProcessStatus()
     }
 
     private fun safeLaunch(action: String, showLoading: Boolean = false, block: suspend () -> Unit) {
@@ -127,5 +128,36 @@ class FaceViewModel(
 
     fun clearCurrentFrame() {
         _currentFrame.value = null
+    }
+
+    private val _processRunning = MutableStateFlow(false)
+    val processRunning: StateFlow<Boolean> = _processRunning.asStateFlow()
+
+    fun fetchProcessStatus() {
+        safeLaunch(action = "获取人脸进程状态") {
+            val status = repository.getFaceProcessStatus()
+            _processRunning.value = status.running
+        }
+    }
+
+    fun startProcess() {
+        safeLaunch(action = "启动人脸进程", showLoading = true) {
+            val status = repository.startFaceProcess()
+            _processRunning.value = status.running
+        }
+    }
+
+    fun stopProcess() {
+        safeLaunch(action = "停止人脸进程", showLoading = true) {
+            val status = repository.stopFaceProcess()
+            _processRunning.value = status.running
+        }
+    }
+
+    fun restartProcess() {
+        safeLaunch(action = "重启人脸进程", showLoading = true) {
+            val status = repository.restartFaceProcess()
+            _processRunning.value = status.running
+        }
     }
 }

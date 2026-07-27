@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.data.bean.TeachActionBean
 import com.example.guangnian.feature.console.ui.components.PanelAddButton
@@ -35,7 +37,7 @@ fun TeachActionPanel(
     val isLoading = uiState.isLoading
     val showAesKeyDialog = uiState.showAesKeyDialog
 
-    val isRecording = status.recording || status.teach.recording
+    val isRecordingState = rememberUpdatedState(status.recording || status.teach.recording)
 
     var showDeleteConfirm by remember { mutableStateOf<TeachActionBean?>(null) }
     var showExecuteConfirm by remember { mutableStateOf<TeachActionBean?>(null) }
@@ -49,9 +51,9 @@ fun TeachActionPanel(
         viewModel.fetchTeachList()
     }
 
-    LaunchedEffect(isRecording, onSetActions) {
-        KLog.d("TeachActionPanel", "注册顶部按钮, isRecording=$isRecording")
+    LaunchedEffect(onSetActions) {
         onSetActions {
+            val isRecording = isRecordingState.value
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (!isRecording) {
                     Button(
@@ -145,39 +147,53 @@ fun TeachActionPanel(
         }
 
         // 弹窗逻辑
-        showStartRecordDialog.let {
-            if (it) {
-                var name by remember { mutableStateOf("") }
-                AlertDialog(
-                    onDismissRequest = { showStartRecordDialog = false },
-                    title = { Text("开始录制", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
-                    text = {
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            label = { Text("动作名称") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    },
-                    backgroundColor = Color.White,
-                    confirmButton = {
-                        TextButton(onClick = {
-                            if (name.isNotBlank()) {
-                                viewModel.startTeach(name)
-                                showStartRecordDialog = false
-                            }
-                        }) { Text("开始", color = Color(0xFF007AFF)) }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showStartRecordDialog = false }) { Text("取消", color = Color.Gray) }
-                    }
-                )
+        if (showStartRecordDialog) {
+            var name by remember { mutableStateOf("") }
+            val focusRequester = remember { FocusRequester() }
+
+            LaunchedEffect(Unit) {
+                delay(100)
+                focusRequester.requestFocus()
             }
+
+            AlertDialog(
+                onDismissRequest = { showStartRecordDialog = false },
+                title = { Text("开始录制", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+                text = {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("动作名称") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
+                    )
+                },
+                backgroundColor = Color.White,
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (name.isNotBlank()) {
+                            viewModel.startTeach(name)
+                            showStartRecordDialog = false
+                        } else {
+                            toastMessage = "请输入动作名称"
+                        }
+                    }) { Text("开始", color = Color(0xFF007AFF)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showStartRecordDialog = false }) { Text("取消", color = Color.Gray) }
+                }
+            )
         }
 
         showRenameDialog?.let { action ->
             var newName by remember { mutableStateOf(action.name) }
+            val focusRequester = remember { FocusRequester() }
+
+            LaunchedEffect(Unit) {
+                delay(100)
+                focusRequester.requestFocus()
+            }
+
             AlertDialog(
                 onDismissRequest = { showRenameDialog = null },
                 title = { Text("修改名称", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
@@ -187,7 +203,7 @@ fun TeachActionPanel(
                         onValueChange = { newName = it },
                         label = { Text("新名称") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
                     )
                 },
                 backgroundColor = Color.White,

@@ -109,19 +109,19 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<BaseBean>("/knowledge/delete_knowledge/", mapOf("knowledge" to Json.encodeToString(knowledge)), targetNode = TcpNode.TABLET)
 
     // 获取动态动作列表
-    override suspend fun getPostureList() = request<List<PostureBean>>("webrtc/get_posture")
+    override suspend fun getPostureList() = request<List<PostureBean>>("action/get_posture")
 
     // 获取手臂动作列表
-    override suspend fun getArmList() = request<List<ArmActionBean>>("webrtc/get_arm")
+    override suspend fun getArmList() = request<List<ArmActionBean>>("action/list")
 
     // 获取运动控制列表
-    override suspend fun getMotionList() = request<List<MotionBean>>("webrtc/get_motion")
+    override suspend fun getMotionList() = request<List<MotionBean>>("action/get_motion")
 
     // 启动机器人握手
-    override suspend fun startRobot() = request<StartupHeartbeatBean>("webrtc/stl_start")
+    override suspend fun startRobot() = request<StartupHeartbeatBean>("action/stl_start")
 
     // 执行动作命令（通用）
-    override suspend fun executePosture(msg: Map<String, String>) = request<Unit>("webrtc/execution", msg)
+    override suspend fun executePosture(msg: Map<String, String>) = request<Unit>("action/execution", msg)
 
     // 执行动作命令（姿态）
     override suspend fun executePosture(postureName: String) =
@@ -129,20 +129,24 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 执行运动控制动作
     override suspend fun executeMotion(motionId: String) =
-        request<Unit>("webrtc/execution", mapOf("motion_id" to motionId))
+        request<Unit>("action/execute", mapOf("arm_id" to motionId))
+
+    // 执行运动控制动作
+    override suspend fun executePostureName(motionName: String) =
+        request<Unit>("action/posture", mapOf("posture_name" to motionName))
 
     // 执行预设运动控制（ahead/back/left/right/turn_left/turn_right/turn_back）
     override suspend fun executeSport(sport: String) =
-        request<Unit>("webrtc/execution", mapOf("sport" to sport))
+        request<Unit>("action/execution", mapOf("sport" to sport))
 
     // 执行手臂动作
     override suspend fun executeArm(armId: Int) =
-        request<Unit>("webrtc/execution", mapOf("arm_id" to armId))
+        request<Unit>("action/execution", mapOf("arm_id" to armId))
 
     // 平移摇杆控制
     override suspend fun moveTranslate(angle: Double, level: Int) =
         request<Unit>(
-            "webrtc/move",
+            "action/move",
             mapOf(
                 "joystick" to "translate",
                 "angle" to angle,
@@ -153,7 +157,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 旋转摇杆控制
     override suspend fun moveRotate(level: Int) =
         request<Unit>(
-            "webrtc/move",
+            "action/move",
             mapOf(
                 "joystick" to "rotate",
                 "level" to level
@@ -163,7 +167,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 混合摇杆控制
     override suspend fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) =
         request<Unit>(
-            "webrtc/move",
+            "action/move",
             mapOf(
                 "joystick" to "translate",
                 "angle" to angle,
@@ -174,15 +178,15 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 停止平移摇杆
     override suspend fun stopTranslate() =
-        request<Unit>("webrtc/stop", mapOf("joystick" to "translate"))
+        request<Unit>("action/stop", mapOf("joystick" to "translate"))
 
     // 停止旋转摇杆
     override suspend fun stopRotate() =
-        request<Unit>("webrtc/stop", mapOf("joystick" to "rotate"))
+        request<Unit>("action/stop", mapOf("joystick" to "rotate"))
 
     // 上报 TCP 断开状态
     override suspend fun notifyTcpDisconnected() =
-        request<Unit>("webrtc/state", mapOf("state" to "false"))
+        request<Unit>("action/state", mapOf("state" to "false"))
 
     // 发送心跳包
     override suspend fun sendHeartbeat(timestamp: Long) =
@@ -224,7 +228,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<TeachStatusBean>("teach/record_status")
 
     override suspend fun setAesKey(key: String) =
-        request<Unit>("webrtc/aes_set", mapOf("aes_key" to key))
+        request<Unit>("action/aes_set", mapOf("aes_key" to key))
 
     // 开始建图（协议约定字段名为 msg）
     override suspend fun startMapping(mapName: String) =
@@ -376,4 +380,31 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     // 获取离线状态摘要
     override suspend fun getOfflineState() = request<OfflineStateBean>("offline/get_state")
+
+    // --- ActionEditingApi Implementation ---
+    override suspend fun executeActionEditing(armId: String) =
+        request<Unit>("action/execute", mapOf("arm_id" to armId, "wrist_lock" to false))
+
+    override suspend fun getActionEditingRecordStatus() =
+        request<TeachStatusBean>("action/record_status")
+
+    override suspend fun getActionEditingList() =
+        request<List<ArmActionBean>>("action/list")
+
+    override suspend fun setActionEditingSession(phase: String) =
+        request<com.example.guangnian.feature.console.data.bean.SessionResponseBean>("action/session", mapOf("phase" to phase))
+
+    override suspend fun recordActionEditing(cmd: String, actionName: String?) {
+        val payload = mutableMapOf<String, String>("cmd" to cmd)
+        if (!actionName.isNullOrEmpty()) {
+            payload["action_name"] = actionName
+        }
+        request<Unit>("action/record", payload)
+    }
+
+    override suspend fun deleteActionEditing(name: String) =
+        request<Unit>("action/delete", mapOf("name" to name))
+
+    override suspend fun renameActionEditing(oldName: String, newName: String) =
+        request<Unit>("action/rename", mapOf("old_name" to oldName, "new_name" to newName))
 }

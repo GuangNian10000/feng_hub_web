@@ -61,6 +61,7 @@ fun FaceScreen(
     var showLivePreview by remember { mutableStateOf(false) }
     val currentFrame by viewModel.currentFrame.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val processRunning by viewModel.processRunning.collectAsState()
 
     val scaffoldState = rememberScaffoldState()
 
@@ -114,12 +115,16 @@ fun FaceScreen(
                 FaceConfigPanel(
                     config = config,
                     faceCount = faces.size,
+                    processRunning = processRunning,
                     compact = false,
                     onThresholdChange = viewModel::updateThreshold,
                     onFlipChange = viewModel::toggleCameraFlip,
                     onOnlyKnownChange = viewModel::toggleOnlyKnown,
                     onAddFace = openAddDialog,
                     onShowLivePreview = { showLivePreview = true },
+                    onStartProcess = viewModel::startProcess,
+                    onStopProcess = viewModel::stopProcess,
+                    onRestartProcess = viewModel::restartProcess,
                     modifier = Modifier.width(268.dp).fillMaxHeight()
                 )
 
@@ -245,12 +250,16 @@ private fun FaceTopBar(
 fun FaceConfigPanel(
     config: FaceConfig,
     faceCount: Int,
+    processRunning: Boolean,
     compact: Boolean,
     onThresholdChange: (Float) -> Unit,
     onFlipChange: (Boolean) -> Unit,
     onOnlyKnownChange: (Boolean) -> Unit,
     onAddFace: () -> Unit,
     onShowLivePreview: () -> Unit,
+    onStartProcess: () -> Unit = {},
+    onStopProcess: () -> Unit = {},
+    onRestartProcess: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -281,6 +290,25 @@ fun FaceConfigPanel(
                 Text("识别配置", color = ModernDialogColors.PrimaryText, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 Text("人脸样本: $faceCount", color = ModernDialogColors.SecondaryText, fontSize = 11.sp)
                 Spacer(Modifier.height(16.dp))
+                
+                ModernDialogSection("进程状态")
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(8.dp).background(if (processRunning) Color(0xFF28A745) else Color(0xFFDC3545), CircleShape))
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (processRunning) "运行中" else "已停止", color = ModernDialogColors.PrimaryText, fontSize = 13.sp)
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (processRunning) {
+                        FaceActionButton("停止", Icons.Default.Stop, false, onStopProcess, Modifier.weight(1f))
+                    } else {
+                        FaceActionButton("启动", Icons.Default.PlayArrow, true, onStartProcess, Modifier.weight(1f))
+                    }
+                    FaceActionButton("重启", Icons.Default.Refresh, false, onRestartProcess, Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(14.dp))
+                
                 ModernDialogSection("匹配阈值")
                 Spacer(Modifier.height(6.dp))
                 ThresholdControl(config.threshold, onThresholdChange, Modifier.fillMaxWidth())

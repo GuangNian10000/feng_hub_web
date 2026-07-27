@@ -17,3 +17,8 @@ data class RecordState(
     val state: String = "",
     val state_zh: String = ""
 )
+
+@Serializable
+data class SessionResponseBean(
+    val phase: String = ""
+)

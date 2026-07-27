@@ -9,6 +9,7 @@ interface MotionControlApi {
     suspend fun executePosture(msg: Map<String, String>)
     suspend fun executePosture(postureName: String)
     suspend fun executeMotion(motionId: String)
+    suspend fun executePostureName(motionName: String)
     suspend fun executeSport(sport: String)
     suspend fun executeArm(armId: Int)
     suspend fun moveTranslate(angle: Double, level: Int)

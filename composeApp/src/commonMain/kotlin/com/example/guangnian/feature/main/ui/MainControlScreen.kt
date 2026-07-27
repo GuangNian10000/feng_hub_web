@@ -71,8 +71,7 @@ fun MainControlScreen(
             pendingRemoteDesktop = true
             showBleAutoConnect = true
         },
-        onTypeClick = { showTypeDialog = true },
-        onAutoConnectClick = { showBleAutoConnect = true }
+        onTypeClick = { showTypeDialog = true }
     )
 
     if (showTypeDialog) {
@@ -94,15 +93,11 @@ fun MainControlScreen(
                 pendingRemoteDesktop = false
             },
             onIpSelected = { selectedIp ->
-                viewModel.onIpChanged(selectedIp)
                 showBleAutoConnect = false
                 if (pendingRemoteDesktop) {
                     // 远程桌面流程：IP 选好后直接跳转配置页
                     pendingRemoteDesktop = false
                     onNavigateToRemoteDesktop(selectedIp)
-                } else {
-                    // 普通连接流程
-                    viewModel.connect()
                 }
             }
         )
@@ -123,8 +118,7 @@ fun MainControlContent(
     onNavigateToFace: () -> Unit,
     onNavigateToBle: () -> Unit = {},
     onNavigateToRemoteDesktop: () -> Unit = {},
-    onTypeClick: () -> Unit,
-    onAutoConnectClick: () -> Unit = {}
+    onTypeClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -147,8 +141,7 @@ fun MainControlContent(
                 canConnect = canConnect,
                 onIpChange = onIpChange,
                 onPortChange = onPortChange,
-                onConnectClick = onConnectClick,
-                onAutoConnectClick = onAutoConnectClick
+                onConnectClick = onConnectClick
             )
 
             Box(
@@ -215,8 +208,7 @@ fun TopConnectionBar(
     ip: String, port: String, connectionState: TcpState,
     canConnect: Boolean,
     onIpChange: (String) -> Unit, onPortChange: (String) -> Unit,
-    onConnectClick: () -> Unit,
-    onAutoConnectClick: () -> Unit = {}
+    onConnectClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -224,53 +216,48 @@ fun TopConnectionBar(
     ) {
         // 连接按钮
         val isConnected = connectionState == TcpState.CONNECTED
-        val btnColor = if (isConnected) Color(0xFF16A34A) else Color(0xFF3B82F6)
+        val isConnecting = connectionState == TcpState.CONNECTING
+
+        val btnBgColor = when {
+            isConnected -> Color(0xFF16A34A).copy(alpha = 0.8f)
+            isConnecting -> Color(0xFF3B82F6).copy(alpha = 0.8f)
+            else -> Color(0xFF0F172A).copy(alpha = 0.6f)
+        }
+        val btnContentColor = when {
+            isConnected -> Color.White
+            isConnecting -> Color.White
+            else -> Color(0xFF00E5FF)
+        }
+        val btnBorder = when {
+            isConnected -> BorderStroke(1.dp, Color(0xFF16A34A).copy(alpha = 0.5f))
+            isConnecting -> BorderStroke(1.dp, Color(0xFF3B82F6).copy(alpha = 0.5f))
+            else -> BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f))
+        }
+
         Button(
             onClick = onConnectClick,
             enabled = canConnect,
             modifier = Modifier.height(46.dp).wrapContentWidth().align(Alignment.Bottom),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = btnColor,
-                disabledBackgroundColor = Color(0xFF1E293B),
-                contentColor = Color.White,
+                backgroundColor = btnBgColor,
+                disabledBackgroundColor = Color(0xFF1E293B).copy(alpha = 0.6f),
+                contentColor = btnContentColor,
                 disabledContentColor = Color.Gray
             ),
             shape = RoundedCornerShape(6.dp),
+            border = btnBorder,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
             Text(
                 text = when (connectionState) {
                     TcpState.CONNECTING  -> "连接中..."
                     TcpState.CONNECTED   -> "已连接"
-                    TcpState.DISCONNECTED -> "手动连接"
+                    TcpState.DISCONNECTED -> "连接"
                 },
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
                 style = TextStyle(shadow = DefaultTextShadow)
             )
-        }
-
-        // 自动连接按钮（BLE，仅 Android 显示）
-        if (isBleSupported) {
-            Spacer(modifier = Modifier.width(10.dp))
-            Button(
-                onClick = onAutoConnectClick,
-                modifier = Modifier.height(46.dp).wrapContentWidth().align(Alignment.Bottom),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFF0F172A).copy(alpha = 0.6f),
-                    contentColor = Color(0xFF00E5FF)
-                ),
-                shape = RoundedCornerShape(6.dp),
-                border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f)),
-                contentPadding = PaddingValues(horizontal = 14.dp)
-            ) {
-                Text(
-                    text = "自动连接",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp,
-                    style = TextStyle(shadow = DefaultTextShadow)
-                )
-            }
         }
 
         Spacer(modifier = Modifier.width(20.dp))

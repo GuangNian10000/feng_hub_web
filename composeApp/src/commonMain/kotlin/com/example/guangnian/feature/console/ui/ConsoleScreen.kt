@@ -76,7 +76,7 @@ fun InteractionScreen(
     // 动作执行确认弹窗状态
     var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
 
-    val menus = listOf("姿态动作", "动作", "示教动作", "导览管理", "语音合成", "智能体设置", "地图管理", "知识库")
+    val menus = listOf("姿态动作", "动作", "示教动作", "动作编辑", "导览管理", "语音合成", "智能体设置", "地图管理", "知识库")
 
     var leftJoyX by remember { mutableFloatStateOf(0f) }
     var leftJoyY by remember { mutableFloatStateOf(0f) }
@@ -323,6 +323,12 @@ fun InteractionScreen(
                                 { actions -> customHeaderActions = actions }
                             }
                             TeachActionPanel(onSetActions = onSetActions)
+                        }
+                        "动作编辑" -> {
+                            val onSetActions: (@Composable () -> Unit) -> Unit = remember {
+                                { actions -> customHeaderActions = actions }
+                            }
+                            com.example.guangnian.feature.motion.ui.ActionEditingPanel(onSetActions = onSetActions)
                         }
                         "导览管理" -> InspectionPointPanel(
                             endpoints = uiState.endpoints,

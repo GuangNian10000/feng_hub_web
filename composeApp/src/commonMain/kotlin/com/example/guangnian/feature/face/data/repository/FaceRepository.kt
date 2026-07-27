@@ -171,4 +171,52 @@ class FaceRepository(
             throw e
         }
     }
+
+    suspend fun getFaceProcessStatus(): FaceProcessStatusResponse {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        return try {
+            val response: FaceProcessStatusResponse = httpClient.get("$baseUrl/api/face/status").body()
+            KLog.d(TAG, "获取人脸进程状态成功: running=${response.running}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+            response
+        } catch (e: Exception) {
+            KLog.w(TAG, "获取人脸进程状态失败: error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+            FaceProcessStatusResponse(receive = "false", running = false)
+        }
+    }
+
+    suspend fun startFaceProcess(): FaceProcessStatusResponse {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        return try {
+            val response: FaceProcessStatusResponse = httpClient.post("$baseUrl/api/face/start").body()
+            KLog.d(TAG, "启动人脸进程成功: running=${response.running}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+            response
+        } catch (e: Exception) {
+            KLog.w(TAG, "启动人脸进程失败: error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+            throw e
+        }
+    }
+
+    suspend fun stopFaceProcess(): FaceProcessStatusResponse {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        return try {
+            val response: FaceProcessStatusResponse = httpClient.post("$baseUrl/api/face/stop").body()
+            KLog.d(TAG, "停止人脸进程成功: running=${response.running}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+            response
+        } catch (e: Exception) {
+            KLog.w(TAG, "停止人脸进程失败: error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+            throw e
+        }
+    }
+
+    suspend fun restartFaceProcess(): FaceProcessStatusResponse {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        return try {
+            val response: FaceProcessStatusResponse = httpClient.post("$baseUrl/api/face/restart").body()
+            KLog.d(TAG, "重启人脸进程成功: running=${response.running}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+            response
+        } catch (e: Exception) {
+            KLog.w(TAG, "重启人脸进程失败: error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+            throw e
+        }
+    }
 }

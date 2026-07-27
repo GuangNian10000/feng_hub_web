@@ -359,7 +359,7 @@ class ConsoleViewModel(
             val startTime = Clock.System.now().toEpochMilliseconds()
             try {
                 KLog.i(TAG, "开始发送姿态指令: postureName=$postureName")
-                motionControlApi.executePosture(postureName)
+                motionControlApi.executePostureName(postureName)
                 KLog.d(TAG, "姿态指令发送成功: postureName=$postureName, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
                 KLog.w(TAG, "发送姿态指令失败: postureName=$postureName, error=${e.message}", e)

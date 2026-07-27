@@ -35,6 +35,12 @@ data class FaceConfig(
 )
 
 @Serializable
+data class FaceProcessStatusResponse(
+    val receive: String = "",
+    val running: Boolean = false
+)
+
+@Serializable
 data class CommonResponse(
     val status: String = "",
     val message: String = ""
