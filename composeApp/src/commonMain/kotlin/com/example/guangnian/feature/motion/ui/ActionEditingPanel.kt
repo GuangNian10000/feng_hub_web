@@ -42,6 +42,10 @@ fun ActionEditingPanel(
     var showRenameDialog by remember { mutableStateOf<ArmActionBean?>(null) }
     var showSaveRecordDialog by remember { mutableStateOf(false) }
 
+    var showStartConfirm by remember { mutableStateOf(false) }
+    var showUnlockConfirm by remember { mutableStateOf(false) }
+    var showRestoreConfirm by remember { mutableStateOf(false) }
+
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -49,12 +53,16 @@ fun ActionEditingPanel(
         viewModel.fetchActionEditingList()
     }
 
+    val armStatus = uiState.teachStatus.teach.arm_status.takeIf { it.isNotEmpty() } ?: uiState.teachStatus.dds.arm_status
+    val armStatusState = rememberUpdatedState(armStatus)
+    val showToastAction = remember { { msg: String -> toastMessage = msg } }
+
     LaunchedEffect(onSetActions) {
         onSetActions {
             val isRecording = isRecordingState.value
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
-                    onClick = { viewModel.setSessionState("unlock") },
+                    onClick = { showUnlockConfirm = true },
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
@@ -65,7 +73,7 @@ fun ActionEditingPanel(
                 }
                 Spacer(modifier = Modifier.width(4.dp))
                 IconButton(
-                    onClick = { viewModel.setSessionState("restore") },
+                    onClick = { showRestoreConfirm = true },
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
@@ -82,7 +90,11 @@ fun ActionEditingPanel(
                         if (isRecording) {
                             showSaveRecordDialog = true
                         } else {
-                            viewModel.startActionEditing()
+                            if (armStatusState.value != "damping_unlock") {
+                                showToastAction("当前未处于阻尼解锁状态，请先解锁")
+                            } else {
+                                showStartConfirm = true
+                            }
                         }
                     }
                 )
@@ -107,6 +119,28 @@ fun ActionEditingPanel(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 6.dp)) {
+            
+            if (armStatus.isNotEmpty()) {
+                val statusText = when (armStatus) {
+                    "damping_unlock" -> "已下发并维持手臂阻尼解锁"
+                    "not_unlocked" -> "当前未处于阻尼解锁"
+                    "unknown" -> "控制进程离线或状态无法确认"
+                    else -> ""
+                }
+                if (statusText.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp, start = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "手臂状态：$statusText",
+                            color = Color(0xFFAAAAAA),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
             if (actionList.isEmpty() && !isLoading) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text("暂无动作数据", color = Color.LightGray, fontSize = 13.sp)
@@ -257,6 +291,60 @@ fun ActionEditingPanel(
                 },
                 dismissButton = {
                     TextButton(onClick = { showExecuteConfirm = null }) { Text("取消", color = Color.Gray) }
+                }
+            )
+        }
+
+        if (showStartConfirm) {
+            AlertDialog(
+                onDismissRequest = { showStartConfirm = false },
+                title = { Text("确认开始", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+                text = { Text("确认要开始录制动作吗？", color = Color.DarkGray, fontSize = 14.sp) },
+                backgroundColor = Color.White,
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.startActionEditing()
+                        showStartConfirm = false
+                    }) { Text("确定", color = Color(0xFF007AFF)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showStartConfirm = false }) { Text("取消", color = Color.Gray) }
+                }
+            )
+        }
+
+        if (showUnlockConfirm) {
+            AlertDialog(
+                onDismissRequest = { showUnlockConfirm = false },
+                title = { Text("确认解锁", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+                text = { Text("确认要下发阻尼解锁指令吗？", color = Color.DarkGray, fontSize = 14.sp) },
+                backgroundColor = Color.White,
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.setSessionState("unlock")
+                        showUnlockConfirm = false
+                    }) { Text("确定", color = Color(0xFF007AFF)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showUnlockConfirm = false }) { Text("取消", color = Color.Gray) }
+                }
+            )
+        }
+
+        if (showRestoreConfirm) {
+            AlertDialog(
+                onDismissRequest = { showRestoreConfirm = false },
+                title = { Text("确认恢复", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+                text = { Text("确认要下发恢复指令吗？", color = Color.DarkGray, fontSize = 14.sp) },
+                backgroundColor = Color.White,
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.setSessionState("restore")
+                        showRestoreConfirm = false
+                    }) { Text("确定", color = Color(0xFF007AFF)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRestoreConfirm = false }) { Text("取消", color = Color.Gray) }
                 }
             )
         }
