@@ -8,7 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import com.example.guangnian.di.appModule
+import com.example.guangnian.feature.update.AppUpdater
 import com.example.guangnian.feature.blue.BleManagementScreen
 import com.example.guangnian.feature.console.ui.InteractionScreen
 import com.example.guangnian.feature.main.ui.MainControlScreen
@@ -37,6 +39,10 @@ fun App() {
         var currentRoute by remember { mutableStateOf(AppRoute.MAIN_CONTROL) }
         var editingMap by remember { mutableStateOf<MapBean?>(null) }
         var remoteDesktopIp by remember { mutableStateOf("") }
+
+        LaunchedEffect(Unit) {
+            AppUpdater.checkUpdate()
+        }
 
         MaterialTheme(colors = darkColors()) {
             // 使用 Crossfade 增加切换时的渐变动画过渡。

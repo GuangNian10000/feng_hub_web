@@ -30,6 +30,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation("com.squareup.okhttp3:okhttp:4.12.0")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -78,8 +79,8 @@ android {
         applicationId = "com.example.guangnian"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 100
+        versionName = "1.0.0"
     }
     packaging {
         resources {

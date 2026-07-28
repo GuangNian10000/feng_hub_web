@@ -16,6 +16,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.guangnian.core.utils.VolumeKeyInterceptor
+import com.example.guangnian.feature.update.AppUpdater
 
 class MainActivity : ComponentActivity() {
 
@@ -77,6 +78,8 @@ class MainActivity : ComponentActivity() {
 
         // 3. 请求 BLE 权限（启动时触发，用户授权后服务可正常扫描连接）
         requestBlePermissionsIfNeeded()
+
+        AppUpdater.init(this)
 
         setContent {
             App()
