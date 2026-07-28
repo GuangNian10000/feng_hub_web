@@ -13,6 +13,8 @@ actual object AppUpdater {
     private const val APP_KEY = "36b1a4b9e0d07ba8eb409d8a315ee579"//"9ef6cd976bcf52d650a2b991894521e9"
 
     actual fun checkUpdate() {
+        // 暂时关闭 iOS 应用内更新检查
+        /*
         val url = NSURL.URLWithString(PGYER_CHECK_API) ?: return
         val request = NSMutableURLRequest.requestWithURL(url)
         request.setHTTPMethod("POST")
@@ -55,6 +57,7 @@ actual object AppUpdater {
             }
         }
         task.resume()
+        */
     }
 
     private fun showUpdateDialog(version: String, desc: String, buildKey: String) {
