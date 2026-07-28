@@ -15,7 +15,10 @@ data class TeachStatusBean(
 data class RecordState(
     val recording: Boolean = false,
     val state: String = "",
-    val state_zh: String = ""
+    val state_zh: String = "",
+    //  "arm_status": "damping_unlock"
+    val arm_status : String = ""
+
 )
 
 @Serializable

@@ -72,7 +72,7 @@ class ActionEditingViewModel(private val api: ActionEditingApi) : ViewModel() {
 
     fun startActionEditing() {
         executeTask("开始录制异常") {
-            api.setActionEditingSession("unlock")
+            //api.setActionEditingSession("unlock")
             delay(1000)
             api.recordActionEditing("start")
             // 重新查询状态
