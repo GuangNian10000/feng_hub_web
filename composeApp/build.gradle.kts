@@ -82,14 +82,26 @@ android {
         versionCode = 100
         versionName = "1.0.0"
     }
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("fengke.jks")
+            storePassword = "fengke123666." // 请替换为实际的 storePassword
+            keyAlias = "feng"           // 请替换为实际的 keyAlias
+            keyPassword = "fengke123666."     // 请替换为实际的 keyPassword
+        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
     buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("release")
+        }
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
