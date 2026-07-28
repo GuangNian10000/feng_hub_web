@@ -34,6 +34,10 @@ import com.example.guangnian.core.utils.PgmUtils
 import com.example.guangnian.feature.console.data.bean.MapBean
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.client.statement.readBytes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -79,6 +83,70 @@ fun MapEditScreen(
     var isDrawing by remember { mutableStateOf(false) }
 
     var showExitConfirm by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val saveMap = {
+        mapBitmap?.let { bmp ->
+            coroutineScope.launch {
+                try {
+                    isLoading = true
+                    loadingStage = "渲染地图..."
+                    loadingProgress = 0.2f
+                    
+                    val resultBitmap = ImageBitmap(bmp.width, bmp.height)
+                    val composeCanvas = androidx.compose.ui.graphics.Canvas(resultBitmap)
+                    
+                    val drawScope = androidx.compose.ui.graphics.drawscope.CanvasDrawScope()
+                    drawScope.draw(
+                        density = androidx.compose.ui.unit.Density(1f),
+                        layoutDirection = androidx.compose.ui.unit.LayoutDirection.Ltr,
+                        canvas = composeCanvas,
+                        size = androidx.compose.ui.geometry.Size(bmp.width.toFloat(), bmp.height.toFloat())
+                    ) {
+                        drawImage(bmp)
+                        
+                        history.forEach { action ->
+                            when (action) {
+                                is DrawAction.Brush -> drawPath(action.path, action.color, style = androidx.compose.ui.graphics.drawscope.Stroke(action.strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                                is DrawAction.Line -> drawLine(action.color, action.start, action.end, strokeWidth = action.strokeWidth, cap = StrokeCap.Round)
+                                is DrawAction.Rectangle -> drawRect(action.color, action.rect.topLeft, action.rect.size, style = androidx.compose.ui.graphics.drawscope.Stroke(action.strokeWidth))
+                            }
+                        }
+                    }
+                    
+                    loadingStage = "编码地图..."
+                    loadingProgress = 0.5f
+                    val pgmBytes = withContext(Dispatchers.Default) {
+                        com.example.guangnian.core.utils.encodeImageBitmapToPgm(resultBitmap)
+                    }
+                    
+                    // 导出到本地 Documents 目录，供用户排查线宽问题
+                    PgmUtils.exportPgmToDocuments("map_edit_export_${mapBean.map_uid}.pgm", pgmBytes)
+                    
+                    loadingStage = "上传地图..."
+                    loadingProgress = 0.8f
+                    val parsedUrl = io.ktor.http.Url(mapBean.image_url)
+                    val uploadUrl = "${parsedUrl.protocol.name}://${parsedUrl.host}:${parsedUrl.port}/navigation/maps/${mapBean.map_uid}/pgm"
+                    
+                    val response = httpClient.put(uploadUrl) {
+                        contentType(ContentType("image", "x-portable-graymap"))
+                        setBody(pgmBytes)
+                    }
+                    
+                    if (response.status.value in 200..299) {
+                        KLog.i("MapEditScreen", "保存地图成功: $uploadUrl")
+                    } else {
+                        KLog.e("MapEditScreen", "保存地图失败: HTTP ${response.status}")
+                    }
+                } catch (e: Exception) {
+                    KLog.e("MapEditScreen", "保存地图异常: ${e.message}", e)
+                } finally {
+                    isLoading = false
+                    history.clear() // Clear history so exit confirm won't show
+                }
+            }
+        }
+    }
 
     LaunchedEffect(mapBean.image_url) {
         if (mapBean.image_url.isNotEmpty()) {
@@ -109,7 +177,7 @@ fun MapEditScreen(
             text = { Text("退出前是否保存修改？") },
             confirmButton = {
                 TextButton(onClick = { 
-                    // TODO: Save logic
+                    saveMap()
                     showExitConfirm = false
                     onBack()
                 }) {
@@ -255,7 +323,7 @@ fun MapEditScreen(
                 Text("地图编辑: ${mapBean.map_name}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
                 Button(
-                    onClick = { /* TODO: Save logic */ },
+                    onClick = { saveMap() },
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
                     shape = RoundedCornerShape(18.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
@@ -307,11 +375,11 @@ fun MapEditScreen(
                     Slider(
                         value = strokeWidth,
                         onValueChange = { strokeWidth = it },
-                        valueRange = 1f..40f,
+                        valueRange = 1f..200f,
                         modifier = Modifier.width(120.dp),
                         colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color(0xFF007AFF))
                     )
-                    Text("${strokeWidth.toInt()}", color = Color.White, fontSize = 12.sp, modifier = Modifier.width(20.dp))
+                    Text("${strokeWidth.toInt()} px", color = Color.White, fontSize = 12.sp, modifier = Modifier.width(40.dp))
 
                     Spacer(modifier = Modifier.width(8.dp))
                     Divider(modifier = Modifier.height(20.dp).width(1.dp), color = Color.White.copy(alpha = 0.2f))

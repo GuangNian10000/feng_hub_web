@@ -75,4 +75,8 @@ actual object PgmUtils {
             return null
         }
     }
+
+    actual fun exportPgmToDocuments(fileName: String, data: ByteArray) {
+        KLog.i("PgmUtils", "iOS exportPgmToDocuments not implemented")
+    }
 }

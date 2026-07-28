@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import android.os.Environment
+import java.io.File
 
 actual object PgmUtils {
     actual fun decodePgmToBitmap(data: ByteArray): ImageBitmap? {
@@ -83,6 +85,20 @@ actual object PgmUtils {
         } catch (e: Exception) {
             KLog.w("PgmUtils", "PGM 解码异常: ${e.message}, bytes=${data.size}", e)
             return null
+        }
+    }
+
+    actual fun exportPgmToDocuments(fileName: String, data: ByteArray) {
+        try {
+            val docsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+            if (!docsFolder.exists()) {
+                docsFolder.mkdirs()
+            }
+            val file = File(docsFolder, fileName)
+            file.writeBytes(data)
+            KLog.i("PgmUtils", "导出 PGM 成功: ${file.absolutePath}")
+        } catch (e: Exception) {
+            KLog.e("PgmUtils", "导出 PGM 失败: ${e.message}", e)
         }
     }
 }
