@@ -39,8 +39,8 @@ fun SystemSettingsPanel(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // 动作分析开关
             SettingSwitchItem(
@@ -87,34 +87,34 @@ private fun SettingSwitchItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(Color(0x1AFFFFFF))
-            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
                     text = title, 
                     color = Color.White, 
-                    fontSize = 13.sp, 
+                    fontSize = 12.sp, 
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(1.dp))
                 Text(
                     text = subtitle, 
                     color = Color(0xFFAAAAAA), 
-                    fontSize = 10.sp
+                    fontSize = 9.sp
                 )
             }
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
-                modifier = Modifier.scale(0.85f),
+                modifier = Modifier.scale(0.7f),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = Color(0xFF007AFF),
@@ -138,28 +138,28 @@ private fun SettingInputItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(Color(0x1AFFFFFF))
-            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
                     text = title, 
                     color = Color.White, 
-                    fontSize = 13.sp, 
+                    fontSize = 12.sp, 
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(1.dp))
                 Text(
                     text = subtitle, 
                     color = Color(0xFFAAAAAA), 
-                    fontSize = 10.sp
+                    fontSize = 9.sp
                 )
             }
             
@@ -167,12 +167,12 @@ private fun SettingInputItem(
                 BasicTextField(
                     value = timeText,
                     onValueChange = { timeText = it },
-                    modifier = Modifier.width(60.dp).height(28.dp),
+                    modifier = Modifier.width(50.dp).height(24.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     textStyle = androidx.compose.ui.text.TextStyle(
                         color = Color.White,
-                        fontSize = 13.sp
+                        fontSize = 11.sp
                     ),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF007AFF)),
                     decorationBox = { innerTextField ->
@@ -181,7 +181,7 @@ private fun SettingInputItem(
                                 .fillMaxSize()
                                 .border(0.5.dp, Color(0x66FFFFFF), RoundedCornerShape(4.dp))
                                 .background(Color(0x1A000000), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp),
+                                .padding(horizontal = 4.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             innerTextField()
@@ -189,7 +189,7 @@ private fun SettingInputItem(
                     }
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
                 Button(
                     onClick = {
@@ -201,10 +201,10 @@ private fun SettingInputItem(
                         backgroundColor = Color(0xFF007AFF),
                         contentColor = Color.White
                     ),
-                    modifier = Modifier.height(28.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp)
+                    modifier = Modifier.defaultMinSize(minWidth = 1.dp, minHeight = 1.dp).height(24.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                 ) {
-                    Text("保存", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text("保存", fontSize = 10.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
