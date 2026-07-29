@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,8 +39,8 @@ fun SystemSettingsPanel(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // 动作分析开关
             SettingSwitchItem(
@@ -87,8 +88,9 @@ private fun SettingSwitchItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0x33FFFFFF))
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .background(Color(0x1AFFFFFF))
+            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -99,24 +101,25 @@ private fun SettingSwitchItem(
                 Text(
                     text = title, 
                     color = Color.White, 
-                    fontSize = 14.sp, 
+                    fontSize = 13.sp, 
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle, 
                     color = Color(0xFFAAAAAA), 
-                    fontSize = 11.sp
+                    fontSize = 10.sp
                 )
             }
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
+                modifier = Modifier.scale(0.85f),
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color(0xFF007AFF),
-                    checkedTrackColor = Color(0xFF007AFF).copy(alpha = 0.5f),
-                    uncheckedThumbColor = Color.LightGray,
-                    uncheckedTrackColor = Color.Gray.copy(alpha = 0.5f)
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF007AFF),
+                    uncheckedThumbColor = Color(0xFFE0E0E0),
+                    uncheckedTrackColor = Color(0x4D000000)
                 )
             )
         }
@@ -136,8 +139,9 @@ private fun SettingInputItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0x33FFFFFF))
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .background(Color(0x1AFFFFFF))
+            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -148,14 +152,14 @@ private fun SettingInputItem(
                 Text(
                     text = title, 
                     color = Color.White, 
-                    fontSize = 14.sp, 
+                    fontSize = 13.sp, 
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle, 
                     color = Color(0xFFAAAAAA), 
-                    fontSize = 11.sp
+                    fontSize = 10.sp
                 )
             }
             
@@ -163,20 +167,21 @@ private fun SettingInputItem(
                 BasicTextField(
                     value = timeText,
                     onValueChange = { timeText = it },
-                    modifier = Modifier.width(70.dp).height(32.dp),
+                    modifier = Modifier.width(60.dp).height(28.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     textStyle = androidx.compose.ui.text.TextStyle(
                         color = Color.White,
-                        fontSize = 14.sp
+                        fontSize = 13.sp
                     ),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF007AFF)),
                     decorationBox = { innerTextField ->
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .border(1.dp, Color(0x66FFFFFF), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 8.dp),
+                                .border(0.5.dp, Color(0x66FFFFFF), RoundedCornerShape(4.dp))
+                                .background(Color(0x1A000000), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             innerTextField()
@@ -184,7 +189,7 @@ private fun SettingInputItem(
                     }
                 )
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Button(
                     onClick = {
@@ -196,10 +201,10 @@ private fun SettingInputItem(
                         backgroundColor = Color(0xFF007AFF),
                         contentColor = Color.White
                     ),
-                    modifier = Modifier.height(32.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp)
+                    modifier = Modifier.height(28.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp)
                 ) {
-                    Text("保存", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text("保存", fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }

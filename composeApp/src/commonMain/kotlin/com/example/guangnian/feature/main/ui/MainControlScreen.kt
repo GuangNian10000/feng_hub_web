@@ -314,7 +314,7 @@ fun FunctionGrid(
         if (isBleSupported) {
             Spacer(modifier = Modifier.width(spacerWidth))
             MenuCard(
-                title = "设备连接",
+                title = "设备管理",
                 icon = Res.drawable.ic_device_connection,
                 modifier = Modifier.weight(1f, fill = false).fillMaxHeight(),
                 targetIconSize = targetIconSize,

@@ -504,7 +504,7 @@ private fun BleManagementTopBar(bleState: BleState, onBack: () -> Unit) {
         Spacer(Modifier.width(4.dp))
         Icon(Icons.Rounded.BluetoothConnected, contentDescription = null, tint = BleAccent, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(8.dp))
-        Text("BLE 设备管理", color = BleText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text("设备管理", color = BleText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.weight(1f))
         Row(
             verticalAlignment = Alignment.CenterVertically,
