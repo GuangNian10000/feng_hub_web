@@ -61,6 +61,7 @@ fun InteractionScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
     var isPosturesExpanded by remember { mutableStateOf(true) }
     var activeFragment by remember { mutableStateOf<String?>(null) }
+    var showLogDialog by remember { mutableStateOf(false) }
     var inspectionTab by remember { mutableStateOf("导览点") }
     var onAddClickAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var addActionText by remember { mutableStateOf("") }
@@ -75,7 +76,7 @@ fun InteractionScreen(
     // 动作执行确认弹窗状态
     var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
 
-    val menus = listOf("姿态动作", "动作", "动作编辑", "导览管理", "语音合成", "智能体设置", "系统设置", "地图管理", "知识库")
+    val menus = listOf("姿态动作", "动作", "动作编辑", "导览管理", "语音合成", "智能体设置", "系统设置", "地图管理", "知识库", "日志")
 
     var leftJoyX by remember { mutableFloatStateOf(0f) }
     var leftJoyY by remember { mutableFloatStateOf(0f) }
@@ -274,7 +275,11 @@ fun InteractionScreen(
                 menus = menus,
                 activeFragment = activeFragment,
                 onMenuClick = { menu ->
-                    activeFragment = if (activeFragment == menu) null else menu
+                    if (menu == "日志") {
+                        showLogDialog = true
+                    } else {
+                        activeFragment = if (activeFragment == menu) null else menu
+                    }
                     isMenuOpen = false
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -408,5 +413,9 @@ fun InteractionScreen(
                 consoleViewModel.updateJoystickInput(leftJoyX, leftJoyY, rightJoyX, isLeftJoyActive || isRightJoyActive)
             }
         )
+
+        if (showLogDialog) {
+            LogDialog(onClose = { showLogDialog = false })
+        }
     }
 }

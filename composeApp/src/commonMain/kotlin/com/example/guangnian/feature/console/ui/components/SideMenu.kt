@@ -83,6 +83,7 @@ fun SideMenu(
                                     "智能体设置" -> Icons.Default.SmartToy
                                     "地图管理" -> Icons.Default.Map
                                     "系统设置" -> Icons.Default.Settings
+                                    "日志" -> Icons.Default.List
                                     "知识库" -> Icons.AutoMirrored.Filled.MenuBook
                                     else -> Icons.Default.MoreHoriz
                                 }
