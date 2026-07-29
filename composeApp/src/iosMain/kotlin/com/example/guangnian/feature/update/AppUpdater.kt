@@ -10,7 +10,7 @@ import platform.darwin.dispatch_get_main_queue
 actual object AppUpdater {
     private const val PGYER_CHECK_API = "https://api.pgyer.com/apiv2/app/check"
     private const val API_KEY = "59b5cb2950f211ea6c5a08d445fe9496"
-    private const val APP_KEY = "36b1a4b9e0d07ba8eb409d8a315ee579"//"9ef6cd976bcf52d650a2b991894521e9"
+    private const val APP_KEY = "50a4e56d92d53dd0d2e98cd90fa36d12"//"9ef6cd976bcf52d650a2b991894521e9"
 
     actual fun checkUpdate() {
         // 暂时关闭 iOS 应用内更新检查

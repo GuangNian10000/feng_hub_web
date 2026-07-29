@@ -117,6 +117,7 @@ class ActionEditingViewModel(private val api: ActionEditingApi) : ViewModel() {
         executeTask("设置会话异常") {
             api.setActionEditingSession(phase)
             _toastEvent.emit("已" + if (phase == "unlock") "解锁" else "恢复")
+            fetchActionEditingStatus()
         }
     }
 }

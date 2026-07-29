@@ -41,7 +41,7 @@ object AppUpdateCoordinator {
     fun checkUpdate(context: Context, callback: UpdateCallback?) {
         val requestBody = FormBody.Builder()
             .add("_api_key", "59b5cb2950f211ea6c5a08d445fe9496")
-            .add("appKey", "36b1a4b9e0d07ba8eb409d8a315ee579") // 9ef6cd976bcf52d650a2b991894521e9
+            .add("appKey", "50a4e56d92d53dd0d2e98cd90fa36d12") // 9ef6cd976bcf52d650a2b991894521e9
             .add("buildVersion", getAppVersionName(context))
             .build()
 

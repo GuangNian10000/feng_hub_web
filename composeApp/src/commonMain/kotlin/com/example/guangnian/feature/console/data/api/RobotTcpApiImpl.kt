@@ -26,6 +26,7 @@ import kotlinx.serialization.json.Json
 
 import com.example.guangnian.feature.console.data.bean.RouteBean
 import com.example.guangnian.feature.console.data.bean.RouteStatusBean
+import com.example.guangnian.feature.console.data.bean.SessionResponseBean
 import com.example.guangnian.feature.console.data.bean.SystemInfo
 
 class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
@@ -392,13 +393,14 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<List<ArmActionBean>>("action/list")
 
     override suspend fun setActionEditingSession(phase: String) =
-        request<com.example.guangnian.feature.console.data.bean.SessionResponseBean>("action/session", mapOf("phase" to phase))
+        request<SessionResponseBean>("action/session", mapOf("phase" to phase))
 
     override suspend fun recordActionEditing(cmd: String, actionName: String?) {
-        val payload = mutableMapOf<String, String>("cmd" to cmd)
+        val payload = mutableMapOf<String, Any>("cmd" to cmd)
         if (!actionName.isNullOrEmpty()) {
             payload["action_name"] = actionName
         }
+        payload["interval_ms"] = 30
         request<Unit>("action/record", payload)
     }
 
