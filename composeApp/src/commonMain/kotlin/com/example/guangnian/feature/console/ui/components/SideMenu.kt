@@ -52,6 +52,7 @@ fun SideMenu(
                     "语音合成" -> Icons.Default.RecordVoiceOver
                     "智能体设置" -> Icons.Default.SmartToy
                     "地图管理" -> Icons.Default.Map
+                    "系统设置" -> Icons.Default.Settings
                     "知识库" -> Icons.AutoMirrored.Filled.MenuBook
                     else -> Icons.Default.MoreHoriz
                 }

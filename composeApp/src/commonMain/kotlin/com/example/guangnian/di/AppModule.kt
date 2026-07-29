@@ -30,6 +30,7 @@ val appModule = module {
     single<KnowledgeApi> { get<RobotTcpApi>() }
     single<TeachApi> { get<RobotTcpApi>() }
     single<ActionEditingApi> { get<RobotTcpApi>() }
+    single<SystemSettingsApi> { get<RobotTcpApi>() }
     single<RouteApi> { get<RobotTcpApi>() }
     single<VoiceApi> { get<RobotTcpApi>() }
 
@@ -63,6 +64,7 @@ val appModule = module {
             routeApi = get(),
             agentControlApi = get(),
             robotStatusApi = get(),
+            systemSettingsApi = get(),
             eventBus = get(),
             settings = get()
         ) 

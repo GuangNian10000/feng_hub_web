@@ -8,6 +8,7 @@ import com.example.guangnian.feature.console.data.api.NavigationApi
 import com.example.guangnian.feature.console.data.api.RouteApi
 import com.example.guangnian.feature.console.data.api.AgentControlApi
 import com.example.guangnian.feature.console.data.api.RobotStatusApi
+import com.example.guangnian.feature.console.data.api.SystemSettingsApi
 import com.example.guangnian.feature.console.data.bean.*
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
@@ -26,6 +27,13 @@ import kotlin.math.*
 import kotlinx.datetime.Clock
 import com.russhwolf.settings.Settings
 
+data class SystemSettingsState(
+    val greetEnabled: Boolean = false,
+    val greetSilentTime: Int = 10,
+    val motionAnalysisEnabled: Boolean = false,
+    val breakEnabled: Boolean = false
+)
+
 data class ConsoleUiState(
     val postures: List<PostureBean> = emptyList(),
     val motions: List<MotionBean> = emptyList(),
@@ -42,6 +50,7 @@ data class ConsoleUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isConnected: Boolean = false,
+    val systemSettingsState: SystemSettingsState = SystemSettingsState(),
     // 交互状态
     val pendingPoint: InspectionPointBean? = null,
     val deleteConfirmPoint: InspectionPointBean? = null
@@ -53,6 +62,7 @@ class ConsoleViewModel(
     private val routeApi: RouteApi,
     private val agentControlApi: AgentControlApi,
     private val robotStatusApi: RobotStatusApi,
+    private val systemSettingsApi: SystemSettingsApi,
     private val eventBus: RobotEventBus,
     private val settings: Settings
 ) : ViewModel() {
@@ -167,6 +177,7 @@ class ConsoleViewModel(
         fetchAgentStatus()
         fetchPostureList()
         fetchArmList()
+        fetchSystemSettings()
     }
 
     private fun startSystemInfoPolling() {
@@ -611,6 +622,42 @@ class ConsoleViewModel(
             }
             
             currentState.copy(favoriteActions = currentFavorites)
+        }
+    }
+
+    fun fetchSystemSettings() {
+        viewModelScope.launch {
+            try {
+                val greet = systemSettingsApi.getGreet()
+                val silentTime = systemSettingsApi.getGreetSilentTime()
+                val motionAnalysis = systemSettingsApi.getMotionAnalysis()
+                val breakEnabled = systemSettingsApi.getBreak()
+                _uiState.update { it.copy(
+                    systemSettingsState = SystemSettingsState(greet, silentTime, motionAnalysis, breakEnabled)
+                ) }
+                KLog.i(TAG, "获取系统设置成功")
+            } catch (e: Exception) {
+                KLog.e(TAG, "获取系统设置失败: ${e.message}")
+            }
+        }
+    }
+
+    fun updateSystemSetting(
+        greetEnabled: Boolean? = null,
+        greetSilentTime: Int? = null,
+        motionAnalysisEnabled: Boolean? = null,
+        breakEnabled: Boolean? = null
+    ) {
+        viewModelScope.launch {
+            try {
+                if (greetEnabled != null) systemSettingsApi.setGreet(greetEnabled)
+                if (greetSilentTime != null) systemSettingsApi.setGreetSilentTime(greetSilentTime)
+                if (motionAnalysisEnabled != null) systemSettingsApi.setMotionAnalysis(motionAnalysisEnabled)
+                if (breakEnabled != null) systemSettingsApi.setBreak(breakEnabled)
+                fetchSystemSettings()
+            } catch (e: Exception) {
+                KLog.e(TAG, "更新系统设置失败: ${e.message}")
+            }
         }
     }
 }

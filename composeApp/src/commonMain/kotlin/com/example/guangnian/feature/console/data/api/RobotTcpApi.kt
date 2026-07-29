@@ -14,4 +14,5 @@ interface RobotTcpApi :
     RobotStatusApi,
     TeachApi,
     ActionEditingApi,
+    SystemSettingsApi,
     com.example.guangnian.feature.face.data.api.FaceApi

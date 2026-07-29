@@ -409,4 +409,21 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
 
     override suspend fun renameActionEditing(oldName: String, newName: String) =
         request<Unit>("action/rename", mapOf("old_name" to oldName, "new_name" to newName))
+
+    // --- SystemSettingsApi Implementation ---
+    override suspend fun getGreet() = request<Boolean>("/agent/get_greet/", targetNode = TcpNode.TABLET)
+    
+    override suspend fun setGreet(enabled: Boolean) = request<Boolean>("/agent/set_greet/", enabled, targetNode = TcpNode.TABLET)
+    
+    override suspend fun getGreetSilentTime() = request<Int>("/agent/get_face_recognition_time/", targetNode = TcpNode.TABLET)
+    
+    override suspend fun setGreetSilentTime(time: Int) = request<Boolean>("/agent/set_face_recognition_time/", time, targetNode = TcpNode.TABLET)
+    
+    override suspend fun getMotionAnalysis() = request<Boolean>("/agent/get_motion_analysis/", targetNode = TcpNode.TABLET)
+    
+    override suspend fun setMotionAnalysis(enabled: Boolean) = request<Boolean>("/agent/set_motion_analysis/", enabled, targetNode = TcpNode.TABLET)
+    
+    override suspend fun getBreak() = request<Boolean>("/agent/get_break/", targetNode = TcpNode.TABLET)
+    
+    override suspend fun setBreak(enabled: Boolean) = request<Boolean>("/agent/set_break/", enabled, targetNode = TcpNode.TABLET)
 }

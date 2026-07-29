@@ -19,7 +19,6 @@ import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.utils.VolumeKeyInterceptor
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.feature.console.ui.panel.*
-import com.example.guangnian.feature.teach.ui.TeachActionPanel
 import com.example.guangnian.feature.console.ui.components.*
 import com.example.guangnian.feature.console.viewmodel.*
 import com.example.guangnian.feature.console.data.bean.RobotNavState
@@ -76,7 +75,7 @@ fun InteractionScreen(
     // 动作执行确认弹窗状态
     var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
 
-    val menus = listOf("姿态动作", "动作", "示教动作", "动作编辑", "导览管理", "语音合成", "智能体设置", "地图管理", "知识库")
+    val menus = listOf("姿态动作", "动作", "动作编辑", "导览管理", "语音合成", "智能体设置", "系统设置", "地图管理", "知识库")
 
     var leftJoyX by remember { mutableFloatStateOf(0f) }
     var leftJoyY by remember { mutableFloatStateOf(0f) }
@@ -100,6 +99,7 @@ fun InteractionScreen(
             "姿态动作" -> consoleViewModel.fetchPostureList()
             "动作" -> consoleViewModel.fetchArmList()
             "地图管理" -> consoleViewModel.fetchMaps()
+            "系统设置" -> consoleViewModel.fetchSystemSettings()
             "导览管理" -> {
                 consoleViewModel.fetchArmList() // 编辑点位需要动作列表进行名称映射
                 if (inspectionTab == "导览点") {
@@ -318,12 +318,6 @@ fun InteractionScreen(
                             onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id.toString(), name, true) },
                             onRetryClick = { consoleViewModel.fetchArmList() }
                         )
-                        "示教动作" -> {
-                            val onSetActions: (@Composable () -> Unit) -> Unit = remember {
-                                { actions -> customHeaderActions = actions }
-                            }
-                            TeachActionPanel(onSetActions = onSetActions)
-                        }
                         "动作编辑" -> {
                             val onSetActions: (@Composable () -> Unit) -> Unit = remember {
                                 { actions -> customHeaderActions = actions }
@@ -369,6 +363,7 @@ fun InteractionScreen(
                             addActionText = text
                             onAddClickAction = action
                         })
+                        "系统设置" -> SystemSettingsPanel()
                         "知识库" -> KnowledgeBasePanel(onSetAddAction = { text, action ->
                             addActionText = text
                             onAddClickAction = action
