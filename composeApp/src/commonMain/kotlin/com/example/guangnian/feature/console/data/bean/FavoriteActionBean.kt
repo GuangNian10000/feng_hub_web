@@ -1,5 +1,8 @@
 package com.example.guangnian.feature.console.data.bean
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class FavoriteActionBean(
     val id: String, // 对应 posture_name 或 arm_id 的字符串形式
     val name: String,

@@ -53,7 +53,7 @@ fun ActionEditingPanel(
         viewModel.fetchActionEditingList()
     }
 
-    val armStatus = uiState.teachStatus.teach.arm_status.takeIf { it.isNotEmpty() } ?: uiState.teachStatus.dds.arm_status
+    val armStatus = uiState.teachStatus.arm_status.takeIf { it.isNotEmpty() } ?: uiState.teachStatus.arm_status
     val armStatusState = rememberUpdatedState(armStatus)
     val showToastAction = remember { { msg: String -> toastMessage = msg } }
 

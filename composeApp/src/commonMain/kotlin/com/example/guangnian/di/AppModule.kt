@@ -63,7 +63,8 @@ val appModule = module {
             routeApi = get(),
             agentControlApi = get(),
             robotStatusApi = get(),
-            eventBus = get()
+            eventBus = get(),
+            settings = get()
         ) 
     }
     factory { 

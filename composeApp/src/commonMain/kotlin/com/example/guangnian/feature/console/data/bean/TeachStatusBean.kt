@@ -8,16 +8,16 @@ data class TeachStatusBean(
     val connected: Boolean = false,
     val recording: Boolean = false,
     val dds: RecordState = RecordState(),
-    val teach: RecordState = RecordState()
+    val teach: RecordState = RecordState(),
+    val arm_status : String = ""
 )
 
 @Serializable
 data class RecordState(
     val recording: Boolean = false,
     val state: String = "",
-    val state_zh: String = "",
+    val state_zh: String = ""
     //  "arm_status": "damping_unlock"
-    val arm_status : String = ""
 
 )
 

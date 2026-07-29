@@ -16,6 +16,7 @@ import com.example.guangnian.core.network.tcp.KmpTcpDispatcher
 import com.example.guangnian.core.network.tcp.TcpState
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -23,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.*
 import kotlinx.datetime.Clock
+import com.russhwolf.settings.Settings
 
 data class ConsoleUiState(
     val postures: List<PostureBean> = emptyList(),
@@ -51,7 +53,8 @@ class ConsoleViewModel(
     private val routeApi: RouteApi,
     private val agentControlApi: AgentControlApi,
     private val robotStatusApi: RobotStatusApi,
-    private val eventBus: RobotEventBus
+    private val eventBus: RobotEventBus,
+    private val settings: Settings
 ) : ViewModel() {
     private companion object {
         const val TAG = "ConsoleViewModel"
@@ -71,6 +74,16 @@ class ConsoleViewModel(
     private var systemInfoSeq = 0L
 
     init {
+        val savedFavoritesJson = settings.getString("favorite_actions", "")
+        if (savedFavoritesJson.isNotEmpty()) {
+            try {
+                val savedFavorites = json.decodeFromString<List<FavoriteActionBean>>(savedFavoritesJson)
+                _uiState.update { it.copy(favoriteActions = savedFavorites) }
+            } catch (e: Exception) {
+                KLog.w(TAG, "解析收藏动作失败: ${e.message}")
+            }
+        }
+
         observeConnectionState()
         startSystemInfoPolling()
         // 监听来自 Map 或其他组件的事件
@@ -590,6 +603,13 @@ class ConsoleViewModel(
             val existingIndex = currentFavorites.indexOfFirst { it.id == id && it.isArmAction == isArmAction }
             if (existingIndex != -1) currentFavorites.removeAt(existingIndex)
             else currentFavorites.add(FavoriteActionBean(id, name, isArmAction))
+            
+            try {
+                settings.putString("favorite_actions", json.encodeToString(currentFavorites))
+            } catch (e: Exception) {
+                KLog.w(TAG, "保存收藏动作失败: ${e.message}")
+            }
+            
             currentState.copy(favoriteActions = currentFavorites)
         }
     }
