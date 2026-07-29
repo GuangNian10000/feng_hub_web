@@ -13,7 +13,7 @@ actual fun BleAutoConnectDialog(
 }
 
 @Composable
-actual fun BleManagementScreen(onBack: () -> Unit) {
+actual fun BleManagementScreen(onBack: () -> Unit, onNavigateToRemoteDesktop: (String) -> Unit) {
     // iOS 不显示此页面
 }
 

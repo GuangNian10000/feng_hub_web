@@ -39,8 +39,7 @@ val DefaultTextShadow = Shadow(
 fun MainControlScreen(
     onNavigateToInteraction: () -> Unit = {},
     onNavigateToFace: () -> Unit = {},
-    onNavigateToBle: () -> Unit = {},
-    onNavigateToRemoteDesktop: (String) -> Unit = {}
+    onNavigateToBle: () -> Unit = {}
 ) {
     val viewModel: RobotViewModel = koinViewModel()
     val ip by viewModel.ip.collectAsState()
@@ -50,9 +49,6 @@ fun MainControlScreen(
     val controlType by viewModel.controlType.collectAsState()
 
     var showTypeDialog by remember { mutableStateOf(false) }
-    var showBleAutoConnect by remember { mutableStateOf(false) }
-    // 远程桌面：先选 IP（BLE 弹窗），再跳转配置弹窗
-    var pendingRemoteDesktop by remember { mutableStateOf(false) }
 
     MainControlContent(
         ip = ip,
@@ -66,11 +62,6 @@ fun MainControlScreen(
         onNavigateToInteraction = onNavigateToInteraction,
         onNavigateToFace = onNavigateToFace,
         onNavigateToBle = onNavigateToBle,
-        onNavigateToRemoteDesktop = {
-            // 点击远程桌面 → 先触发 BLE 自动连接选 IP
-            pendingRemoteDesktop = true
-            showBleAutoConnect = true
-        },
         onTypeClick = { showTypeDialog = true }
     )
 
@@ -81,24 +72,6 @@ fun MainControlScreen(
             onSelect = {
                 viewModel.setControlType(it)
                 showTypeDialog = false
-            }
-        )
-    }
-
-    // BLE 自动连接弹窗（仅 Android 显示）
-    if (showBleAutoConnect) {
-        BleAutoConnectDialog(
-            onDismiss = {
-                showBleAutoConnect = false
-                pendingRemoteDesktop = false
-            },
-            onIpSelected = { selectedIp ->
-                showBleAutoConnect = false
-                if (pendingRemoteDesktop) {
-                    // 远程桌面流程：IP 选好后直接跳转配置页
-                    pendingRemoteDesktop = false
-                    onNavigateToRemoteDesktop(selectedIp)
-                }
             }
         )
     }
@@ -117,7 +90,6 @@ fun MainControlContent(
     onNavigateToInteraction: () -> Unit,
     onNavigateToFace: () -> Unit,
     onNavigateToBle: () -> Unit = {},
-    onNavigateToRemoteDesktop: () -> Unit = {},
     onTypeClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -152,8 +124,7 @@ fun MainControlContent(
                     controlType = controlType,
                     onNavigateToInteraction = onNavigateToInteraction,
                     onNavigateToFace = onNavigateToFace,
-                    onNavigateToBle = onNavigateToBle,
-                    onNavigateToRemoteDesktop = onNavigateToRemoteDesktop
+                    onNavigateToBle = onNavigateToBle
                 )
             }
 
@@ -308,8 +279,7 @@ fun FunctionGrid(
     controlType: ControlType,
     onNavigateToInteraction: () -> Unit,
     onNavigateToFace: () -> Unit,
-    onNavigateToBle: () -> Unit = {},
-    onNavigateToRemoteDesktop: () -> Unit = {}
+    onNavigateToBle: () -> Unit = {}
 ) {
     val isDog = controlType == ControlType.DOG
     val targetIconSize = if (isDog) 160.dp else 140.dp
@@ -333,12 +303,6 @@ fun FunctionGrid(
         if (controlType == ControlType.ROBOT) {
             Spacer(modifier = Modifier.width(spacerWidth))
             MenuCard("人脸识别", Res.drawable.ic_face, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize, onClick = onNavigateToFace)
-
-            // 仅 Android 显示远程桌面入口
-            if (isRemoteDesktopSupported) {
-                Spacer(modifier = Modifier.width(spacerWidth))
-                MenuCard("远程桌面", Res.drawable.ic_remote_desktop, Modifier.weight(1f, fill = false).fillMaxHeight(), targetIconSize, fontSize, onClick = onNavigateToRemoteDesktop)
-            }
         }
 
         if (controlType == ControlType.DOG) {

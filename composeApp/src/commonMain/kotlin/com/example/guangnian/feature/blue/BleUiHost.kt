@@ -19,7 +19,7 @@ expect fun BleAutoConnectDialog(
  * iOS      : 隐藏（不显示）
  */
 @Composable
-expect fun BleManagementScreen(onBack: () -> Unit)
+expect fun BleManagementScreen(onBack: () -> Unit, onNavigateToRemoteDesktop: (String) -> Unit = {})
 
 /**
  * 当前平台是否支持 BLE 功能（用于按钮的显隐控制）

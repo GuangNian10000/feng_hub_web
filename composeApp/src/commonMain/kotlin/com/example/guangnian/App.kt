@@ -52,11 +52,7 @@ fun App() {
                         MainControlScreen(
                             onNavigateToInteraction = { currentRoute = AppRoute.INTERACTION },
                             onNavigateToFace = { currentRoute = AppRoute.FACE_MANAGEMENT },
-                            onNavigateToBle = { currentRoute = AppRoute.BLE_MANAGEMENT },
-                            onNavigateToRemoteDesktop = { ip ->
-                                remoteDesktopIp = ip
-                                currentRoute = AppRoute.REMOTE_DESKTOP
-                            }
+                            onNavigateToBle = { currentRoute = AppRoute.BLE_MANAGEMENT }
                         )
                     }
                     AppRoute.INTERACTION -> {
@@ -82,7 +78,13 @@ fun App() {
                         }
                     }
                     AppRoute.BLE_MANAGEMENT -> {
-                        BleManagementScreen(onBack = { currentRoute = AppRoute.MAIN_CONTROL })
+                        BleManagementScreen(
+                            onBack = { currentRoute = AppRoute.MAIN_CONTROL },
+                            onNavigateToRemoteDesktop = { ip ->
+                                remoteDesktopIp = ip
+                                currentRoute = AppRoute.REMOTE_DESKTOP
+                            }
+                        )
                     }
                     AppRoute.REMOTE_DESKTOP -> {
                         RemoteDesktopScreen(

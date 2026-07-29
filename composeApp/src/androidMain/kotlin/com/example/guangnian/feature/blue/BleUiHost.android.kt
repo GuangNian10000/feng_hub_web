@@ -412,10 +412,11 @@ private fun DialogErrorContent(message: String, onRetry: () -> Unit) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @Composable
-actual fun BleManagementScreen(onBack: () -> Unit) {
+actual fun BleManagementScreen(onBack: () -> Unit, onNavigateToRemoteDesktop: (String) -> Unit) {
     val context = LocalContext.current
     val viewModel: BleViewModel = viewModel()
     val bleState       by viewModel.bleState.collectAsState()
+    val autoScanState  by viewModel.autoScanState.collectAsState()
     val scannedDevices by viewModel.scannedDevices.collectAsState()
     val logLines       by viewModel.logLines.collectAsState()
 
@@ -441,12 +442,19 @@ actual fun BleManagementScreen(onBack: () -> Unit) {
         ) {
             // 左栏：连接控制
             Column(modifier = Modifier.weight(1f)) {
-                when (val state = bleState) {
+                val displayState = if (autoScanState is AutoScanState.QueryingIp || autoScanState is AutoScanState.Scanning) {
+                    BleState.Scanning((autoScanState as? AutoScanState.QueryingIp)?.progress ?: "正在搜索...")
+                } else {
+                    bleState
+                }
+                
+                when (val state = displayState) {
                     is BleState.Idle, is BleState.Error -> {
                         ScanDevicePanel(
                             viewModel      = viewModel,
                             scannedDevices = scannedDevices,
-                            bleState       = bleState
+                            bleState       = displayState,
+                            onNavigateToRemoteDesktop = onNavigateToRemoteDesktop
                         )
                     }
                     is BleState.Scanning -> {
@@ -518,7 +526,8 @@ private fun BleManagementTopBar(bleState: BleState, onBack: () -> Unit) {
 private fun ScanDevicePanel(
     viewModel: BleViewModel,
     scannedDevices: List<BleDevice>,
-    bleState: BleState
+    bleState: BleState,
+    onNavigateToRemoteDesktop: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // 标题 + 扫描按钮
@@ -576,7 +585,11 @@ private fun ScanDevicePanel(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(scannedDevices, key = { it.address }) { device ->
-                    ScannedDeviceItem(device = device, onConnect = { viewModel.connectDevice(device) })
+                    ScannedDeviceItem(
+                        device = device, 
+                        onConnect = { viewModel.connectDevice(device) },
+                        onNavigateToRemoteDesktop = onNavigateToRemoteDesktop
+                    )
                 }
             }
         }
@@ -584,43 +597,154 @@ private fun ScanDevicePanel(
 }
 
 @Composable
-private fun ScannedDeviceItem(device: BleDevice, onConnect: () -> Unit) {
-    Row(
+private fun ScannedDeviceItem(
+    device: BleDevice, 
+    onConnect: () -> Unit,
+    onNavigateToRemoteDesktop: (String) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(BleSurface)
             .border(1.dp, BleDivider, RoundedCornerShape(12.dp))
-            .clickable { onConnect() }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(BleAccent.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .clickable {
+                    if (device.ips.isNotEmpty()) {
+                        isExpanded = !isExpanded
+                    } else {
+                        onConnect()
+                    }
+                }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Rounded.Bluetooth, null, tint = BleAccent, modifier = Modifier.size(18.dp))
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(BleAccent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Rounded.Bluetooth, null, tint = BleAccent, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(device.name, color = BleText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    "${device.address}  ${device.rssi} dBm",
+                    color = BleSubText,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+            if (device.ips.isNotEmpty()) {
+                Icon(
+                    if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                    contentDescription = null,
+                    tint = BleAccent,
+                    modifier = Modifier.size(20.dp)
+                )
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { onNavigateToRemoteDesktop("") },
+                        colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text("远程", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = onConnect,
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E3A5F)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text("连接", color = BleAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
-        Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(device.name, color = BleText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(
-                "${device.address}  ${device.rssi} dBm",
-                color = BleSubText,
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace
-            )
-        }
-        Button(
-            onClick = onConnect,
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E3A5F)),
-            shape = RoundedCornerShape(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+        
+        // IP 列表（可展开）
+        AnimatedVisibility(
+            visible = isExpanded && device.ips.isNotEmpty(),
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
         ) {
-            Text("连接", color = BleAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Divider(color = BleDivider)
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("可用 IP 地址", color = BleSubText, fontSize = 11.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { onNavigateToRemoteDesktop(device.ips.firstOrNull() ?: "") },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text("默认远程", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = onConnect,
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E3A5F)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text("连接设备", color = BleAccent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(2.dp))
+                device.ips.forEach { ip ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(BleAccent.copy(alpha = 0.12f))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            ip,
+                            color = BleAccent,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Button(
+                            onClick = { onNavigateToRemoteDesktop(ip) },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(Icons.Rounded.Computer, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("远程桌面", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
+            }
         }
     }
 }

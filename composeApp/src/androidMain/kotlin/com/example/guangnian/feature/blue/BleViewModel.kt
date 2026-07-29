@@ -157,6 +157,7 @@ class BleViewModel : ViewModel() {
             }
 
             _autoScanState.value = AutoScanState.Done(resultDevices)
+            _scannedDevices.value = resultDevices
         }
     }
 
