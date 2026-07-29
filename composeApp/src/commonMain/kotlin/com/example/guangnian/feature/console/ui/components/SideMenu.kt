@@ -3,6 +3,9 @@ package com.example.guangnian.feature.console.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -31,37 +34,86 @@ fun SideMenu(
     onMenuClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // bgColor 改为半透明，同时保持内边距一致
     GlassBox(
         modifier = modifier.heightIn(max = 300.dp), 
         bgColor = Color(0xCC1A1A1A) 
     ) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 80.dp), 
-            contentPadding = PaddingValues(16.dp), // 统一四周内边距
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxWidth().wrapContentHeight()
-        ) {
-            items(menus) { menu ->
-                val icon = when (menu) {
-                    "姿态动作" -> Icons.Default.Accessibility
-                    "动作" -> Icons.AutoMirrored.Filled.DirectionsRun
-                    "动作编辑" -> Icons.Default.Edit
-                    "导览管理" -> Icons.Default.Explore
-                    "语音合成" -> Icons.Default.RecordVoiceOver
-                    "智能体设置" -> Icons.Default.SmartToy
-                    "地图管理" -> Icons.Default.Map
-                    "系统设置" -> Icons.Default.Settings
-                    "知识库" -> Icons.AutoMirrored.Filled.MenuBook
-                    else -> Icons.Default.MoreHoriz
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
+            val availableWidth = maxWidth - 32.dp // padding 16.dp * 2
+            val itemWidth = 80.dp
+            val spacing = 10.dp
+            val columns = maxOf(1, ((availableWidth + spacing) / (itemWidth + spacing)).toInt())
+            val itemsPerPage = columns * 2
+            
+            // 补齐空白项，使所有页面的高度一致
+            val paddedMenus = menus.toMutableList()
+            if (paddedMenus.size > itemsPerPage) {
+                while (paddedMenus.size % itemsPerPage != 0) {
+                    paddedMenus.add("")
                 }
-                GridMenuItem(
-                    text = menu,
-                    icon = icon,
-                    isSelected = activeFragment == menu,
-                    onClick = { onMenuClick(menu) }
-                )
+            }
+            val pages = paddedMenus.chunked(maxOf(1, itemsPerPage))
+            
+            val pagerState = rememberPagerState(pageCount = { pages.size })
+            
+            Column(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth().wrapContentHeight()
+                ) { page ->
+                    val pageItems = pages[page]
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(columns), 
+                        contentPadding = PaddingValues(16.dp), 
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth().wrapContentHeight()
+                    ) {
+                        items(pageItems) { menu ->
+                            if (menu.isEmpty()) {
+                                // 空白占位符，保持高度一致
+                                Spacer(modifier = Modifier.height(64.dp))
+                            } else {
+                                val icon = when (menu) {
+                                    "姿态动作" -> Icons.Default.Accessibility
+                                    "动作" -> Icons.AutoMirrored.Filled.DirectionsRun
+                                    "动作编辑" -> Icons.Default.Edit
+                                    "导览管理" -> Icons.Default.Explore
+                                    "语音合成" -> Icons.Default.RecordVoiceOver
+                                    "智能体设置" -> Icons.Default.SmartToy
+                                    "地图管理" -> Icons.Default.Map
+                                    "系统设置" -> Icons.Default.Settings
+                                    "知识库" -> Icons.AutoMirrored.Filled.MenuBook
+                                    else -> Icons.Default.MoreHoriz
+                                }
+                                GridMenuItem(
+                                    text = menu,
+                                    icon = icon,
+                                    isSelected = activeFragment == menu,
+                                    onClick = { onMenuClick(menu) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (pages.size > 1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        repeat(pages.size) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) Color.White else Color.Gray
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 3.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .size(6.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -71,6 +123,7 @@ fun SideMenu(
 fun GridMenuItem(text: String, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
     Column(
         modifier = Modifier
+            .height(64.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (isSelected) Color(0x33FFFFFF) else Color(0x11FFFFFF))
             .clickable { onClick() }
