@@ -26,6 +26,10 @@ import kotlinx.coroutines.isActive
 import kotlin.math.*
 import kotlinx.datetime.Clock
 import com.russhwolf.settings.Settings
+import io.ktor.client.HttpClient
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 
 data class SystemSettingsState(
     val greetEnabled: Boolean = false,
@@ -71,7 +75,8 @@ class ConsoleViewModel(
     private val robotStatusApi: RobotStatusApi,
     private val systemSettingsApi: SystemSettingsApi,
     private val eventBus: RobotEventBus,
-    private val settings: Settings
+    private val settings: Settings,
+    private val httpClient: HttpClient
 ) : ViewModel() {
     private companion object {
         const val TAG = "ConsoleViewModel"
@@ -689,6 +694,39 @@ class ConsoleViewModel(
                 fetchSystemSettings()
             } catch (e: Exception) {
                 KLog.e(TAG, "更新系统设置失败: ${e.message}")
+            }
+        }
+    }
+
+    fun uploadCarouselMedia(bytes: ByteArray, mediaType: String, fileName: String, onResult: ((Boolean, String) -> Unit)? = null) {
+        viewModelScope.launch {
+            val seq = ++taskSeq
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                val savedIp = settings.getString("saved_ip", "192.168.1.100")
+                val url = "http://$savedIp:5001/api/carousel/items?media_type=$mediaType"
+                KLog.i(TAG, "开始上传轮播素材 #$seq: type=$mediaType, name=$fileName, size=${bytes.size}")
+                
+                val response = httpClient.post(url) {
+                    header("X-Filename", fileName)
+                    setBody(bytes)
+                }
+                
+                if (response.status.isSuccess()) {
+                    KLog.i(TAG, "上传轮播素材成功 #$seq: 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                    onResult?.invoke(true, "上传成功")
+                } else {
+                    KLog.w(TAG, "上传轮播素材失败 #$seq: 状态码=${response.status}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                    onResult?.invoke(false, "上传失败: HTTP ${response.status}")
+                    handleError("上传失败", Exception("HTTP ${response.status}"))
+                }
+            } catch (e: Exception) {
+                KLog.w(TAG, "上传轮播素材异常 #$seq: ${e.message}", e)
+                onResult?.invoke(false, "上传异常: ${e.message}")
+                handleError("上传失败", e)
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

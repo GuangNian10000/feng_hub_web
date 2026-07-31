@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.feature.console.viewmodel.ConsoleViewModel
+import com.example.guangnian.core.utils.rememberMediaPicker
+import kotlinx.coroutines.delay
 
 @Composable
 fun SystemSettingsPanel(
@@ -33,6 +35,21 @@ fun SystemSettingsPanel(
     LaunchedEffect(Unit) {
         consoleViewModel.fetchSystemSettings()
     }
+
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
+            delay(2000)
+            toastMessage = null
+        }
+    }
+
+    val mediaPicker = rememberMediaPicker(onMediaPicked = { bytes, mediaType, fileName ->
+        consoleViewModel.uploadCarouselMedia(bytes, mediaType, fileName) { success, msg ->
+            toastMessage = msg
+        }
+    })
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -144,6 +161,78 @@ fun SystemSettingsPanel(
                 value = settingsState.carouselImageDuration,
                 onSave = { time -> consoleViewModel.updateSystemSetting(carouselImageDuration = time) }
             )
+
+            // 上传轮播图片或视频
+            SettingActionItem(
+                title = "上传轮播素材",
+                subtitle = "支持图片或视频",
+                buttonText = "选择并上传",
+                onClick = { mediaPicker.pickMedia() }
+            )
+        }
+
+        // 跨平台 Toast
+        if (toastMessage != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xD9000000))
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Text(text = toastMessage!!, color = Color.White, fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingActionItem(
+    title: String,
+    subtitle: String,
+    buttonText: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(0x1AFFFFFF))
+            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Text(
+                    text = title, 
+                    color = Color.White, 
+                    fontSize = 12.sp, 
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = subtitle, 
+                    color = Color(0xFFAAAAAA), 
+                    fontSize = 9.sp
+                )
+            }
+            
+            Button(
+                onClick = onClick,
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(0xFF007AFF),
+                    contentColor = Color.White
+                ),
+                modifier = Modifier.defaultMinSize(minWidth = 1.dp, minHeight = 1.dp).height(24.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+            ) {
+                Text(buttonText, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+            }
         }
     }
 }

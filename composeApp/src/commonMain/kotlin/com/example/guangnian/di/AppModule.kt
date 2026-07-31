@@ -66,7 +66,8 @@ val appModule = module {
             robotStatusApi = get(),
             systemSettingsApi = get(),
             eventBus = get(),
-            settings = get()
+            settings = get(),
+            httpClient = get()
         ) 
     }
     factory { 
