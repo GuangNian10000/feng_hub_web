@@ -322,10 +322,11 @@ private fun AgentEditDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("智能体名称") },
+                label = { Text("智能体名称", fontSize = 12.sp) },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(6.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                 colors = modernOutlinedTextFieldColors()
             )
 
@@ -333,11 +334,12 @@ private fun AgentEditDialog(
                 OutlinedTextField(
                     value = selectedVoice.sex.ifEmpty { "未选择" },
                     onValueChange = {},
-                    label = { Text("音色配置") },
+                    label = { Text("音色配置", fontSize = 12.sp) },
                     readOnly = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(6.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
@@ -360,12 +362,13 @@ private fun AgentEditDialog(
         OutlinedTextField(
             value = prompt,
             onValueChange = { prompt = it },
-            label = { Text("系统提示词 (Prompt)") },
+            label = { Text("系统提示词 (Prompt)", fontSize = 12.sp) },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 180.dp),
+                .heightIn(min = 120.dp),
             maxLines = 15,
             shape = RoundedCornerShape(6.dp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
             colors = modernOutlinedTextFieldColors()
         )
     }
@@ -399,16 +402,17 @@ private fun VoiceSelectionDialog(
     // 分类与分页状态
     val categories = listOf("全部", "火山", "讯飞", "微软", "中文", "日文", "英文", "方言")
     var selectedCategory by remember { mutableStateOf("全部") }
+    var searchQuery by remember { mutableStateOf("") }
     var currentPage by remember { mutableIntStateOf(0) }
-    val pageSize = 20
+    val pageSize = 40 // Increased page size to show more items
 
     // 根据选择的分类动态过滤数据
-    val filteredList = remember(selectedCategory) {
+    val filteredList = remember(selectedCategory, searchQuery) {
         val allVoices = com.example.guangnian.feature.console.data.bean.StaticVoiceData.allVoices
         allVoices.filter { voice ->
             val lang = voice.language
             val sourceStr = voice.source.toString()
-            when (selectedCategory) {
+            val categoryMatch = when (selectedCategory) {
                 "火山" -> sourceStr.contains("VOLCANO")
                 "讯飞" -> sourceStr.contains("AIUI")
                 "微软" -> sourceStr.contains("MICROSOFT")
@@ -420,6 +424,11 @@ private fun VoiceSelectionDialog(
                         lang.contains("客") || lang.contains("广西")
                 else -> true // "全部"
             }
+            val searchMatch = if (searchQuery.isBlank()) true else {
+                voice.sex.contains(searchQuery, ignoreCase = true) ||
+                lang.contains(searchQuery, ignoreCase = true)
+            }
+            categoryMatch && searchMatch
         }
     }
 
@@ -431,8 +440,8 @@ private fun VoiceSelectionDialog(
         filteredList.drop(currentPage * pageSize).take(pageSize)
     }
 
-    // 切换分类时，页码重置为第 0 页
-    LaunchedEffect(selectedCategory) {
+    // 切换分类或搜索时，页码重置为第 0 页
+    LaunchedEffect(selectedCategory, searchQuery) {
         currentPage = 0
     }
 
@@ -445,38 +454,64 @@ private fun VoiceSelectionDialog(
         )
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize(), // 强制全屏
-            color = Color.White // 全屏背景改为白色
+            modifier = Modifier.fillMaxSize(), // 恢复全屏
+            color = Color.White
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxSize().padding(12.dp)) { // 边距减小为 12.dp
 
-                // 1. 顶部标题
-                Text(
-                    text = "《 选择音色",
-                    color = Color.Black,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onDismiss() }
-                        .padding(bottom = 12.dp, end = 16.dp, top = 2.dp, start = 2.dp)
-                )
+                // 1. 顶部标题和搜索
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "《 选择音色",
+                        color = Color.Black,
+                        fontSize = 16.sp, // 标题减小
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable { onDismiss() }
+                            .padding(end = 12.dp, top = 2.dp, start = 2.dp)
+                    )
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .width(260.dp)
+                            .height(36.dp)
+                            .border(1.dp, Color.LightGray, RoundedCornerShape(18.dp))
+                            .padding(horizontal = 12.dp),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, color = Color.Black),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF007AFF)),
+                        decorationBox = { innerTextField ->
+                            Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.fillMaxSize()) {
+                                if (searchQuery.isEmpty()) {
+                                    Text("搜索当前分类...", color = Color.Gray, fontSize = 12.sp)
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
+                }
 
                 // 2. 动态分类筛选栏 (LazyRow横向滚动)
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(categories) { category ->
                         val isSelected = selectedCategory == category
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(if (isSelected) Color(0xFF007AFF) else Color(0x0A000000))
                                 .clickable { selectedCategory = category }
-                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .padding(horizontal = 12.dp, vertical = 4.dp) // 分类按钮减小
                         ) {
-                            Text(category, color = if (isSelected) Color.White else Color.Black, fontSize = 14.sp)
+                            Text(category, color = if (isSelected) Color.White else Color.Black, fontSize = 12.sp) // 分类字号减小
                         }
                     }
                 }
@@ -484,12 +519,12 @@ private fun VoiceSelectionDialog(
                 // 3. 音色列表 (占满中间剩余空间)
                 if (pagedList.isEmpty()) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("该分类下暂无音色", color = Color.Gray, fontSize = 14.sp)
+                        Text("该分类下暂无音色", color = Color.Gray, fontSize = 12.sp)
                     }
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp) // 列表间距减小
                     ) {
                         items(pagedList) { voice ->
                             // 通过 ID 判断是否选中，每次进来能准确回显默认值
@@ -499,31 +534,32 @@ private fun VoiceSelectionDialog(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(6.dp))
                                     .background(if (isSelected) Color(0x1A007AFF) else Color(0x0A000000))
-                                    .border(1.dp, if (isSelected) Color(0xFF007AFF) else Color.Transparent, RoundedCornerShape(8.dp))
+                                    .border(1.dp, if (isSelected) Color(0xFF007AFF) else Color.Transparent, RoundedCornerShape(6.dp))
                                     .clickable { tempSelectedVoice = voice }
-                                    .padding(12.dp),
+                                    .padding(8.dp), // 内边距减小
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = isSelected,
                                     onClick = { tempSelectedVoice = voice },
-                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF007AFF), unselectedColor = Color.LightGray)
+                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF007AFF), unselectedColor = Color.LightGray),
+                                    modifier = Modifier.scale(0.8f) // 按钮缩放
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
 
                                 Column {
-                                    Text(text = voice.sex.ifEmpty { "默认" }, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = "平台: ${voice.source} | 语言: ${voice.language}", color = Color.Gray, fontSize = 12.sp)
+                                    Text(text = voice.sex.ifEmpty { "默认" }, color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold) // 名字字号减小
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(text = "平台: ${voice.source} | 语言: ${voice.language}", color = Color.Gray, fontSize = 10.sp) // 描述字号减小
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 4. 底部控制区 (分页按钮 + 确认取消操作)
                 Row(
@@ -535,37 +571,44 @@ private fun VoiceSelectionDialog(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TextButton(
                             onClick = { if (currentPage > 0) currentPage-- },
-                            enabled = currentPage > 0
+                            enabled = currentPage > 0,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                         ) {
-                            Text("上一页", color = if (currentPage > 0) Color(0xFF007AFF) else Color.Gray)
+                            Text("上一页", color = if (currentPage > 0) Color(0xFF007AFF) else Color.Gray, fontSize = 12.sp)
                         }
 
                         Text(
                             text = "${currentPage + 1} / $totalPages",
                             color = Color.Black,
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            fontSize = 14.sp
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            fontSize = 12.sp
                         )
 
                         TextButton(
                             onClick = { if (currentPage < totalPages - 1) currentPage++ },
-                            enabled = currentPage < totalPages - 1
+                            enabled = currentPage < totalPages - 1,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                         ) {
-                            Text("下一页", color = if (currentPage < totalPages - 1) Color(0xFF007AFF) else Color.Gray)
+                            Text("下一页", color = if (currentPage < totalPages - 1) Color(0xFF007AFF) else Color.Gray, fontSize = 12.sp)
                         }
                     }
 
                     // 操作按钮
-                    Row {
-                        TextButton(onClick = onDismiss) {
-                            Text("取消", color = Color.Gray)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = onDismiss,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text("取消", color = Color.Gray, fontSize = 12.sp)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = { onSelect(tempSelectedVoice) },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF))
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
                         ) {
-                            Text("确定选择", color = Color.White)
+                            Text("确定选择", color = Color.White, fontSize = 12.sp)
                         }
                     }
                 }

@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -402,12 +403,13 @@ fun SynthesisEditDialog(
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
-            label = { Text("播报文本 (必填)") },
+            label = { Text("播报文本 (必填)", fontSize = 12.sp) },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 200.dp),
+                .heightIn(min = 120.dp),
             maxLines = 12,
             shape = RoundedCornerShape(6.dp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
             colors = modernOutlinedTextFieldColors()
         )
 
@@ -421,11 +423,12 @@ fun SynthesisEditDialog(
                 OutlinedTextField(
                     value = selectedVoice?.sex?.ifEmpty { "已选择" } ?: "默认音色",
                     onValueChange = {},
-                    label = { Text("指定音色") },
+                    label = { Text("指定音色", fontSize = 12.sp) },
                     readOnly = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(6.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                     colors = modernOutlinedTextFieldColors()
                 )
                 Box(modifier = Modifier.matchParentSize().clickable { showVoiceSelection = true })
@@ -454,11 +457,12 @@ fun SynthesisEditDialog(
                 OutlinedTextField(
                     value = selectedAction?.arm_name ?: "无关联动作",
                     onValueChange = {},
-                    label = { Text("指定动作") },
+                    label = { Text("指定动作", fontSize = 12.sp) },
                     readOnly = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(6.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                     colors = modernOutlinedTextFieldColors()
                 )
                 Box(modifier = Modifier.matchParentSize().clickable { showActionSelection = true })
@@ -601,15 +605,16 @@ fun SynthesisVoiceSelectionDialog(
 
     val categories = listOf("全部", "火山", "讯飞", "微软", "中文", "日文", "英文", "方言")
     var selectedCategory by remember { mutableStateOf("全部") }
+    var searchQuery by remember { mutableStateOf("") }
     var currentPage by remember { mutableIntStateOf(0) }
-    val pageSize = 20
+    val pageSize = 40
 
-    val filteredList = remember(selectedCategory) {
+    val filteredList = remember(selectedCategory, searchQuery) {
         val allVoices = com.example.guangnian.feature.console.data.bean.StaticVoiceData.allVoices
         allVoices.filter { voice ->
             val lang = voice.language
             val sourceStr = voice.source.toString()
-            when (selectedCategory) {
+            val categoryMatch = when (selectedCategory) {
                 "火山" -> sourceStr.contains("VOLCANO")
                 "讯飞" -> sourceStr.contains("AIUI")
                 "微软" -> sourceStr.contains("MICROSOFT")
@@ -621,69 +626,100 @@ fun SynthesisVoiceSelectionDialog(
                         lang.contains("客") || lang.contains("广西")
                 else -> true
             }
+            val searchMatch = if (searchQuery.isBlank()) true else {
+                voice.sex.contains(searchQuery, ignoreCase = true) ||
+                lang.contains(searchQuery, ignoreCase = true)
+            }
+            categoryMatch && searchMatch
         }
     }
 
     val totalPages = maxOf(1, (filteredList.size + pageSize - 1) / pageSize)
     val pagedList = remember(filteredList, currentPage) { filteredList.drop(currentPage * pageSize).take(pageSize) }
 
-    LaunchedEffect(selectedCategory) { currentPage = 0 }
+    LaunchedEffect(selectedCategory, searchQuery) { currentPage = 0 }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF1E1E1E)) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Text(
-                    text = "《 选择音色",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable { onDismiss() }
-                        .padding(bottom = 12.dp, end = 16.dp, top = 2.dp, start = 2.dp)
-                )
-                LazyRow(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "《 选择音色",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable { onDismiss() }
+                            .padding(end = 12.dp, top = 2.dp, start = 2.dp)
+                    )
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .width(260.dp)
+                            .height(36.dp)
+                            .border(1.dp, Color(0x4DFFFFFF), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 12.dp),
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp, color = Color.White),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF007AFF)),
+                        decorationBox = { innerTextField ->
+                            Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.fillMaxSize()) {
+                                if (searchQuery.isEmpty()) {
+                                    Text("搜索当前分类...", color = Color.Gray, fontSize = 12.sp)
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
+                }
+                LazyRow(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(categories) { category ->
                         val isSelected = selectedCategory == category
                         Box(
-                            modifier = Modifier.clip(RoundedCornerShape(16.dp)).background(if (isSelected) Color(0xFF007AFF) else Color(0x33FFFFFF)).clickable { selectedCategory = category }.padding(horizontal = 16.dp, vertical = 6.dp)
-                        ) { Text(category, color = Color.White, fontSize = 14.sp) }
+                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(if (isSelected) Color(0xFF007AFF) else Color(0x33FFFFFF)).clickable { selectedCategory = category }.padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) { Text(category, color = Color.White, fontSize = 12.sp) }
                     }
                 }
 
                 if (pagedList.isEmpty()) {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("该分类下暂无音色", color = Color.Gray, fontSize = 14.sp) }
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("该分类下暂无音色", color = Color.Gray, fontSize = 12.sp) }
                 } else {
-                    LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(pagedList) { voice ->
                             val isSelected = voice.id == tempSelectedVoice.id || (tempSelectedVoice.id.isEmpty() && voice.sex == tempSelectedVoice.sex)
                             Row(
-                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (isSelected) Color(0x4D007AFF) else Color(0x1AFFFFFF)).border(1.dp, if (isSelected) Color(0xFF007AFF) else Color.Transparent, RoundedCornerShape(8.dp)).clickable { tempSelectedVoice = voice }.padding(12.dp),
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(if (isSelected) Color(0x4D007AFF) else Color(0x1AFFFFFF)).border(1.dp, if (isSelected) Color(0xFF007AFF) else Color.Transparent, RoundedCornerShape(6.dp)).clickable { tempSelectedVoice = voice }.padding(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                RadioButton(selected = isSelected, onClick = { tempSelectedVoice = voice }, colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF007AFF), unselectedColor = Color.LightGray))
-                                Spacer(modifier = Modifier.width(12.dp))
+                                RadioButton(selected = isSelected, onClick = { tempSelectedVoice = voice }, colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF007AFF), unselectedColor = Color.LightGray), modifier = Modifier.scale(0.8f))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Column {
-                                    Text(text = voice.sex.ifEmpty { "默认" }, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = "平台: ${voice.source} | 语言: ${voice.language}", color = Color(0xFFAAAAAA), fontSize = 12.sp)
+                                    Text(text = voice.sex.ifEmpty { "默认" }, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(text = "平台: ${voice.source} | 语言: ${voice.language}", color = Color(0xFFAAAAAA), fontSize = 10.sp)
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { if (currentPage > 0) currentPage-- }, enabled = currentPage > 0) { Text("上一页", color = if (currentPage > 0) Color(0xFF007AFF) else Color.Gray) }
-                        Text(text = "${currentPage + 1} / $totalPages", color = Color.White, modifier = Modifier.padding(horizontal = 12.dp), fontSize = 14.sp)
-                        TextButton(onClick = { if (currentPage < totalPages - 1) currentPage++ }, enabled = currentPage < totalPages - 1) { Text("下一页", color = if (currentPage < totalPages - 1) Color(0xFF007AFF) else Color.Gray) }
+                        TextButton(onClick = { if (currentPage > 0) currentPage-- }, enabled = currentPage > 0, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) { Text("上一页", color = if (currentPage > 0) Color(0xFF007AFF) else Color.Gray, fontSize = 12.sp) }
+                        Text(text = "${currentPage + 1} / $totalPages", color = Color.White, modifier = Modifier.padding(horizontal = 8.dp), fontSize = 12.sp)
+                        TextButton(onClick = { if (currentPage < totalPages - 1) currentPage++ }, enabled = currentPage < totalPages - 1, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) { Text("下一页", color = if (currentPage < totalPages - 1) Color(0xFF007AFF) else Color.Gray, fontSize = 12.sp) }
                     }
-                    Row {
-                        TextButton(onClick = onDismiss) { Text("取消", color = Color.Gray) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onDismiss, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) { Text("取消", color = Color.Gray, fontSize = 12.sp) }
                         Spacer(modifier = Modifier.width(8.dp))
-                        Button(onClick = { onSelect(tempSelectedVoice) }, colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF))) { Text("确定选择", color = Color.White) }
+                        Button(onClick = { onSelect(tempSelectedVoice) }, colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF007AFF)), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp), modifier = Modifier.height(32.dp)) { Text("确定选择", color = Color.White, fontSize = 12.sp) }
                     }
                 }
             }

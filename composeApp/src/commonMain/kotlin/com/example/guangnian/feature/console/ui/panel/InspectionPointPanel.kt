@@ -28,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -388,9 +389,10 @@ private fun InspectionPointEditDialog(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("点位名称") },
+                        label = { Text("点位名称", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
 
@@ -398,10 +400,11 @@ private fun InspectionPointEditDialog(
                         OutlinedTextField(
                             value = getPointTypeLabel(pointType),
                             onValueChange = {},
-                            label = { Text("点位类型") },
+                            label = { Text("点位类型", fontSize = 12.sp) },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(6.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                             trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = ModernDialogColors.SecondaryText) },
                             colors = modernOutlinedTextFieldColors()
                         )
@@ -431,25 +434,28 @@ private fun InspectionPointEditDialog(
                     OutlinedTextField(
                         value = x,
                         onValueChange = { x = it },
-                        label = { Text("X 坐标") },
+                        label = { Text("X 坐标", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = y,
                         onValueChange = { y = it },
-                        label = { Text("Y 坐标") },
+                        label = { Text("Y 坐标", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = yaw,
                         onValueChange = { yaw = it },
-                        label = { Text("角度 (Yaw)") },
+                        label = { Text("角度 (Yaw)", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
                 }
@@ -458,17 +464,19 @@ private fun InspectionPointEditDialog(
                     OutlinedTextField(
                         value = stayTime,
                         onValueChange = { stayTime = it },
-                        label = { Text("停留时间 (s)") },
+                        label = { Text("停留时间 (s)", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = playPriority,
                         onValueChange = { playPriority = it },
-                        label = { Text("播放优先级") },
+                        label = { Text("播放优先级", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
                 }
@@ -480,10 +488,11 @@ private fun InspectionPointEditDialog(
                         OutlinedTextField(
                             value = armName.ifEmpty { if(armId.isNotEmpty()) "动作ID: $armId" else "无关联动作" },
                             onValueChange = {},
-                            label = { Text("关联手臂动作") },
+                            label = { Text("关联手臂动作", fontSize = 12.sp) },
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(6.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                             trailingIcon = { Icon(Icons.Default.ArrowDropDown, null, tint = ModernDialogColors.SecondaryText) },
                             colors = modernOutlinedTextFieldColors()
                         )
@@ -550,10 +559,11 @@ private fun InspectionPointEditDialog(
                 OutlinedTextField(
                     value = broadcastContent,
                     onValueChange = { broadcastContent = it },
-                    label = { Text("广播内容") },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp),
+                    label = { Text("广播内容", fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
                     maxLines = 5,
                     shape = RoundedCornerShape(6.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                     colors = modernOutlinedTextFieldColors()
                 )
 
@@ -660,10 +670,11 @@ private fun RouteEditDialog(
                 OutlinedTextField(
                     value = route_name,
                     onValueChange = { route_name = it },
-                    label = { Text("路线名称") },
+                    label = { Text("路线名称", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(6.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                     colors = modernOutlinedTextFieldColors()
                 )
 
@@ -671,19 +682,21 @@ private fun RouteEditDialog(
                     OutlinedTextField(
                         value = loopCount,
                         onValueChange = { loopCount = it },
-                        label = { Text("循环次数") },
+                        label = { Text("循环次数", fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text("路线描述") },
+                        label = { Text("路线描述", fontSize = 12.sp) },
                         modifier = Modifier.weight(2f),
                         singleLine = true,
                         shape = RoundedCornerShape(6.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.sp),
                         colors = modernOutlinedTextFieldColors()
                     )
                 }
@@ -694,7 +707,7 @@ private fun RouteEditDialog(
                     Text(
                         "已选择 ${selectedPointIds.size} 个点位",
                         color = ModernDialogColors.SecondaryText,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
@@ -703,8 +716,8 @@ private fun RouteEditDialog(
                             backgroundColor = ModernDialogColors.Accent,
                             contentColor = Color.White
                         ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        modifier = Modifier.height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp),
                         shape = RoundedCornerShape(6.dp),
                         elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp)
                     ) {
@@ -722,8 +735,8 @@ private fun RouteEditDialog(
                         .padding(8.dp)
                 ) {
                     if (selectedPointIds.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                            Text("尚未选择点位", color = ModernDialogColors.SecondaryText, fontSize = 13.sp)
+                        Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+                            Text("尚未选择点位", color = ModernDialogColors.SecondaryText, fontSize = 12.sp)
                         }
                     } else {
                         Column(
@@ -740,12 +753,12 @@ private fun RouteEditDialog(
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("${index + 1}.", color = ModernDialogColors.Accent, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                    Spacer(Modifier.width(12.dp))
+                                    Text("${index + 1}.", color = ModernDialogColors.Accent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Spacer(Modifier.width(10.dp))
                                     Text(
                                         text = point?.name ?: "未知点位 ($id)",
                                         color = ModernDialogColors.PrimaryText,
-                                        fontSize = 15.sp,
+                                        fontSize = 12.sp,
                                         modifier = Modifier.weight(1f)
                                     )
                                     IconButton(onClick = {
@@ -789,12 +802,12 @@ private fun PointSelectionDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Text(
                         "选择导览点 (可多选)",
                         color = ModernDialogColors.PrimaryText,
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -808,8 +821,8 @@ private fun PointSelectionDialog(
                         .fillMaxWidth()
                         .background(ModernDialogColors.Canvas)
                         .verticalScroll(rememberScrollState())
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     availablePoints.forEach { point ->
                         val isSelected = selectedIds.contains(point.point_id)
@@ -826,7 +839,7 @@ private fun PointSelectionDialog(
                                 .clickable {
                                     if (isSelected) selectedIds.remove(point.point_id) else selectedIds.add(point.point_id)
                                 }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
@@ -834,13 +847,14 @@ private fun PointSelectionDialog(
                                 onCheckedChange = {
                                     if (it == true) selectedIds.add(point.point_id) else selectedIds.remove(point.point_id)
                                 },
+                                modifier = Modifier.scale(0.8f),
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = ModernDialogColors.Accent,
                                     uncheckedColor = ModernDialogColors.Border
                                 )
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(point.name, color = ModernDialogColors.PrimaryText, fontSize = 15.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(point.name, color = ModernDialogColors.PrimaryText, fontSize = 12.sp)
                         }
                     }
                 }
@@ -851,14 +865,14 @@ private fun PointSelectionDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("取消", color = ModernDialogColors.SecondaryText)
+                    TextButton(onClick = onDismiss, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
+                        Text("取消", color = ModernDialogColors.SecondaryText, fontSize = 12.sp)
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = { onConfirm(selectedIds.toList()) },
                         colors = ButtonDefaults.buttonColors(
@@ -867,12 +881,13 @@ private fun PointSelectionDialog(
                             disabledBackgroundColor = ModernDialogColors.Accent.copy(alpha = 0.4f),
                             disabledContentColor = Color.White.copy(alpha = 0.7f)
                         ),
-                        modifier = Modifier.height(40.dp),
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
                         shape = RoundedCornerShape(6.dp),
                         enabled = selectedIds.isNotEmpty(),
                         elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp)
                     ) {
-                        Text("添加选定 (${selectedIds.size})", fontWeight = FontWeight.Medium)
+                        Text("添加选定 (${selectedIds.size})", fontWeight = FontWeight.Medium, fontSize = 12.sp)
                     }
                 }
             }

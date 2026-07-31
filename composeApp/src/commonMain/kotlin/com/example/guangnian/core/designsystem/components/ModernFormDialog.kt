@@ -70,14 +70,14 @@ fun ModernFormDialog(
         title = title,
         onDismiss = onDismiss,
         actions = {
-            TextButton(onClick = onDismiss) {
-                Text("取消", color = ModernDialogColors.SecondaryText)
+            TextButton(onClick = onDismiss, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
+                Text("取消", color = ModernDialogColors.SecondaryText, fontSize = 12.sp)
             }
             Spacer(Modifier.width(12.dp))
             Button(
                 onClick = onConfirm,
                 enabled = confirmEnabled,
-                modifier = Modifier.height(40.dp),
+                modifier = Modifier.height(32.dp),
                 shape = RoundedCornerShape(6.dp),
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = ModernDialogColors.Accent,
@@ -85,9 +85,9 @@ fun ModernFormDialog(
                     disabledBackgroundColor = ModernDialogColors.Accent.copy(alpha = 0.35f),
                     disabledContentColor = Color.White.copy(alpha = 0.75f)
                 ),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                Text(confirmText, fontWeight = FontWeight.Medium)
+                Text(confirmText, fontWeight = FontWeight.Medium, fontSize = 12.sp)
             }
         },
         content = content
@@ -100,11 +100,11 @@ fun ModernDialogScaffold(
     onDismiss: () -> Unit,
     maxWidth: Dp = 920.dp,
     maxHeight: Dp = 680.dp,
-    titleFontSize: TextUnit = 20.sp,
+    titleFontSize: TextUnit = 16.sp,
     showFooter: Boolean = true,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
-    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(18.dp),
-    headerHeight: Dp = 48.dp,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(12.dp),
+    headerHeight: Dp = 40.dp,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -176,8 +176,8 @@ fun ModernDialogScaffold(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(68.dp)
-                                .padding(horizontal = 20.dp),
+                                .height(56.dp)
+                                .padding(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.CenterVertically
                         ) { actions() }
@@ -194,7 +194,7 @@ fun ModernDialogSection(title: String) {
         Text(
             text = title,
             color = ModernDialogColors.PrimaryText,
-            fontSize = 13.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.width(10.dp))
@@ -225,16 +225,16 @@ fun ModernToggleOption(
 ) {
     Row(
         modifier = modifier
-            .height(52.dp)
+            .height(40.dp)
             .background(ModernDialogColors.Surface, RoundedCornerShape(6.dp))
             .border(1.dp, ModernDialogColors.Border, RoundedCornerShape(6.dp))
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             color = ModernDialogColors.PrimaryText,
-            fontSize = 13.sp,
+            fontSize = 12.sp,
             modifier = Modifier.weight(1f)
         )
         Switch(
