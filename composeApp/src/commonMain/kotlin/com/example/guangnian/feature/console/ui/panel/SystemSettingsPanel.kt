@@ -73,6 +73,77 @@ fun SystemSettingsPanel(
                 value = settingsState.greetSilentTime,
                 onSave = { time -> consoleViewModel.updateSystemSetting(greetSilentTime = time) }
             )
+
+            // Boot ID 设置
+            SettingStringInputItem(
+                title = "Boot ID",
+                subtitle = "修改当前设备的 Boot ID",
+                value = settingsState.bootId,
+                onSave = { id -> consoleViewModel.updateSystemSetting(bootId = id) }
+            )
+
+            // 打断词设置
+            SettingStringInputItem(
+                title = "打断词",
+                subtitle = "多个词请用逗号分隔",
+                value = settingsState.interruptWords.joinToString(", "),
+                onSave = { text -> 
+                    val words = text.split(",", "，").map { it.trim() }.filter { it.isNotEmpty() }
+                    consoleViewModel.updateSystemSetting(interruptWords = words) 
+                }
+            )
+
+            // 唤醒词设置
+            SettingStringInputItem(
+                title = "唤醒词",
+                subtitle = "多个词请用逗号分隔",
+                value = settingsState.wakeUpWords.joinToString(", "),
+                onSave = { text -> 
+                    val words = text.split(",", "，").map { it.trim() }.filter { it.isNotEmpty() }
+                    consoleViewModel.updateSystemSetting(wakeUpWords = words) 
+                }
+            )
+
+            // 休眠词设置
+            SettingStringInputItem(
+                title = "休眠词",
+                subtitle = "多个词请用逗号分隔",
+                value = settingsState.sleepWords.joinToString(", "),
+                onSave = { text -> 
+                    val words = text.split(",", "，").map { it.trim() }.filter { it.isNotEmpty() }
+                    consoleViewModel.updateSystemSetting(sleepWords = words) 
+                }
+            )
+
+            // 导航词设置
+            SettingStringInputItem(
+                title = "导航词",
+                subtitle = "多个词请用逗号分隔",
+                value = settingsState.navigationWords.joinToString(", "),
+                onSave = { text -> 
+                    val words = text.split(",", "，").map { it.trim() }.filter { it.isNotEmpty() }
+                    consoleViewModel.updateSystemSetting(navigationWords = words) 
+                }
+            )
+
+            // 视觉词设置
+            SettingStringInputItem(
+                title = "视觉词",
+                subtitle = "多个词请用逗号分隔",
+                value = settingsState.visionWords.joinToString(", "),
+                onSave = { text -> 
+                    val words = text.split(",", "，").map { it.trim() }.filter { it.isNotEmpty() }
+                    consoleViewModel.updateSystemSetting(visionWords = words) 
+                }
+            )
+
+            // 轮播图停留时长设置
+            SettingInputItem(
+                title = "轮播图停留时长 (秒)",
+                subtitle = "每张轮播图片的展示时间",
+                value = settingsState.carouselImageDuration,
+                onSave = { time -> consoleViewModel.updateSystemSetting(carouselImageDuration = time) }
+            )
         }
     }
 }
@@ -196,6 +267,89 @@ private fun SettingInputItem(
                         timeText.toIntOrNull()?.let { time ->
                             onSave(time)
                         }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFF007AFF),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.defaultMinSize(minWidth = 1.dp, minHeight = 1.dp).height(24.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
+                    Text("保存", fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingStringInputItem(
+    title: String,
+    subtitle: String,
+    value: String,
+    onSave: (String) -> Unit
+) {
+    var textValue by remember(value) { mutableStateOf(value) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(0x1AFFFFFF))
+            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Text(
+                    text = title, 
+                    color = Color.White, 
+                    fontSize = 12.sp, 
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = subtitle, 
+                    color = Color(0xFFAAAAAA), 
+                    fontSize = 9.sp
+                )
+            }
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BasicTextField(
+                    value = textValue,
+                    onValueChange = { textValue = it },
+                    modifier = Modifier.width(180.dp).height(24.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = Color.White,
+                        fontSize = 11.sp
+                    ),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(Color(0xFF007AFF)),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .border(0.5.dp, Color(0x66FFFFFF), RoundedCornerShape(4.dp))
+                                .background(Color(0x1A000000), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 4.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            innerTextField()
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Button(
+                    onClick = {
+                        onSave(textValue)
                     },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = Color(0xFF007AFF),

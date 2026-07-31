@@ -426,4 +426,32 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     override suspend fun getBreak() = request<Boolean>("/agent/get_break/", targetNode = TcpNode.TABLET)
     
     override suspend fun setBreak(enabled: Boolean) = request<BaseBean>("/agent/set_break/", enabled, targetNode = TcpNode.TABLET)
+
+    override suspend fun getBootId() = request<String>("/agent/get_boot_id/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setBootId(bootId: String) = request<BaseBean>("/agent/set_boot_id/", bootId, targetNode = TcpNode.TABLET)
+
+    override suspend fun getInterruptWords() = request<List<String>>("/agent/get_interrupt_words/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setInterruptWords(words: List<String>) = request<BaseBean>("/agent/set_interrupt_words/", words, targetNode = TcpNode.TABLET)
+
+    override suspend fun getWakeUpWords() = request<List<String>>("/agent/get_wake_up_words/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setWakeUpWords(words: List<String>) = request<BaseBean>("/agent/set_wake_up_words/", words, targetNode = TcpNode.TABLET)
+
+    override suspend fun getSleepWords() = request<List<String>>("/agent/get_sleep_words/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setSleepWords(words: List<String>) = request<BaseBean>("/agent/set_sleep_words/", words, targetNode = TcpNode.TABLET)
+
+    override suspend fun getNavigationWords() = request<List<String>>("/agent/get_claw_trigger_words/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setNavigationWords(words: List<String>) = request<BaseBean>("/agent/set_claw_trigger_words/", words, targetNode = TcpNode.TABLET)
+
+    override suspend fun getVisionWords() = request<List<String>>("/agent/get_vision_words/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setVisionWords(words: List<String>) = request<BaseBean>("/agent/set_vision_words/", words, targetNode = TcpNode.TABLET)
+
+    override suspend fun getCarouselImageDuration() = request<Int>("/agent/get_carousel_image_duration/", targetNode = TcpNode.TABLET)
+
+    override suspend fun setCarouselImageDuration(duration: Int) = request<BaseBean>("/agent/set_carousel_image_duration/", duration, targetNode = TcpNode.TABLET)
 }

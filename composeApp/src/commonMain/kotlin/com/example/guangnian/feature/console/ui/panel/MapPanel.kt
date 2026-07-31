@@ -34,9 +34,9 @@ import com.example.guangnian.feature.console.utils.MapTransformUtils
 import com.example.guangnian.feature.console.viewmodel.MapInteractionMode
 import com.example.guangnian.feature.console.viewmodel.MapUiState
 import com.example.guangnian.feature.console.viewmodel.MapViewModel
-import com.example.guangnian.feature.console.ui.panel.MapUtils.drawDirectionArrow
-import com.example.guangnian.feature.console.ui.panel.MapUtils.drawFallbackGrid
-import com.example.guangnian.feature.console.ui.panel.MapUtils.drawPathLine
+import com.example.guangnian.feature.console.utils.MapUtils.drawDirectionArrow
+import com.example.guangnian.feature.console.utils.MapUtils.drawFallbackGrid
+import com.example.guangnian.feature.console.utils.MapUtils.drawPathLine
 import kotlin.math.*
 
 @Composable

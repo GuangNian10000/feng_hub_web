@@ -31,7 +31,14 @@ data class SystemSettingsState(
     val greetEnabled: Boolean = false,
     val greetSilentTime: Int = 10,
     val motionAnalysisEnabled: Boolean = false,
-    val breakEnabled: Boolean = false
+    val breakEnabled: Boolean = false,
+    val bootId: String = "",
+    val interruptWords: List<String> = emptyList(),
+    val wakeUpWords: List<String> = emptyList(),
+    val sleepWords: List<String> = emptyList(),
+    val navigationWords: List<String> = emptyList(),
+    val visionWords: List<String> = emptyList(),
+    val carouselImageDuration: Int = 5
 )
 
 data class ConsoleUiState(
@@ -632,8 +639,19 @@ class ConsoleViewModel(
                 val silentTime = systemSettingsApi.getGreetSilentTime()
                 val motionAnalysis = systemSettingsApi.getMotionAnalysis()
                 val breakEnabled = systemSettingsApi.getBreak()
+                val bootId = systemSettingsApi.getBootId()
+                val interruptWords = systemSettingsApi.getInterruptWords()
+                val wakeUpWords = systemSettingsApi.getWakeUpWords()
+                val sleepWords = systemSettingsApi.getSleepWords()
+                val navigationWords = systemSettingsApi.getNavigationWords()
+                val visionWords = systemSettingsApi.getVisionWords()
+                val carouselImageDuration = systemSettingsApi.getCarouselImageDuration()
                 _uiState.update { it.copy(
-                    systemSettingsState = SystemSettingsState(greet, silentTime, motionAnalysis, breakEnabled)
+                    systemSettingsState = SystemSettingsState(
+                        greet, silentTime, motionAnalysis, breakEnabled, bootId,
+                        interruptWords, wakeUpWords, sleepWords, navigationWords, visionWords,
+                        carouselImageDuration
+                    )
                 ) }
                 KLog.i(TAG, "获取系统设置成功")
             } catch (e: Exception) {
@@ -646,7 +664,14 @@ class ConsoleViewModel(
         greetEnabled: Boolean? = null,
         greetSilentTime: Int? = null,
         motionAnalysisEnabled: Boolean? = null,
-        breakEnabled: Boolean? = null
+        breakEnabled: Boolean? = null,
+        bootId: String? = null,
+        interruptWords: List<String>? = null,
+        wakeUpWords: List<String>? = null,
+        sleepWords: List<String>? = null,
+        navigationWords: List<String>? = null,
+        visionWords: List<String>? = null,
+        carouselImageDuration: Int? = null
     ) {
         viewModelScope.launch {
             try {
@@ -654,6 +679,13 @@ class ConsoleViewModel(
                 if (greetSilentTime != null) systemSettingsApi.setGreetSilentTime(greetSilentTime)
                 if (motionAnalysisEnabled != null) systemSettingsApi.setMotionAnalysis(motionAnalysisEnabled)
                 if (breakEnabled != null) systemSettingsApi.setBreak(breakEnabled)
+                if (bootId != null) systemSettingsApi.setBootId(bootId)
+                if (interruptWords != null) systemSettingsApi.setInterruptWords(interruptWords)
+                if (wakeUpWords != null) systemSettingsApi.setWakeUpWords(wakeUpWords)
+                if (sleepWords != null) systemSettingsApi.setSleepWords(sleepWords)
+                if (navigationWords != null) systemSettingsApi.setNavigationWords(navigationWords)
+                if (visionWords != null) systemSettingsApi.setVisionWords(visionWords)
+                if (carouselImageDuration != null) systemSettingsApi.setCarouselImageDuration(carouselImageDuration)
                 fetchSystemSettings()
             } catch (e: Exception) {
                 KLog.e(TAG, "更新系统设置失败: ${e.message}")
