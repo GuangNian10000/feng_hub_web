@@ -33,7 +33,8 @@ data class InspectionPointBean(
     @SerialName("play_priority")
     val playPriority: Int = 0, // 播放优先级
     val position: PointPosition? = null, // 点位序列位置
-    val arm_name: String  = "" // 动作名称
+    val arm_name: String  = "" ,// 动作名称
+    val has_action :String = "" // 达到是否做动作
 )
 
 @Serializable

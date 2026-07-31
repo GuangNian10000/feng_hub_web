@@ -348,6 +348,7 @@ private fun InspectionPointEditDialog(
     }
     var skipAllowed by remember(initialPoint) { mutableStateOf(initialPoint?.skipAllowed ?: true) }
     var playPriority by remember(initialPoint) { mutableStateOf(initialPoint?.playPriority?.toString() ?: "0") }
+    var hasAction by remember(initialPoint) { mutableStateOf(initialPoint?.has_action == "1" || initialPoint?.has_action == "true") }
 
     var showTypeMenu by remember { mutableStateOf(false) }
     var showArmMenu by remember { mutableStateOf(false) }
@@ -378,7 +379,8 @@ private fun InspectionPointEditDialog(
                 armId = armId.ifEmpty { null },
                 arm_name = armName,
                 skipAllowed = skipAllowed,
-                playPriority = playPriority.toIntOrNull() ?: 0
+                playPriority = playPriority.toIntOrNull() ?: 0,
+                has_action = if (hasAction) "1" else "0"
             )
             onConfirm(updated)
         }
@@ -529,6 +531,13 @@ private fun InspectionPointEditDialog(
                         label = "需要旋转",
                         checked = needRotate,
                         onCheckedChange = { needRotate = it },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    ModernToggleOption(
+                        label = "到达做动作",
+                        checked = hasAction,
+                        onCheckedChange = { hasAction = it },
                         modifier = Modifier.weight(1f)
                     )
                 }
