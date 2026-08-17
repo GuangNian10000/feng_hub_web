@@ -48,7 +48,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Locale
 
@@ -134,7 +133,7 @@ actual fun BleAutoConnectDialog(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "搜索附近的语音交互端设备",
+                            "搜索附近的可配网设备",
                             color = BleSubText,
                             fontSize = 12.sp
                         )
@@ -171,7 +170,7 @@ actual fun BleAutoConnectDialog(
                         is AutoScanState.Done -> {
                             if (state.devices.isEmpty()) {
                                 DialogErrorContent(
-                                    message = "未找到任何语音交互端设备",
+                                    message = "未找到任何兼容 BLE 设备",
                                     onRetry = { viewModel.retryAutoScan() }
                                 )
                             } else {
@@ -312,6 +311,7 @@ private fun DeviceResultList(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium
                             )
+                            DeviceTypeText(device.type)
                             Text(
                                 "${device.address}  •  ${device.rssi} dBm",
                                 color = BleSubText,
@@ -636,6 +636,7 @@ private fun ScannedDeviceItem(
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(device.name, color = BleText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                DeviceTypeText(device.type)
                 Text(
                     "${device.address}  ${device.rssi} dBm",
                     color = BleSubText,
@@ -652,13 +653,15 @@ private fun ScannedDeviceItem(
                 )
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { onNavigateToRemoteDesktop("") },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text("远程", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    if (device.type == BleDeviceType.VOICE_INTERACTION) {
+                        Button(
+                            onClick = { onNavigateToRemoteDesktop("") },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text("远程", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                     Button(
                         onClick = onConnect,
@@ -693,14 +696,16 @@ private fun ScannedDeviceItem(
                 ) {
                     Text("可用 IP 地址", color = BleSubText, fontSize = 11.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = { onNavigateToRemoteDesktop(device.ips.firstOrNull() ?: "") },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                            modifier = Modifier.height(28.dp)
-                        ) {
-                            Text("默认远程", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        if (device.type == BleDeviceType.VOICE_INTERACTION) {
+                            Button(
+                                onClick = { onNavigateToRemoteDesktop(device.ips.firstOrNull() ?: "") },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Text("默认远程", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                         Button(
                             onClick = onConnect,
@@ -731,16 +736,18 @@ private fun ScannedDeviceItem(
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace
                         )
-                        Button(
-                            onClick = { onNavigateToRemoteDesktop(ip) },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(Icons.Rounded.Computer, null, tint = Color.White, modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("远程桌面", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        if (device.type == BleDeviceType.VOICE_INTERACTION) {
+                            Button(
+                                onClick = { onNavigateToRemoteDesktop(ip) },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Icon(Icons.Rounded.Computer, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("远程桌面", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            }
                         }
                     }
                 }
@@ -804,8 +811,6 @@ private fun ConnectedCommandPanel(
     var showWifiForm by remember { mutableStateOf(false) }
     var selectedTimeStr by remember { mutableStateOf("") }
     var selectedTimeDisplay by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -833,6 +838,7 @@ private fun ConnectedCommandPanel(
             Spacer(Modifier.width(8.dp))
             Column {
                 Text(device.name, color = BleSuccess, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                DeviceTypeText(device.type)
                 Text(device.address, color = BleSubText, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
             }
             Spacer(Modifier.weight(1f))
@@ -857,12 +863,14 @@ private fun ConnectedCommandPanel(
                 modifier = Modifier.weight(1f),
                 onClick = { viewModel.queryIp() }
             )
-            BleActionButton(
-                label = "查询时间",
-                icon = Icons.Rounded.Schedule,
-                modifier = Modifier.weight(1f),
-                onClick = { viewModel.queryTime() }
-            )
+            if (device.type == BleDeviceType.VOICE_INTERACTION) {
+                BleActionButton(
+                    label = "查询时间",
+                    icon = Icons.Rounded.Schedule,
+                    modifier = Modifier.weight(1f),
+                    onClick = { viewModel.queryTime() }
+                )
+            }
         }
 
         // WiFi 配网折叠面板
@@ -910,85 +918,101 @@ private fun ConnectedCommandPanel(
             }
         }
 
-        // 设置系统时间
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(BleCardBg)
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.AccessTime, null, tint = BleAccent, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("设置系统时间", color = BleText, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(
-                    onClick = { showDateTimePicker(context) { disp, cmd ->
-                        selectedTimeDisplay = disp; selectedTimeStr = cmd
-                    }},
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E3A5F)),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(8.dp)
-                ) {
-                    Icon(Icons.Rounded.DateRange, null, tint = BleAccent, modifier = Modifier.size(15.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        if (selectedTimeDisplay.isEmpty()) "选择时间" else selectedTimeDisplay,
-                        color = BleAccent, fontSize = 12.sp
-                    )
+        if (device.type == BleDeviceType.VOICE_INTERACTION) {
+            // 语音交互端支持系统时间和自定义 Shell 指令，服务端协议不支持。
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(BleCardBg)
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.AccessTime, null, tint = BleAccent, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("设置系统时间", color = BleText, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 }
-                Button(
-                    onClick = { if (selectedTimeStr.isNotEmpty()) viewModel.setTime(selectedTimeStr) },
-                    enabled = selectedTimeStr.isNotEmpty(),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E3A5F)),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(8.dp)
-                ) {
-                    Icon(Icons.Rounded.CloudUpload, null, tint = if (selectedTimeStr.isEmpty()) BleSubText else BleAccent, modifier = Modifier.size(15.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("同步时间", color = if (selectedTimeStr.isEmpty()) BleSubText else BleAccent, fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(
+                        onClick = { showDateTimePicker(context) { disp, cmd ->
+                            selectedTimeDisplay = disp; selectedTimeStr = cmd
+                        }},
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E3A5F)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(8.dp)
+                    ) {
+                        Icon(Icons.Rounded.DateRange, null, tint = BleAccent, modifier = Modifier.size(15.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            if (selectedTimeDisplay.isEmpty()) "选择时间" else selectedTimeDisplay,
+                            color = BleAccent, fontSize = 12.sp
+                        )
+                    }
+                    Button(
+                        onClick = { if (selectedTimeStr.isNotEmpty()) viewModel.setTime(selectedTimeStr) },
+                        enabled = selectedTimeStr.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E3A5F)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(8.dp)
+                    ) {
+                        Icon(Icons.Rounded.CloudUpload, null, tint = if (selectedTimeStr.isEmpty()) BleSubText else BleAccent, modifier = Modifier.size(15.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("同步时间", color = if (selectedTimeStr.isEmpty()) BleSubText else BleAccent, fontSize = 12.sp)
+                    }
                 }
             }
-        }
 
-        // 自定义命令
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(BleCardBg)
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Terminal, null, tint = BleAccent, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("自定义命令", color = BleText, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                BleTextField(
-                    value = customCmd,
-                    onValueChange = { customCmd = it },
-                    label = "Shell 命令",
-                    modifier = Modifier.weight(1f)
-                )
-                Button(
-                    onClick = { if (customCmd.isNotBlank()) { viewModel.execCmd(customCmd); customCmd = "" } },
-                    enabled = customCmd.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    Icon(Icons.Rounded.Send, null, tint = Color.White, modifier = Modifier.size(16.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(BleCardBg)
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Terminal, null, tint = BleAccent, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("自定义命令", color = BleText, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BleTextField(
+                        value = customCmd,
+                        onValueChange = { customCmd = it },
+                        label = "Shell 命令",
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(
+                        onClick = { if (customCmd.isNotBlank()) { viewModel.execCmd(customCmd); customCmd = "" } },
+                        enabled = customCmd.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = BleAccentDark),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Icon(Icons.Rounded.Send, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun DeviceTypeText(type: BleDeviceType) {
+    val label = when (type) {
+        BleDeviceType.SERVER -> "服务端设备"
+        BleDeviceType.VOICE_INTERACTION -> "语音交互端"
+        BleDeviceType.UNKNOWN -> "设备类型待确认"
+    }
+    val color = when (type) {
+        BleDeviceType.SERVER -> BleWarning
+        BleDeviceType.VOICE_INTERACTION -> BleAccent
+        BleDeviceType.UNKNOWN -> BleSubText
+    }
+    Text(label, color = color, fontSize = 10.sp)
 }
 
 // ── 日志面板 ──────────────────────────────────────────────────────────────────

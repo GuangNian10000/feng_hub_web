@@ -127,7 +127,7 @@ class BleViewModel : ViewModel() {
             return
         }
 
-        _autoScanState.value = AutoScanState.Scanning("正在搜索附近语音交互端设备...")
+        _autoScanState.value = AutoScanState.Scanning("正在搜索附近可配网设备...")
         _scannedDevices.value = emptyList()
 
         // 启动 BLE 扫描
@@ -140,7 +140,7 @@ class BleViewModel : ViewModel() {
 
             val found = _scannedDevices.value
             if (found.isEmpty()) {
-                _autoScanState.value = AutoScanState.Failed("未搜索到任何语音交互端设备")
+                _autoScanState.value = AutoScanState.Failed("未搜索到任何兼容 BLE 设备")
                 return@launch
             }
 
@@ -152,8 +152,16 @@ class BleViewModel : ViewModel() {
                     progress = "正在查询第 ${idx + 1}/${found.size} 台设备 IP..."
                 )
 
-                val ips = queryDeviceIps(device, svc)
-                resultDevices.add(device.copy(ips = ips, isQuerying = false))
+                val result = queryDevice(device, svc)
+                resultDevices.add(
+                    device.copy(
+                        name = result.name,
+                        deviceId = result.deviceId.ifBlank { device.deviceId },
+                        ips = result.ips,
+                        isQuerying = false,
+                        type = result.type
+                    )
+                )
             }
 
             _autoScanState.value = AutoScanState.Done(resultDevices)
@@ -165,22 +173,16 @@ class BleViewModel : ViewModel() {
      * 对单台设备：建立连接 → 发送 ifconfig → 收集所有 IP → 断开
      * 返回解析到的 IP 列表
      */
-    private suspend fun queryDeviceIps(
+    private suspend fun queryDevice(
         device: BleDevice,
         svc: BleManagerService
-    ): List<String> {
-        val collectedIps = mutableSetOf<String>()
-        val ipRegex = Regex("""inet\s+addr:(\d+\.\d+\.\d+\.\d+)""")
-        val ipRegex2 = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
+    ): DeviceQueryResult {
+        val responseBuffer = StringBuilder()
+        var resolvedName = device.name
 
-        // 临时监听日志，收集 IP
+        // Notify 可能被服务端按 MTU 分片；只收集远端通知，避免连接日志干扰类型判断。
         val collectJob = viewModelScope.launch {
-            svc.logFlow.collect { line ->
-                ipRegex.find(line)?.groupValues?.getOrNull(1)?.let { collectedIps.add(it) }
-                ipRegex2.find(line)?.groupValues?.getOrNull(1)?.let {
-                    if (it != "127.0.0.1") collectedIps.add(it)
-                }
-            }
+            svc.notificationFlow.collect { chunk -> responseBuffer.append(chunk) }
         }
 
         try {
@@ -195,8 +197,13 @@ class BleViewModel : ViewModel() {
             }
 
             if (svc.bleState.value is BleState.Connected) {
+                resolvedName = (svc.bleState.value as BleState.Connected).device.name
                 svc.queryIpAddress()
                 kotlinx.coroutines.delay(3_000)  // 等待 ifconfig 输出回传
+                resolvedName = (svc.bleState.value as? BleState.Connected)
+                    ?.device
+                    ?.name
+                    ?: resolvedName
             }
         } finally {
             collectJob.cancel()
@@ -204,8 +211,31 @@ class BleViewModel : ViewModel() {
             kotlinx.coroutines.delay(500)  // 给 GATT 堆栈留出关闭时间
         }
 
-        return collectedIps.filter { it != "127.0.0.1" }
+        val response = responseBuffer.toString()
+        val serverSummary = BleProtocolParser.parseServerSummary(response)
+        return DeviceQueryResult(
+            name = if (serverSummary != null && resolvedName == "未知设备") {
+                "FengBot 服务端"
+            } else {
+                resolvedName
+            },
+            ips = BleProtocolParser.extractIpv4Addresses(response),
+            type = when {
+                serverSummary != null -> BleDeviceType.SERVER
+                device.type != BleDeviceType.UNKNOWN -> device.type
+                response.isNotBlank() -> BleDeviceType.VOICE_INTERACTION
+                else -> BleDeviceType.UNKNOWN
+            },
+            deviceId = serverSummary?.deviceId.orEmpty()
+        )
     }
+
+    private data class DeviceQueryResult(
+        val name: String,
+        val ips: List<String>,
+        val type: BleDeviceType,
+        val deviceId: String
+    )
 
     fun retryAutoScan() {
         _autoScanState.value = AutoScanState.Idle
