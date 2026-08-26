@@ -340,7 +340,14 @@ class ConsoleViewModel(
 
     fun switchMap(mapUid: String) {
         executeTask("切换地图失败", mapUid) {
-            navigationApi.switchMap(mapUid)
+            val response = navigationApi.switchMap(mapUid)
+            if (response.receive) {
+                // 服务端返回 receive=true 代表 RViz 已重启且地图切换完成。
+                eventBus.emit(RobotEvent.MapChanged)
+            } else {
+                KLog.w(TAG, "地图切换请求已返回，但服务端尚未确认完成: mapUid=$mapUid")
+                error(response.message.ifBlank { "服务端未确认地图切换完成" })
+            }
             // 切换地图后，点位和路线都会改变，需要全量刷新
             refreshAllData()
         }

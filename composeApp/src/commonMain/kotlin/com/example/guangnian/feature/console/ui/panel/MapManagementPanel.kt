@@ -63,12 +63,24 @@ fun MapManagementPanel(
                 Column {
                     Text("请输入新地图的名称：", color = Color.DarkGray, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    TextField(
+                    OutlinedTextField(
                         value = newMapName,
                         onValueChange = { newMapName = it },
+                        label = { Text("地图名称") },
                         placeholder = { Text("例如：办公室_1F") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(6.dp),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            backgroundColor = Color(0xFFF7F9FC),
+                            textColor = Color(0xFF1F2937),
+                            focusedBorderColor = Color(0xFF007AFF),
+                            unfocusedBorderColor = Color(0xFFB8C2D1),
+                            focusedLabelColor = Color(0xFF007AFF),
+                            unfocusedLabelColor = Color(0xFF5F6B7A),
+                            placeholderColor = Color(0xFF8A95A5),
+                            cursorColor = Color(0xFF007AFF)
+                        )
                     )
                 }
             },

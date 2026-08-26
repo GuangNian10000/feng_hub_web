@@ -79,8 +79,8 @@ android {
         applicationId = "com.feng.hub"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 101
-        versionName = "1.0.1"
+        versionCode = 102
+        versionName = "1.0.2"
     }
     signingConfigs {
         create("release") {

@@ -107,6 +107,12 @@ class MapViewModel(
                         KLog.d(TAG, "收到建图状态变更: isMapping=${event.isMapping}")
                         _uiState.update { it.copy(isMapping = event.isMapping) }
                     }
+                    RobotEvent.MapChanged -> {
+                        KLog.d(TAG, "收到地图切换事件，清除旧地图并重新加载")
+                        _uiState.update {
+                            it.copy(mapConfig = null, mapImage = null, isMapLoading = true, loadingStage = "重新加载地图...")
+                        }
+                    }
                     is RobotEvent.NavStatusChanged -> {
                         KLog.d(TAG, "收到导航状态变更: state=${event.status.state}")
                         _uiState.update { it.copy(navStatus = event.status) }
@@ -133,24 +139,7 @@ class MapViewModel(
                     continue
                 }
 
-                mapConfigSeq += 1
-                val seq = mapConfigSeq
-                val startTime = Clock.System.now().toEpochMilliseconds()
-                try {
-                    val config = navigationApi.getMapConfig()
-                    val savedIp = settings.getString("saved_ip", "192.168.1.100")
-                    val fixedUrl = config.getFixedImageUrl(savedIp)
-
-                    _uiState.update { it.copy(mapConfig = config.copy(image = fixedUrl)) }
-                    loadMapImage(fixedUrl)
-
-                    KLog.d(
-                        TAG,
-                        "地图配置同步成功 #$seq: resolution=${config.resolution}, origin=${config.origin}, image=$fixedUrl, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
-                    )
-                } catch (e: Exception) {
-                    KLog.w(TAG, "地图配置同步失败 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
-                }
+                syncMapConfigAndImage()
                 
                 // 正在建图或初始加载时的刷新频率
                 delay(3000)
@@ -178,7 +167,7 @@ class MapViewModel(
             }
         }
 
-        // 3. 动效数据刷新 (1Hz: 点云、路径)
+        // 3. 动效数据刷新 (约 0.33Hz: 点云、路径)
         viewModelScope.launch {
             while (isActive) {
                 if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
@@ -240,7 +229,7 @@ class MapViewModel(
                 } catch (e: Exception) {
                     KLog.w(TAG, "路径数据同步异常 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 }
-                delay(5000)
+                delay(2000)
             }
         }
 
@@ -263,6 +252,24 @@ class MapViewModel(
                 }
                 delay(5000) // 失败则 5 秒后重试
             }
+        }
+    }
+
+    private suspend fun syncMapConfigAndImage() {
+        mapConfigSeq += 1
+        val seq = mapConfigSeq
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        try {
+            val config = navigationApi.getMapConfig()
+            val savedIp = settings.getString("saved_ip", "192.168.1.100")
+            val fixedUrl = config.getFixedImageUrl(savedIp)
+            // 地图切换后服务端可能复用同一个图片地址，追加版本参数避免 HTTP/客户端缓存返回旧图。
+            val imageUrl = fixedUrl + if (fixedUrl.contains("?")) "&reload=$seq" else "?reload=$seq"
+            _uiState.update { it.copy(mapConfig = config.copy(image = imageUrl)) }
+            loadMapImage(imageUrl)
+            KLog.d(TAG, "地图配置同步成功 #$seq: image=$imageUrl, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+        } catch (e: Exception) {
+            KLog.w(TAG, "地图配置同步失败 #$seq: ${e.message}", e)
         }
     }
 
