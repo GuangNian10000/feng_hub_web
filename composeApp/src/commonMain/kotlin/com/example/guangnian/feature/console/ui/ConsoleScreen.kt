@@ -182,6 +182,7 @@ fun InteractionScreen(
             connectionError = connectionError,
             latency = latency,
             onBackClick = onBackClick,
+            onNavStatusClick = consoleViewModel::fetchNavStatus,
             onConnectClick = {
                 if (connectionState == TcpState.DISCONNECTED) {
                     robotViewModel.connect()
@@ -413,6 +414,7 @@ fun InteractionScreen(
         )
         ComposeJoystick(
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 32.dp, bottom = 24.dp).size(130.dp),
+            levelMode = JoystickLevelMode.Horizontal,
             onMove = { x, _, isDragging ->
                 rightJoyX = x
                 isRightJoyActive = isDragging

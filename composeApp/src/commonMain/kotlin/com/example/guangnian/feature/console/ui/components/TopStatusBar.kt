@@ -29,6 +29,7 @@ fun TopStatusBar(
     connectionError: String?,
     latency: Long?,
     onBackClick: () -> Unit,
+    onNavStatusClick: () -> Unit = {},
     onConnectClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -74,7 +75,11 @@ fun TopStatusBar(
         }
 
         // 机器人状态区域
-        GlassBox(modifier = Modifier.height(36.dp)) {
+        GlassBox(
+            modifier = Modifier
+                .height(36.dp)
+                .clickable { onNavStatusClick() }
+        ) {
             Row(
                 modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -230,7 +230,7 @@ fun MapBackgroundLayer(
             MapLoadingOverlay(uiState.mapLoadingProgress, uiState.loadingStage)
         }
 
-        MapControlOverlays(uiState, mapViewModel, config, mapHeightPx, scale, offset)
+        MapControlOverlays(uiState, mapViewModel, config, mapHeightPx, scale, rotation, offset)
     }
 }
 
@@ -454,6 +454,7 @@ private fun MapControlOverlays(
     config: MapConfigBean?,
     mapHeightPx: Float,
     scale: Float,
+    rotation: Float,
     offset: Offset
 ) {
     if (uiState.interactionMode == MapInteractionMode.SHOW_MENU && uiState.menuPosition != null) {
@@ -492,16 +493,29 @@ private fun MapControlOverlays(
     if ((uiState.interactionMode == MapInteractionMode.CONFIRM_POINT || uiState.interactionMode == MapInteractionMode.CONFIRM_ROBOT_POSITION || uiState.interactionMode == MapInteractionMode.CONFIRM_GO_HERE) 
         && uiState.tempPoint != null && config != null) {
         val px = MapTransformUtils.worldToPixel(uiState.tempPoint.x, uiState.tempPoint.y, config, mapHeightPx)
-        val screenX = px.x * scale + offset.x
-        val screenY = px.y * scale + offset.y
+        // Keep the popup anchor in sync with the map layer's graphics transform:
+        // graphicsLayer applies scale and rotation around (0, 0), then translation.
+        val rotationRad = (rotation * (PI / 180f)).toFloat()
+        val cosRotation = cos(rotationRad)
+        val sinRotation = sin(rotationRad)
+        val scaledX = px.x * scale
+        val scaledY = px.y * scale
+        val screenPoint = Offset(
+            x = scaledX * cosRotation - scaledY * sinRotation + offset.x,
+            y = scaledX * sinRotation + scaledY * cosRotation + offset.y
+        )
         val density = androidx.compose.ui.platform.LocalDensity.current
         val popupWidthPx = with(density) { 140.dp.toPx() }
+        val popupGapPx = with(density) { 8.dp.toPx() }
+        // InteractionLayer draws the confirmation marker with a radius of
+        // 14f / sqrt(scale), which becomes 14f * sqrt(scale) on screen.
+        val markerRadiusPx = 14f * sqrt(scale.coerceAtLeast(0f))
 
         Popup(
             alignment = Alignment.TopStart,
             offset = androidx.compose.ui.unit.IntOffset(
-                (screenX - popupWidthPx / 2).toInt(),
-                (screenY + 60).toInt()
+                (screenPoint.x - popupWidthPx / 2f).roundToInt(),
+                (screenPoint.y + markerRadiusPx + popupGapPx).roundToInt()
             ),
             onDismissRequest = { mapViewModel.clearInteraction() }
         ) {
