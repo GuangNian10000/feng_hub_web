@@ -135,8 +135,6 @@ class ConsoleViewModel(
                         KLog.d(TAG, "收到导航状态推送: state=${navStatus.state}, msg=$msgElement")
                         
                         // 同时同步状态给 EventBus
-                        val isMapping = navStatus.state == RobotNavState.MAPPING
-                        eventBus.tryEmit(RobotEvent.MappingStateChanged(isMapping))
                         eventBus.tryEmit(RobotEvent.NavStatusChanged(navStatus))
                     }
                 } catch (e: Exception) {
@@ -281,6 +279,7 @@ class ConsoleViewModel(
                 KLog.i(TAG, "用户操作: 主动获取导航状态")
                 val status = navigationApi.getNavStatus()
                 _uiState.update { it.copy(robotNavStatus = status) }
+                eventBus.emit(RobotEvent.NavStatusChanged(status))
                 KLog.i(TAG, "获取导航状态成功: state=${status.state}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
             } catch (e: Exception) {
                 KLog.e(TAG, "获取导航状态失败: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
@@ -356,14 +355,18 @@ class ConsoleViewModel(
     fun startMapping(mapName: String) {
         executeTask("开始建图失败", mapName) {
             navigationApi.startMapping(mapName)
-            eventBus.emit(RobotEvent.MappingStateChanged(true))
+            val newStatus = _uiState.value.robotNavStatus.copy(state = RobotNavState.MAPPING)
+            _uiState.update { it.copy(robotNavStatus = newStatus) }
+            eventBus.emit(RobotEvent.NavStatusChanged(newStatus))
         }
     }
 
     fun endMapping() {
         executeTask("结束建图失败") {
             navigationApi.endMapping()
-            eventBus.emit(RobotEvent.MappingStateChanged(false))
+            val newStatus = _uiState.value.robotNavStatus.copy(state = RobotNavState.IDLE)
+            _uiState.update { it.copy(robotNavStatus = newStatus) }
+            eventBus.emit(RobotEvent.NavStatusChanged(newStatus))
             // 结束后刷新地图列表和可能的初始点位
             refreshAllData()
         }

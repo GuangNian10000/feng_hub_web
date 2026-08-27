@@ -207,6 +207,9 @@ fun MapBackgroundLayer(
             
             if (mapBitmap != null) { // 移除 !uiState.isMapLoading 判断，避免刷新时图层消失导致的闪烁
                 PathLayer(uiState.globalPath, uiState.localPath, config, mapHeightPx, scale, layerModifier)
+                if (uiState.navStatus.state == RobotNavState.MAPPING) {
+                    MappingTrajectoryLayer(uiState.mappingTrajectory, config, mapHeightPx, scale, layerModifier)
+                }
                 // 调整层级：点云放在下方
                 PointCloudLayer(uiState.robotPosition, uiState.robotPosition?.let { uiState.pointCloud } ?: emptyList(), config, mapHeightPx, scale, layerModifier)
                 // 导览点在点云之上
@@ -296,6 +299,20 @@ private fun PathLayer(
         // 增加路径粗细：全局路径从 5f 改为 12f，局部路径从 6f 改为 15f
         drawPathLine(globalPath, config, mapHeightPx, Color(0xFF03DC6B), 17f / scale)
         drawPathLine(localPath, config, mapHeightPx, Color(0xFFF3D65A), 20f / scale)
+    }
+}
+
+@Composable
+private fun MappingTrajectoryLayer(
+    trajectory: List<Point2DBean>,
+    config: MapConfigBean?,
+    mapHeightPx: Float,
+    scale: Float,
+    modifier: Modifier
+) {
+    if (config == null || trajectory.size < 2) return
+    Canvas(modifier = modifier) {
+        drawPathLine(trajectory, config, mapHeightPx, Color(0xFF007AFF), 12f / scale)
     }
 }
 

@@ -17,7 +17,6 @@ sealed class RobotEvent {
     // 机器人状态相关
     data class ReachGoal(val point_id: String) : RobotEvent()
     data class Error(val message: String) : RobotEvent()
-    data class MappingStateChanged(val isMapping: Boolean) : RobotEvent()
     object MapChanged : RobotEvent() // 当前地图已切换，需要重新加载配置和图片
     data class NavStatusChanged(val status: RobotNavStatusBean) : RobotEvent()
 }

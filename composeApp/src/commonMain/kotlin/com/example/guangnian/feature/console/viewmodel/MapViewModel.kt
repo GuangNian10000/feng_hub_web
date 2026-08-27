@@ -23,6 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.math.hypot
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -36,8 +37,8 @@ data class MapUiState(
     val endpoints: List<InspectionPointBean> = emptyList(),
     val globalPath: List<Point2DBean> = emptyList(),
     val localPath: List<Point2DBean> = emptyList(),
+    val mappingTrajectory: List<Point2DBean> = emptyList(),
     val pointCloud: List<Point2DBean> = emptyList(),
-    val isMapping: Boolean = false,
     val navStatus: RobotNavStatusBean = RobotNavStatusBean(),
     // 交互状态
     val interactionMode: MapInteractionMode = MapInteractionMode.NONE,
@@ -50,6 +51,21 @@ data class MapUiState(
     val mapLoadingProgress: Float = 0f,
     val loadingStage: String = "",
     val isConnected: Boolean = false
+)
+
+
+internal fun MapUiState.withRobotPosition(position: RobotPositionBean): MapUiState = copy(
+    robotPosition = position,
+    mappingTrajectory = if (navStatus.state == RobotNavState.MAPPING) {
+        val lastPoint = mappingTrajectory.lastOrNull()
+        if (lastPoint == null || hypot(lastPoint.x - position.x, lastPoint.y - position.y) > 0.05) {
+            mappingTrajectory + Point2DBean(position.x, position.y)
+        } else {
+            mappingTrajectory
+        }
+    } else {
+        mappingTrajectory
+    }
 )
 
 enum class MapInteractionMode {
@@ -86,7 +102,13 @@ class MapViewModel(
         viewModelScope.launch {
             KmpTcpClient.connectionState.collect { state ->
                 val isConnected = state == TcpState.CONNECTED
-                _uiState.update { it.copy(isConnected = isConnected) }
+                _uiState.update {
+                    if (isConnected) {
+                        it.copy(isConnected = true)
+                    } else {
+                        it.copy(isConnected = false, mappingTrajectory = emptyList())
+                    }
+                }
                 if (isConnected) {
                     KLog.i(TAG, "网络已连接，准备刷新数据")
                     refreshMapData()
@@ -103,10 +125,7 @@ class MapViewModel(
                         KLog.d(TAG, "收到点位变更事件，刷新地图点位")
                         refreshMapData()
                     }
-                    is RobotEvent.MappingStateChanged -> {
-                        KLog.d(TAG, "收到建图状态变更: isMapping=${event.isMapping}")
-                        _uiState.update { it.copy(isMapping = event.isMapping) }
-                    }
+
                     RobotEvent.MapChanged -> {
                         KLog.d(TAG, "收到地图切换事件，清除旧地图并重新加载")
                         _uiState.update {
@@ -115,7 +134,14 @@ class MapViewModel(
                     }
                     is RobotEvent.NavStatusChanged -> {
                         KLog.d(TAG, "收到导航状态变更: state=${event.status.state}")
-                        _uiState.update { it.copy(navStatus = event.status) }
+                        _uiState.update { 
+                            val wasMapping = it.navStatus.state == RobotNavState.MAPPING
+                            val isNowMapping = event.status.state == RobotNavState.MAPPING
+                            it.copy(
+                                navStatus = event.status,
+                                mappingTrajectory = if (wasMapping != isNowMapping) emptyList() else it.mappingTrajectory
+                            )
+                        }
                     }
                     else -> {}
                 }
@@ -133,7 +159,7 @@ class MapViewModel(
                 }
 
                 // 非建图状态且地图已加载时不请求
-                val needSyncMap = _uiState.value.mapConfig == null || _uiState.value.isMapping
+                val needSyncMap = _uiState.value.mapConfig == null || _uiState.value.navStatus.state == RobotNavState.MAPPING
                 if (!needSyncMap) {
                     delay(5000)
                     continue
@@ -158,7 +184,7 @@ class MapViewModel(
                 val startTime = Clock.System.now().toEpochMilliseconds()
                 try {
                     val pos = navigationApi.getPosition()
-                    _uiState.update { it.copy(robotPosition = pos) }
+                    _uiState.update { it.withRobotPosition(pos) }
                 } catch (e: Exception) {
                     KLog.w(TAG, "机器人位置同步失败 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                     delay(1000)
@@ -299,7 +325,7 @@ class MapViewModel(
             val seq = imageSeq
             val startTime = Clock.System.now().toEpochMilliseconds()
             try {
-                val isMapping = _uiState.value.isMapping
+                val isMapping = _uiState.value.navStatus.state == RobotNavState.MAPPING
                 val hasMap = _uiState.value.mapImage != null
                 
                 // 如果正在建图且已经有地图图片了，就不显示加载框以避免闪烁

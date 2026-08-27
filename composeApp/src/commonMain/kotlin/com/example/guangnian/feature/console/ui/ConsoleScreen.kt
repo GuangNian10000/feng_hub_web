@@ -215,15 +215,21 @@ fun InteractionScreen(
                 .padding(top = 64.dp, end = 24.dp)
         )
 
-        AgentControlPanel(
-            status = uiState.agentStatus,
-            onWakeUpToggle = consoleViewModel::toggleAgentWakeUp,
-            onAsrToggle = consoleViewModel::toggleAgentAsr,
-            onInterruptClick = consoleViewModel::interruptDialogue,
+        AnimatedVisibility(
+            visible = uiState.agentStatus != null,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(top = 64.dp, start = 24.dp)
-        )
+                .padding(top = 64.dp, start = 24.dp),
+            enter = fadeIn(tween(250)) + slideInHorizontally(initialOffsetX = { -40 }),
+            exit = fadeOut(tween(200)) + slideOutHorizontally(targetOffsetX = { -40 })
+        ) {
+            AgentControlPanel(
+                status = uiState.agentStatus,
+                onWakeUpToggle = consoleViewModel::toggleAgentWakeUp,
+                onAsrToggle = consoleViewModel::toggleAgentAsr,
+                onInterruptClick = consoleViewModel::interruptDialogue
+            )
+        }
 
         BottomActionBar(
             isMenuOpen = isMenuOpen,
