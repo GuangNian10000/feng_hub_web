@@ -236,7 +236,7 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
         request<Unit>("slam/start_mapping", mapOf("msg" to mapName))
 
     // 结束建图
-    override suspend fun endMapping() = request<Unit>("slam/end_mapping")
+    override suspend fun endMapping() = request<BaseBean>("slam/end_mapping")
 
     // 获取地图配置
     override suspend fun getMapConfig() = request<MapConfigBean>("slam/map_config")

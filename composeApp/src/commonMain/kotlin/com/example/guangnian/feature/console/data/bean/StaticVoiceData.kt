@@ -466,7 +466,7 @@ object StaticVoiceData {
         VoiceBean("x6_daqixuanchuanpiannansheng_mi", "中文", "大气宣传片男声", SourceType.AIUI),
         VoiceBean("x6_cuishounvsheng_pro", "中文", "催收女声", SourceType.AIUI),
         VoiceBean("x6_yingxiaonv_pro", "中文", "营销女声", SourceType.AIUI),
-        VoiceBean("x6_huanleimianbao_pro", "中文", "海绵宝宝", SourceType.AIUI),
+        VoiceBean("x6_huanlemianbao_pro", "中文", "海绵宝宝", SourceType.AIUI),
         VoiceBean("x6_xiangruiyingyu_pro", "中文", "商务殷语", SourceType.AIUI),
         VoiceBean("x6_taiqiangnuannan_pro", "中文", "台湾腔 温柔男声", SourceType.AIUI),
         VoiceBean("x6_wumeinv_pro", "中文", "妩媚姐姐", SourceType.AIUI),

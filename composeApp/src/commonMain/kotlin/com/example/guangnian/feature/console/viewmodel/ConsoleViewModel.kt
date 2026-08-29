@@ -319,7 +319,9 @@ class ConsoleViewModel(
     fun fetchInspectionPoints() {
         executeTask("获取导航点失败") {
             val list = navigationApi.getInspectionPoints()
-            _uiState.update { it.copy(endpoints = list) }
+            _uiState.update {
+                it.copy(endpoints = if (it.robotNavStatus.state == RobotNavState.MAPPING) emptyList() else list)
+            }
         }
     }
 
@@ -356,18 +358,22 @@ class ConsoleViewModel(
         executeTask("开始建图失败", mapName) {
             navigationApi.startMapping(mapName)
             val newStatus = _uiState.value.robotNavStatus.copy(state = RobotNavState.MAPPING)
-            _uiState.update { it.copy(robotNavStatus = newStatus) }
+            _uiState.update { it.copy(robotNavStatus = newStatus, endpoints = emptyList()) }
             eventBus.emit(RobotEvent.NavStatusChanged(newStatus))
         }
     }
 
     fun endMapping() {
         executeTask("结束建图失败") {
-            navigationApi.endMapping()
+            val response = navigationApi.endMapping()
+            if (!response.receive) {
+                KLog.w(TAG, "结束建图请求已返回，但服务端尚未确认完成")
+                error(response.message.ifBlank { "服务端未确认结束建图完成" })
+            }
             val newStatus = _uiState.value.robotNavStatus.copy(state = RobotNavState.IDLE)
             _uiState.update { it.copy(robotNavStatus = newStatus) }
             eventBus.emit(RobotEvent.NavStatusChanged(newStatus))
-            // 结束后刷新地图列表和可能的初始点位
+            // 仅在服务端确认结束建图后刷新地图、路线和导览点。
             refreshAllData()
         }
     }

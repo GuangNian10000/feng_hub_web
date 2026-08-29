@@ -4,7 +4,7 @@ import com.example.guangnian.feature.console.data.bean.*
 
 interface NavigationApi {
     suspend fun startMapping(mapName: String)
-    suspend fun endMapping()
+    suspend fun endMapping(): BaseBean
     suspend fun getMapConfig(): MapConfigBean
     suspend fun getPosition(): RobotPositionBean
     suspend fun setPosition(x: Double, y: Double, yaw: Double)
