@@ -140,7 +140,7 @@ object KmpTcpDispatcher {
         mutex.withLock { routeHandlers.remove(route) }
     }
 
-    suspend fun request(requestJsonString: String, messageId: String, timeoutMs: Long = 15000): JsonObject? {
+    suspend fun request(requestJsonString: String, messageId: String, timeoutMs: Long = 60000): JsonObject? { // 耗时暂时改成 60
         val routeName = TcpLogFormatter.routeOf(requestJsonString)
         if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
             KLog.w("KmpTcpDispatcher", "TCP 未连接，无法发送请求 [$routeName]: id=$messageId")
