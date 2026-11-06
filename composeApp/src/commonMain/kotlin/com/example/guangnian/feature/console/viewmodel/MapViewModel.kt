@@ -192,7 +192,7 @@ class MapViewModel(
             }
         }
 
-        // 3. 动效数据刷新 (约 0.33Hz: 点云、路径)
+        // 3. 动效数据刷新 (点云、路径)
         viewModelScope.launch {
             while (isActive) {
                 if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
@@ -254,7 +254,7 @@ class MapViewModel(
                 } catch (e: Exception) {
                     KLog.w(TAG, "路径数据同步异常 #$seq: ${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
                 }
-                delay(1000)
+                delay(500)
             }
         }
 

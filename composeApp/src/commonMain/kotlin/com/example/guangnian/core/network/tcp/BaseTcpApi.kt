@@ -45,7 +45,9 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
         coerceInputValues = true
     }
 
-    fun dispatchError(errorMessage: String) {
+    fun dispatchError(errorMessage: String, targetNode: String? = null) {
+        // 排除发往 TABLET 的接口报错弹窗
+        if (targetNode == TcpNode.TABLET) return
         if (errorMessage.isNotBlank()) {
             eventBus?.tryEmit(RobotEvent.Error(errorMessage))
         }
@@ -119,6 +121,7 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
         val routeName = TcpLogFormatter.routeOf(type, topic)
         val startTime = Clock.System.now().toEpochMilliseconds()
         val isQuietRoute = TcpLogFormatter.isQuiet(route)
+        val shouldShowErrorDialog = !isQuietRoute && targetNode != TcpNode.TABLET
 
         val requestElement = buildJsonObject {
             put("from", TcpNode.PHONE)
@@ -154,7 +157,9 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
                         "BaseTcpApi",
                         "请求超时或失败 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
                     )
-                    dispatchError(errorMsg)
+                    if (shouldShowErrorDialog) {
+                        dispatchError(errorMsg, targetNode)
+                    }
                 }
                 throw Exception("TCP请求超时: $route")
             }
@@ -172,7 +177,9 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
                 KLog.e("BaseTcpApi", "原始响应日志 [$routeName]: $responseJson")
             } else {
                 KLog.w("BaseTcpApi", "响应数据为空 [$routeName]: id=$messageId")
-                dispatchError(errorMsg)
+                if (shouldShowErrorDialog) {
+                    dispatchError(errorMsg, targetNode)
+                }
             }
             throw Exception(errorMsg)
         }
@@ -186,7 +193,9 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
                 )
                 val businessError = extractErrorMessage(result, msgElement, responseJson)
                 if (!businessError.isNullOrBlank()) {
-                    dispatchError(businessError)
+                    if (shouldShowErrorDialog) {
+                        dispatchError(businessError, targetNode)
+                    }
                     throw BusinessException(businessError)
                 }
             }
@@ -208,21 +217,21 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
             // 如果 msg 本身是一个字符串（而非预期的对象），说明服务端可能直接返回了错误描述
             if (msgElement is JsonPrimitive && msgElement.isString) {
                 val errorMsg = msgElement.content
-                if (!isQuietRoute) {
-                    dispatchError(errorMsg)
+                if (shouldShowErrorDialog) {
+                    dispatchError(errorMsg, targetNode)
                 }
                 throw Exception("服务端返回错误: $errorMsg")
             }
 
             // 检查 msgElement 里面是否包含明确的 error/message 字段（尽管未能 decode 成 T）
-            if (!isQuietRoute) {
+            if (shouldShowErrorDialog) {
                 val errInJson = (msgElement as? JsonObject)?.let {
                     it["error"]?.jsonPrimitive?.content
                         ?: it["message"]?.jsonPrimitive?.content
                         ?: it["msg"]?.jsonPrimitive?.content
                 }
                 if (!errInJson.isNullOrBlank()) {
-                    dispatchError(errInJson)
+                    dispatchError(errInJson, targetNode)
                     throw Exception(errInJson, e)
                 }
             }
