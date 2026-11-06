@@ -18,8 +18,12 @@ import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 val appModule = module {
+    // Core Utilities
+    single { RobotEventBus() }
+    single { Settings() }
+
     // Data Sources
-    single<RobotTcpApi> { RobotTcpApiImpl() }
+    single<RobotTcpApi> { RobotTcpApiImpl(eventBus = get()) }
     
     // Scoped API Interfaces for better isolation (ISP)
     single<RobotStatusApi> { get<RobotTcpApi>() }
@@ -33,10 +37,6 @@ val appModule = module {
     single<SystemSettingsApi> { get<RobotTcpApi>() }
     single<RouteApi> { get<RobotTcpApi>() }
     single<VoiceApi> { get<RobotTcpApi>() }
-
-    // Core Utilities
-    single { RobotEventBus() }
-    single { Settings() }
     single { 
         HttpClient {
             install(HttpTimeout) {

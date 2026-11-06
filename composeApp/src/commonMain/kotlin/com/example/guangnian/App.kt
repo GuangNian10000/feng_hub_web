@@ -1,7 +1,11 @@
 package com.example.guangnian
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.darkColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -9,13 +13,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.guangnian.di.appModule
+import com.example.guangnian.feature.console.data.event.RobotEvent
+import com.example.guangnian.feature.console.data.event.RobotEventBus
 import com.example.guangnian.feature.update.AppUpdater
 import com.example.guangnian.feature.blue.BleManagementScreen
 import com.example.guangnian.feature.console.ui.InteractionScreen
 import com.example.guangnian.feature.main.ui.MainControlScreen
 import com.example.guangnian.feature.remote.RemoteDesktopScreen
 import org.koin.compose.KoinApplication
+import org.koin.compose.koinInject
 
 import com.example.guangnian.feature.face.ui.FaceScreen
 import com.example.guangnian.feature.map.MapEditScreen
@@ -39,6 +50,16 @@ fun App() {
         var currentRoute by remember { mutableStateOf(AppRoute.MAIN_CONTROL) }
         var editingMap by remember { mutableStateOf<MapBean?>(null) }
         var remoteDesktopIp by remember { mutableStateOf("") }
+        val eventBus = koinInject<RobotEventBus>()
+        var globalErrorMessage by remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(eventBus) {
+            eventBus.events.collect { event ->
+                if (event is RobotEvent.Error) {
+                    globalErrorMessage = event.message
+                }
+            }
+        }
 
         LaunchedEffect(Unit) {
             AppUpdater.checkUpdate()
@@ -93,6 +114,39 @@ fun App() {
                         )
                     }
                 }
+            }
+
+            if (globalErrorMessage != null) {
+                AlertDialog(
+                    onDismissRequest = { globalErrorMessage = null },
+                    title = {
+                        Text(
+                            text = "提示",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = globalErrorMessage!!,
+                            color = Color(0xFF1F2937),
+                            fontSize = 14.sp
+                        )
+                    },
+                    backgroundColor = Color.White,
+                    shape = RoundedCornerShape(8.dp),
+                    confirmButton = {
+                        TextButton(onClick = { globalErrorMessage = null }) {
+                            Text(
+                                text = "确定",
+                                color = Color(0xFF007AFF),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                )
             }
         }
     }

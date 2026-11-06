@@ -29,7 +29,9 @@ import com.example.guangnian.feature.console.data.bean.RouteStatusBean
 import com.example.guangnian.feature.console.data.bean.SessionResponseBean
 import com.example.guangnian.feature.console.data.bean.SystemInfo
 
-class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
+import com.example.guangnian.feature.console.data.event.RobotEventBus
+
+class RobotTcpApiImpl(eventBus: RobotEventBus? = null) : BaseTcpApi(eventBus), RobotTcpApi {
     override suspend fun getAgentStatus() =
         request<AgentStatusBean>("/agent/get_agent_status/", targetNode = TcpNode.TABLET)
 
@@ -310,11 +312,14 @@ class RobotTcpApiImpl : BaseTcpApi(), RobotTcpApi {
     // 归档（删除）地图
     override suspend fun archiveMap(mapUid: String) = request<BaseBean>("map/archive",mapOf("map_uid" to mapUid))//("map", mapOf("topic" to "archive", "map_uid" to mapUid))
 
-    // 切换地图
-    override suspend fun switchMap(map_uid: String) = request<BaseBean>("map/switch",
-            mapOf(
-                "map_uid" to map_uid
-            ))
+    // 切换地图（设置 120 秒超时）
+    override suspend fun switchMap(map_uid: String) = request<BaseBean>(
+        route = "map/switch",
+        msgPayload = mapOf(
+            "map_uid" to map_uid
+        ),
+        timeoutMs = 120_000L
+    )
 
     // 创建导航点
     override suspend fun addInspectionPoint(point: InspectionPointBean) =
