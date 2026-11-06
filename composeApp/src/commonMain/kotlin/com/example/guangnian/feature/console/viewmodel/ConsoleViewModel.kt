@@ -60,6 +60,7 @@ data class ConsoleUiState(
     val isInspectionPaused: Boolean = false,
     val isLoading: Boolean = false,
     val isSwitchingMap: Boolean = false,
+    val isEndingMapping: Boolean = false,
     val errorMessage: String? = null,
     val isConnected: Boolean = false,
     val systemSettingsState: SystemSettingsState = SystemSettingsState(),
@@ -376,17 +377,31 @@ class ConsoleViewModel(
     }
 
     fun endMapping() {
-        executeTask("结束建图失败") {
-            val response = navigationApi.endMapping()
-            if (!response.receive) {
-                KLog.w(TAG, "结束建图请求已返回，但服务端尚未确认完成")
-                error(response.message.ifBlank { "服务端未确认结束建图完成" })
+        viewModelScope.launch {
+            taskSeq += 1
+            val seq = taskSeq
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            _uiState.update { it.copy(isEndingMapping = true, isLoading = true) }
+            try {
+                val response = navigationApi.endMapping()
+                if (response.receive) {
+                    KLog.d(TAG, "任务成功 #$seq: 结束建图, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                    val newStatus = _uiState.value.robotNavStatus.copy(state = RobotNavState.IDLE)
+                    _uiState.update { it.copy(robotNavStatus = newStatus) }
+                    eventBus.emit(RobotEvent.NavStatusChanged(newStatus))
+                } else {
+                    KLog.w(TAG, "结束建图请求已返回，但服务端尚未确认完成")
+                    error(response.message.ifBlank { "服务端未确认结束建图完成" })
+                }
+            } catch (e: Exception) {
+                KLog.w(TAG, "任务失败 #$seq: 结束建图失败, error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+                handleError("结束建图失败", e)
+            } finally {
+                // 等待接口回调后，全量刷新数据并重新加载地图，最后隐藏加载转圈弹窗
+                refreshAllData()
+                eventBus.emit(RobotEvent.MapChanged)
+                _uiState.update { it.copy(isEndingMapping = false, isLoading = false) }
             }
-            val newStatus = _uiState.value.robotNavStatus.copy(state = RobotNavState.IDLE)
-            _uiState.update { it.copy(robotNavStatus = newStatus) }
-            eventBus.emit(RobotEvent.NavStatusChanged(newStatus))
-            // 仅在服务端确认结束建图后刷新地图、路线和导览点。
-            refreshAllData()
         }
     }
 

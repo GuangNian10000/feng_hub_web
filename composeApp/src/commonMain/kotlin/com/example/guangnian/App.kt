@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.guangnian.core.network.tcp.KmpTcpClient
+import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.di.appModule
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
@@ -56,7 +58,19 @@ fun App() {
         LaunchedEffect(eventBus) {
             eventBus.events.collect { event ->
                 if (event is RobotEvent.Error) {
-                    globalErrorMessage = event.message
+                    // TCP 未连接时，不弹窗提示
+                    if (KmpTcpClient.connectionState.value == TcpState.CONNECTED) {
+                        globalErrorMessage = event.message
+                    }
+                }
+            }
+        }
+
+        // 当 TCP 断开连接时，自动清除现存的错误弹窗
+        LaunchedEffect(Unit) {
+            KmpTcpClient.connectionState.collect { state ->
+                if (state != TcpState.CONNECTED) {
+                    globalErrorMessage = null
                 }
             }
         }

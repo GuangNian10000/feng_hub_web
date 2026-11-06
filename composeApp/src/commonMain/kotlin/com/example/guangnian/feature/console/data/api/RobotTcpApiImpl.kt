@@ -238,7 +238,8 @@ class RobotTcpApiImpl(eventBus: RobotEventBus? = null) : BaseTcpApi(eventBus), R
         request<Unit>("slam/start_mapping", mapOf("msg" to mapName))
 
     // 结束建图
-    override suspend fun endMapping() = request<BaseBean>("slam/end_mapping")
+    override suspend fun endMapping() = request<BaseBean>("slam/end_mapping",
+        timeoutMs = 120_000L)
 
     // 获取地图配置
     override suspend fun getMapConfig() = request<MapConfigBean>("slam/map_config")

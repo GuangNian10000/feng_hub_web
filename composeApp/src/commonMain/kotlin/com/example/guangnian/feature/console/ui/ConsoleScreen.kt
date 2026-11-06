@@ -5,14 +5,19 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.utils.KLog
@@ -209,7 +214,9 @@ fun InteractionScreen(
                 }
             },
             onEndMappingClick = {
-                confirmActionPayload = "结束建图" to { consoleViewModel.endMapping() }
+                if (!uiState.isEndingMapping) {
+                    confirmActionPayload = "结束建图" to { consoleViewModel.endMapping() }
+                }
             },
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -425,6 +432,42 @@ fun InteractionScreen(
 
         if (showLogDialog) {
             LogDialog(onClose = { showLogDialog = false })
+        }
+
+        if (uiState.isEndingMapping) {
+            Dialog(
+                onDismissRequest = {},
+                properties = DialogProperties(
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xEE1E1E1E)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color(0xFF007AFF),
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "正在结束建图...",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
         }
     }
 }

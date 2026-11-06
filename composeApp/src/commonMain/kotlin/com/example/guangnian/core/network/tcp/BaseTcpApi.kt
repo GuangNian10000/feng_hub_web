@@ -46,8 +46,10 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
     }
 
     fun dispatchError(errorMessage: String, targetNode: String? = null) {
-        // 排除发往 TABLET 的接口报错弹窗
+        // 1. 排除发往 TABLET 的接口报错弹窗
         if (targetNode == TcpNode.TABLET) return
+        // 2. 如果 TCP 已经断开（未连接），不弹窗
+        if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) return
         if (errorMessage.isNotBlank()) {
             eventBus?.tryEmit(RobotEvent.Error(errorMessage))
         }
@@ -121,7 +123,7 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
         val routeName = TcpLogFormatter.routeOf(type, topic)
         val startTime = Clock.System.now().toEpochMilliseconds()
         val isQuietRoute = TcpLogFormatter.isQuiet(route)
-        val shouldShowErrorDialog = !isQuietRoute && targetNode != TcpNode.TABLET
+        val shouldShowErrorDialog = !isQuietRoute && targetNode != TcpNode.TABLET && KmpTcpClient.connectionState.value == TcpState.CONNECTED
 
         val requestElement = buildJsonObject {
             put("from", TcpNode.PHONE)
