@@ -382,6 +382,7 @@ fun InteractionScreen(
                         })
                         "地图管理" -> MapManagementPanel(
                             maps = uiState.maps,
+                            isSwitchingMap = uiState.isSwitchingMap,
                             onDeleteMap = { mapUid ->
                                 consoleViewModel.deleteMap(mapUid)
                             },

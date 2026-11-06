@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.utils.PgmUtils
 import com.example.guangnian.feature.console.data.bean.MapBean
@@ -35,6 +37,7 @@ import org.koin.compose.koinInject
 @Composable
 fun MapManagementPanel(
     maps: List<MapBean>,
+    isSwitchingMap: Boolean = false,
     onDeleteMap: (String) -> Unit,
     onSwitchMap: (String) -> Unit,
     onEditMap: (MapBean) -> Unit,
@@ -58,6 +61,7 @@ fun MapManagementPanel(
     if (showStartMappingDialog) {
         AlertDialog(
             onDismissRequest = { showStartMappingDialog = false },
+            properties = DialogProperties(dismissOnClickOutside = false),
             title = { Text("开始建图", color = Color.Black, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
@@ -150,6 +154,42 @@ fun MapManagementPanel(
         )
     }
 
+    if (isSwitchingMap) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(140.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xEE1E1E1E)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF007AFF),
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = "正在切换地图...",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+
     Column(modifier = modifier.fillMaxSize().padding(4.dp)) {
         if (maps.isEmpty()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -160,7 +200,7 @@ fun MapManagementPanel(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color(0x33FFFFFF))
-                            .clickable { onRetryClick() }
+                            .clickable(enabled = !isSwitchingMap) { onRetryClick() }
                             .padding(horizontal = 24.dp, vertical = 8.dp)
                     ) {
                         Text("点击重试", color = Color.White, fontSize = 14.sp)
@@ -176,10 +216,10 @@ fun MapManagementPanel(
                 items(maps) { map ->
                     MapItem(
                         map = map,
-                        onDeleteClick = { showDeleteConfirm = map },
-                        onEditClick = { onEditMap(map) },
+                        onDeleteClick = { if (!isSwitchingMap) showDeleteConfirm = map },
+                        onEditClick = { if (!isSwitchingMap) onEditMap(map) },
                         onClick = {
-                            if (!map.is_active) {
+                            if (!map.is_active && !isSwitchingMap) {
                                 showSwitchConfirm = map
                             }
                         }

@@ -5,6 +5,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
+/**
+ * 日志拦截
+ * 静默拦截路由
+ * */
 object TcpLogFormatter {
     fun message(prefix: String, rawJson: String): String {
         val body = rawJson.trim()

@@ -59,6 +59,7 @@ data class ConsoleUiState(
     val systemInfo: SystemInfo? = null,
     val isInspectionPaused: Boolean = false,
     val isLoading: Boolean = false,
+    val isSwitchingMap: Boolean = false,
     val errorMessage: String? = null,
     val isConnected: Boolean = false,
     val systemSettingsState: SystemSettingsState = SystemSettingsState(),
@@ -340,17 +341,28 @@ class ConsoleViewModel(
     }
 
     fun switchMap(mapUid: String) {
-        executeTask("切换地图失败", mapUid) {
-            val response = navigationApi.switchMap(mapUid)
-            if (response.receive) {
-                // 服务端返回 receive=true 代表 RViz 已重启且地图切换完成。
+        viewModelScope.launch {
+            taskSeq += 1
+            val seq = taskSeq
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            _uiState.update { it.copy(isSwitchingMap = true, isLoading = true) }
+            try {
+                val response = navigationApi.switchMap(mapUid)
+                if (response.receive) {
+                    KLog.d(TAG, "任务成功 #$seq: 切换地图, mapUid=$mapUid, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
+                } else {
+                    KLog.w(TAG, "地图切换请求已返回，但服务端尚未确认完成: mapUid=$mapUid")
+                    error(response.message.ifBlank { "服务端未确认地图切换完成" })
+                }
+            } catch (e: Exception) {
+                KLog.w(TAG, "任务失败 #$seq: 切换地图失败, request=$mapUid, error=${e.message}, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms", e)
+                handleError("切换地图失败", e)
+            } finally {
+                // 收到切换地图接口回调（无论是成功、超时还是失败），都必须刷新地图数据、重新加载地图
+                refreshAllData()
                 eventBus.emit(RobotEvent.MapChanged)
-            } else {
-                KLog.w(TAG, "地图切换请求已返回，但服务端尚未确认完成: mapUid=$mapUid")
-                error(response.message.ifBlank { "服务端未确认地图切换完成" })
+                _uiState.update { it.copy(isSwitchingMap = false, isLoading = false) }
             }
-            // 切换地图后，点位和路线都会改变，需要全量刷新
-            refreshAllData()
         }
     }
 

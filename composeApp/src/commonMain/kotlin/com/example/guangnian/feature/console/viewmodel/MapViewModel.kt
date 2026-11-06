@@ -127,10 +127,8 @@ class MapViewModel(
                     }
 
                     RobotEvent.MapChanged -> {
-                        KLog.d(TAG, "收到地图切换事件，清除旧地图并重新加载")
-                        _uiState.update {
-                            it.copy(mapConfig = null, mapImage = null, isMapLoading = true, loadingStage = "重新加载地图...")
-                        }
+                        KLog.d(TAG, "收到地图切换事件，立即重新加载地图")
+                        reloadMap()
                     }
                     is RobotEvent.NavStatusChanged -> {
                         KLog.d(TAG, "收到导航状态变更: state=${event.status.state}")
@@ -284,6 +282,16 @@ class MapViewModel(
         }
     }
 
+    fun reloadMap() {
+        viewModelScope.launch {
+            KLog.i(TAG, "立即清除旧地图并重新加载地图")
+            _uiState.update {
+                it.copy(mapConfig = null, mapImage = null, isMapLoading = true, loadingStage = "重新加载地图...")
+            }
+            syncMapConfigAndImage()
+        }
+    }
+
     private suspend fun syncMapConfigAndImage() {
         mapConfigSeq += 1
         val seq = mapConfigSeq
@@ -299,6 +307,7 @@ class MapViewModel(
             KLog.d(TAG, "地图配置同步成功 #$seq: image=$imageUrl, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
         } catch (e: Exception) {
             KLog.w(TAG, "地图配置同步失败 #$seq: ${e.message}", e)
+            _uiState.update { it.copy(isMapLoading = false, loadingStage = "地图配置加载失败") }
         }
     }
 
