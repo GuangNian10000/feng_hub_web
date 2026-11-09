@@ -1,4 +1,4 @@
-rootProject.name = "Guangnian"
+rootProject.name = "feng_hub"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

@@ -19,14 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.network.tcp.TcpState
-import com.example.guangnian.feature.blue.BleAutoConnectDialog
 import com.example.guangnian.feature.blue.isBleSupported
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import com.example.guangnian.feature.main.viewmodel.ControlType
-import com.example.guangnian.feature.remote.isRemoteDesktopSupported
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
-import guangnian.composeapp.generated.resources.*
+import feng_hub.composeapp.generated.resources.*
 
 //全局定义文字阴影，增强复杂背景下的对比度
 val DefaultTextShadow = Shadow(
