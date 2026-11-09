@@ -1,5 +1,6 @@
 package com.example.guangnian.di
 
+import com.example.guangnian.core.network.createPlatformHttpClient
 import com.example.guangnian.feature.console.data.api.*
 import com.example.guangnian.feature.console.data.event.RobotEventBus
 import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
@@ -37,22 +38,7 @@ val appModule = module {
     single<SystemSettingsApi> { get<RobotTcpApi>() }
     single<RouteApi> { get<RobotTcpApi>() }
     single<VoiceApi> { get<RobotTcpApi>() }
-    single { 
-        HttpClient {
-            install(HttpTimeout) {
-                requestTimeoutMillis = 5000
-                connectTimeoutMillis = 5000
-            }
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    prettyPrint = true
-                    isLenient = true
-                    coerceInputValues = true
-                })
-            }
-        }
-    }
+    single { createPlatformHttpClient() }
     
     // ViewModels
     single { RobotConnectionManager(get(), get()) }

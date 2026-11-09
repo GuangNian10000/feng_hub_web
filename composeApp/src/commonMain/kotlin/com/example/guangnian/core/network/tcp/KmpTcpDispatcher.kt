@@ -40,7 +40,7 @@ import kotlinx.serialization.json.put
  * }
  * */
 object KmpTcpDispatcher {
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val mutex = Mutex()
     private val pendingRequests = mutableMapOf<String, CompletableDeferred<JsonObject>>()

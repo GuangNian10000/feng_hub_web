@@ -1,6 +1,6 @@
 # 机器人多平台控制系统
 
-基于 **Kotlin Multiplatform (KMP)** 构建的移动端机器人控制系统，支持 **Android** 和 **iOS** 平台。该项目利用 **Compose Multiplatform** 实现了跨平台的 UI 共享，旨在为机器人提供直观、高效的交互控制界面。
+基于 **Kotlin Multiplatform (KMP)** 构建的多端机器人控制系统，支持 **Android**、**iOS** 以及 **Web (网页端)**。该项目利用 **Compose Multiplatform (Wasm)** 实现了跨平台的 UI 100% 共享，旨在为机器人提供直观、高效的交互控制界面。
 
 ## 🚀 核心功能
 
@@ -20,25 +20,38 @@
 项目采用 MVVM 架构，最大化复用业务逻辑：
 
 *   **[/composeApp](./composeApp)**: 核心逻辑共享层。
-    *   `commonMain`: 包含跨平台 UI (Compose)、ViewModels、数据模型 (Beans) 以及 TCP 通信协议层。
+    *   `commonMain`: 包含跨平台 UI (Compose Multiplatform)、ViewModels、数据模型 (Beans) 以及通用通信协议层。
     *   `androidMain`: Android 平台特有实现及应用入口。
     *   `iosMain`: iOS 平台适配逻辑。
+    *   `wasmJsMain`: Web 平台 (Kotlin/Wasm) 适配逻辑、浏览器入库点及 WebSocket 通信层。
 *   **[/iosApp](./iosApp)**: iOS 原生工程入口，负责集成共享的 KMP 模块。
 
 ## 🛠 技术栈
 
-*   **UI 框架**: Compose Multiplatform
+*   **UI 框架**: Compose Multiplatform (Android / iOS / Web Wasm)
 *   **异步处理**: Kotlin Coroutines & Flow
-*   **网络通信**: 自定义高性能 TCP 客户端 (支持 JSON 指令序列化与自动重连)
-*   **本地存储**: Multiplatform Settings
-*   **依赖注入/管理**: ViewModel (KMP 兼容版)
+*   **网络通信**: 高性能 TCP / WebSocket 统一客户端 (支持 JSON 指令序列化与自动重连)
+*   **HTTP 引擎**: Ktor Client 3.0 (Android/iOS 使用 CIO 引擎，Web 使用浏览器标准 Fetch/Js 引擎)
+*   **本地存储**: Multiplatform Settings (移动端持久化 / Web 端 LocalStorage)
+*   **依赖注入/管理**: Koin 4.0 (支持 Compose Multiplatform 及 ViewModel)
 
 ## 📦 编译与运行
 
 ### 环境要求
 *   Android Studio Jellyfish 或更高版本
 *   Xcode 15+ (仅限 iOS 开发)
-*   Kotlin 插件支持
+*   JDK 21
+*   现代浏览器 (Chrome 119+, Safari 18+, Edge, Firefox 120+ 等支持 WasmGC 的浏览器)
+
+### Web (网页端)
+开发阶段可一键启动热重载开发服务器：
+```shell
+./gradlew :composeApp:wasmJsBrowserRun
+```
+构建生产环境静态资源（输出位于 `composeApp/build/dist/wasmJs/productionExecutable`）：
+```shell
+./gradlew :composeApp:wasmJsBrowserDistribution
+```
 
 ### Android 端
 你可以直接在 Android Studio 中运行 `composeApp` 配置，或者使用命令行：
@@ -53,7 +66,7 @@
 
 ## 📝 开发规范
 *   **UI 风格**: 遵循沉浸式深色设计模式，二级面板标题统一使用 `《 标题` 风格，并支持点击标题快速关闭/返回。
-*   **数据协议**: 所有机器人交互通过 TCP 发送标准 JSON 报文，确保数据字段与 `InspectionPointBean` 等模型同步。
+*   **数据协议**: 所有机器人交互通过 TCP / WebSocket 发送标准 JSON 报文，确保数据字段与 `InspectionPointBean` 等模型同步。
 
 ---
 © 2024 Guangnian Project. Powered by Kotlin Multiplatform.

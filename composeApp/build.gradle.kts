@@ -1,4 +1,6 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -24,12 +26,44 @@ kotlin {
             isStatic = true
         }
     }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        moduleName = "composeApp"
+        browser {
+            commonWebpackConfig {
+                outputFileName = "composeApp.js"
+                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
+                    static = (static ?: mutableListOf()).apply {
+                        // Serve sources to debug inside browser
+                        add(project.projectDir.path)
+                    }
+                }
+            }
+        }
+        binaries.executable()
+    }
     
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
             implementation("com.squareup.okhttp3:okhttp:4.12.0")
+            implementation(libs.ktor.network)
+            implementation(libs.ktor.client.cio)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.network)
+            implementation(libs.ktor.client.cio)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.ktor.client.js)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -50,12 +84,10 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
 
             // 👇 新增：KMP 网络、序列化和 UUID 依赖
-            implementation("io.ktor:ktor-network:2.3.8")
-            implementation("io.ktor:ktor-client-core:2.3.8")
-            implementation("io.ktor:ktor-client-cio:2.3.8")
-            implementation("io.ktor:ktor-client-content-negotiation:2.3.8")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.8")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kotlinx.serialization.json)
             implementation("com.benasher44:uuid:0.8.2")
 
             implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
