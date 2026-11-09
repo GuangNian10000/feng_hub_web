@@ -40,8 +40,13 @@ val appModule = module {
     single<VoiceApi> { get<RobotTcpApi>() }
     single { createPlatformHttpClient() }
     
+    // Framework & WS Management
+    single { com.example.guangnian.core.network.ws.FrameworkManager(get()) }
+    single { com.example.guangnian.core.network.ws.TabletWsClient(get()) }
+    single(createdAtStart = true) { com.example.guangnian.core.network.ws.TabletWsDispatcher(get()) }
+
     // ViewModels
-    single { RobotConnectionManager(get(), get()) }
+    single { RobotConnectionManager(get(), get(), get(), get()) }
     factory { RobotViewModel(get(), get()) }
     factory { 
         ConsoleViewModel(

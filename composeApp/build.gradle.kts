@@ -86,6 +86,7 @@ kotlin {
             // 👇 新增：KMP 网络、序列化和 UUID 依赖
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.websockets)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
             implementation("com.benasher44:uuid:0.8.2")

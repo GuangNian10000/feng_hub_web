@@ -1,5 +1,8 @@
 package com.example.guangnian.core.network.tcp
 
+import com.example.guangnian.core.network.ws.CommunicationFramework
+import com.example.guangnian.core.network.ws.FrameworkManager
+import com.example.guangnian.core.network.ws.TabletWsClient
 import com.example.guangnian.core.utils.KLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -91,7 +94,7 @@ object KmpTcpDispatcher {
         }
     }
 
-    private fun handlePassiveRequest(routePath: String, requestJson: JsonObject) {
+    fun handlePassiveRequest(routePath: String, requestJson: JsonObject) {
         scope.launch {
             val routeName = routePath.trim('/').ifEmpty { "unknown/unknown" }
             val replyId = requestJson["id"]?.jsonPrimitive?.content ?: ""
@@ -110,13 +113,20 @@ object KmpTcpDispatcher {
                             put("to", fromNode)
                             put("type", requestJson["type"]?.jsonPrimitive?.content ?: "")
                             put("topic", requestJson["topic"]?.jsonPrimitive?.content ?: "")
-                            put("id", replyId)
+                            if (replyId.isNotEmpty()) {
+                                put("id", replyId)
+                            }
                             put("msg", resultElement)
                         }
                         if (!TcpLogFormatter.isQuiet(routeName)) {
                             KLog.d("KmpTcpDispatcher", "路由处理完成并回复 [$routeName]: id=$replyId")
                         }
-                        KmpTcpClient.send(responseJson.toString())
+                        
+                        if (FrameworkManager.instance?.currentFramework?.value == CommunicationFramework.OLD_FRAMEWORK) {
+                            TabletWsClient.instance?.sendToTablet(responseJson.toString())
+                        } else {
+                            KmpTcpClient.send(responseJson.toString())
+                        }
                     }
                 } catch (e: Exception) {
                     KLog.w("KmpTcpDispatcher", "路由处理异常 [$routePath]: ${e.message}", e)

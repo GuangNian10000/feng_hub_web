@@ -2,6 +2,11 @@ package com.example.guangnian.core.network.tcp
 
 import com.benasher44.uuid.uuid4
 import com.example.guangnian.core.utils.KLog
+import com.example.guangnian.core.network.ws.CommunicationFramework
+import com.example.guangnian.core.network.ws.FrameworkManager
+import com.example.guangnian.core.network.ws.ServerMode
+import com.example.guangnian.core.network.ws.TabletWsClient
+import com.example.guangnian.core.network.ws.TabletWsDispatcher
 import com.example.guangnian.feature.console.data.bean.BaseBean
 import com.example.guangnian.feature.console.data.event.RobotEvent
 import com.example.guangnian.feature.console.data.event.RobotEventBus
@@ -45,11 +50,20 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
         coerceInputValues = true
     }
 
+    fun isConnected(): Boolean {
+        val framework = FrameworkManager.instance?.currentFramework?.value ?: CommunicationFramework.NEW_FRAMEWORK
+        return if (framework == CommunicationFramework.OLD_FRAMEWORK) {
+            TabletWsClient.instance?.connectionState?.value == TcpState.CONNECTED
+        } else {
+            KmpTcpClient.connectionState.value == TcpState.CONNECTED
+        }
+    }
+
     fun dispatchError(errorMessage: String, targetNode: String? = null) {
         // 1. 排除发往 TABLET 的接口报错弹窗
         if (targetNode == TcpNode.TABLET) return
-        // 2. 如果 TCP 已经断开（未连接），不弹窗
-        if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) return
+        // 2. 如果网络已经断开（未连接），不弹窗
+        if (!isConnected()) return
         if (errorMessage.isNotBlank()) {
             eventBus?.tryEmit(RobotEvent.Error(errorMessage))
         }
@@ -123,7 +137,11 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
         val routeName = TcpLogFormatter.routeOf(type, topic)
         val startTime = Clock.System.now().toEpochMilliseconds()
         val isQuietRoute = TcpLogFormatter.isQuiet(route)
-        val shouldShowErrorDialog = !isQuietRoute && targetNode != TcpNode.TABLET && KmpTcpClient.connectionState.value == TcpState.CONNECTED
+        val isConnectedState = isConnected()
+        val shouldShowErrorDialog = !isQuietRoute && targetNode != TcpNode.TABLET && isConnectedState
+
+        val currentFramework = FrameworkManager.instance?.currentFramework?.value ?: CommunicationFramework.NEW_FRAMEWORK
+        val serverMode = FrameworkManager.instance?.serverMode?.value ?: ServerMode.MODE_A
 
         val requestElement = buildJsonObject {
             put("from", TcpNode.PHONE)
@@ -136,54 +154,104 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
             }
         }
 
-        //KLog.d("BaseTcpApi", "开始请求 [$routeName]: id=$messageId, target=$targetNode, 参数=$payloadKeys")
-
-        if (T::class == Unit::class) {
-            KmpTcpClient.send(requestElement.toString())
-            if (!isQuietRoute) {
-                KLog.d(
-                    "BaseTcpApi",
-                    "请求入队成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+        val responseJson: JsonObject = if (currentFramework == CommunicationFramework.OLD_FRAMEWORK) {
+            // ==========================================
+            // 【老框架】：通过 WebSocket 双通道连接平板端
+            // ==========================================
+            if (T::class == Unit::class) {
+                TabletWsDispatcher.instance?.sendOneWay(
+                    route = route,
+                    msgPayload = msgPayload,
+                    targetNode = targetNode,
+                    serverMode = serverMode
                 )
+                if (!isQuietRoute) {
+                    KLog.d(
+                        "BaseTcpApi[WS]",
+                        "WS请求发送成功 [$routeName]: mode=$serverMode, target=$targetNode, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                    )
+                }
+                return Unit as T
             }
-            return Unit as T
-        }
 
-        val responseJson = KmpTcpDispatcher.request(requestElement.toString(), messageId, timeoutMs)
-            ?: run {
-                val errorMsg = "请求超时: $routeName"
+            val dispatcher = TabletWsDispatcher.instance ?: throw Exception("TabletWsDispatcher 未初始化")
+            dispatcher.request(
+                route = route,
+                msgPayload = msgPayload,
+                targetNode = targetNode,
+                timeoutMs = timeoutMs,
+                serverMode = serverMode
+            ) ?: run {
+                val errorMsg = "WS请求超时: $routeName"
                 if (isQuietRoute) {
-                    KLog.e("BaseTcpApi", "请求超时 [$routeName]: id=$messageId, 发送内容=$requestElement")
+                    KLog.e("BaseTcpApi[WS]", "WS请求超时 [$routeName]: target=$targetNode")
                 } else {
                     KLog.w(
-                        "BaseTcpApi",
-                        "请求超时或失败 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                        "BaseTcpApi[WS]",
+                        "WS请求超时或失败 [$routeName]: target=$targetNode, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
                     )
                     if (shouldShowErrorDialog) {
                         dispatchError(errorMsg, targetNode)
                     }
                 }
-                throw Exception("TCP请求超时: $route")
+                throw Exception("WS请求超时: $route")
+            }
+        } else {
+            // ==========================================
+            // 【新框架】：原有 TCP 直连服务端逻辑（完全保持不变）
+            // ==========================================
+            if (T::class == Unit::class) {
+                KmpTcpClient.send(requestElement.toString())
+                if (!isQuietRoute) {
+                    KLog.d(
+                        "BaseTcpApi",
+                        "请求入队成功 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                    )
+                }
+                return Unit as T
             }
 
-        val msgElement = responseJson["msg"] ?: run {
-            val serverError = responseJson["error"]?.jsonPrimitive?.content
-                ?: responseJson["message"]?.jsonPrimitive?.content
-            val errorMsg = if (!serverError.isNullOrBlank()) {
-                serverError
-            } else {
-                "响应缺少 msg 字段: $routeName"
-            }
-            if (isQuietRoute) {
-                KLog.e("BaseTcpApi", "响应缺少msg [$routeName]: id=$messageId, 发送内容=$requestElement")
-                KLog.e("BaseTcpApi", "原始响应日志 [$routeName]: $responseJson")
-            } else {
-                KLog.w("BaseTcpApi", "响应数据为空 [$routeName]: id=$messageId")
-                if (shouldShowErrorDialog) {
-                    dispatchError(errorMsg, targetNode)
+            KmpTcpDispatcher.request(requestElement.toString(), messageId, timeoutMs)
+                ?: run {
+                    val errorMsg = "请求超时: $routeName"
+                    if (isQuietRoute) {
+                        KLog.e("BaseTcpApi", "请求超时 [$routeName]: id=$messageId, 发送内容=$requestElement")
+                    } else {
+                        KLog.w(
+                            "BaseTcpApi",
+                            "请求超时或失败 [$routeName]: id=$messageId, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                        )
+                        if (shouldShowErrorDialog) {
+                            dispatchError(errorMsg, targetNode)
+                        }
+                    }
+                    throw Exception("TCP请求超时: $route")
                 }
+        }
+
+        val msgElement: JsonElement = responseJson["msg"] ?: run {
+            // 模式 A 下若服务端直接返回平铺字段（未包 msg 节点），直接以 responseJson 作为结果
+            if (currentFramework == CommunicationFramework.OLD_FRAMEWORK && serverMode == ServerMode.MODE_A && responseJson.keys.any { it != "type" && it != "topic" }) {
+                responseJson
+            } else {
+                val serverError = responseJson["error"]?.jsonPrimitive?.content
+                    ?: responseJson["message"]?.jsonPrimitive?.content
+                val errorMsg = if (!serverError.isNullOrBlank()) {
+                    serverError
+                } else {
+                    "响应缺少 msg 字段: $routeName"
+                }
+                if (isQuietRoute) {
+                    KLog.e("BaseTcpApi", "响应缺少msg [$routeName]: 响应内容=$responseJson")
+                    KLog.e("BaseTcpApi", "原始响应日志 [$routeName]: $responseJson")
+                } else {
+                    KLog.w("BaseTcpApi", "响应数据为空 [$routeName]")
+                    if (shouldShowErrorDialog) {
+                        dispatchError(errorMsg, targetNode)
+                    }
+                }
+                throw Exception(errorMsg)
             }
-            throw Exception(errorMsg)
         }
 
         return try {
