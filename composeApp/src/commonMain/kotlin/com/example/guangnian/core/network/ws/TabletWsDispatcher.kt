@@ -11,14 +11,15 @@ import kotlinx.serialization.json.*
 
 /**
  * 平板端 WebSocket 消息调度器
- * 负责老框架（WS 双通道连接平板端）下的请求发送、路由匹配、响应恢复及推送事件的分发：
+ * 负责老框架（WS 双通道同时连接平板端）下的请求发送、路由匹配、响应恢复及推送事件的分发：
  *
- * 1. 模式 A (当前默认模式)：
- *    - 发给服务端 (ARM)：通过 /ws/proxy 发送无包装原始 JSON；回包不带 id，按 routePath 匹配请求，或分发为单向推送。
- *    - 发给平板自身 (TABLET)：通过 /ws/tablet 发送标准格式 JSON (带 from/to/id)；回包按 id 精准匹配。
+ * 1. 手机透传通道 (/ws/proxy)：
+ *    - 极速无损中继，专为高频低延迟场景（如虚拟摇杆 50Hz 刷新控制、底盘/导航等底层硬件控制）设计，跳过 JSON 包装反序列化；
+ *    - 手机发给底层/主控 ARM 的控制直接发送原始无包装 JSON；回包不带 id，按 routePath 匹配请求，或分发为被动推送。
  *
- * 2. 模式 B (全标准化网关模式)：
- *    - 无论是 ARM 还是 TABLET，统一通过 /ws/tablet 发送带有完整 to/from/id 规范的数据包；回包按唯一 id 唤醒。
+ * 2. 手机业务通道 (/ws/tablet)：
+ *    - 规范业务总线，专为结构化业务（智能体配置、本地 TTS 播报、UI 状态等发往平板本地拦截消费的业务）设计；
+ *    - 带有规范的 from/to/id 请求包装；回包按唯一 id 唤醒恢复异步响应。
  */
 class TabletWsDispatcher(
     private val tabletWsClient: TabletWsClient
@@ -30,19 +31,19 @@ class TabletWsDispatcher(
             private set
     }
 
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val mutex = Mutex()
+
+    // 按 messageId 等待响应（适用于发往平板自身的结构化业务请求）
+    private val pendingIdRequests = mutableMapOf<String, CompletableDeferred<JsonObject>>()
+
+    // 按 routePath (如 "/slam/route_query_all/") 等待响应（适用于通过 /ws/proxy 发往主控的主动请求）
+    private val pendingRouteRequests = mutableMapOf<String, ArrayDeque<CompletableDeferred<JsonObject>>>()
+
     init {
         instance = this
         startIncomingMessageListeners()
     }
-
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private val mutex = Mutex()
-
-    // 按 messageId 等待响应（适用于模式 B 或发往平板自身的请求）
-    private val pendingIdRequests = mutableMapOf<String, CompletableDeferred<JsonObject>>()
-
-    // 按 routePath (如 "/slam/route_query_all/") 等待响应（适用于模式 A 下通过 /ws/proxy 发往服务端的主动请求）
-    private val pendingRouteRequests = mutableMapOf<String, ArrayDeque<CompletableDeferred<JsonObject>>>()
 
     private fun startIncomingMessageListeners() {
         // 1. 监听通道 1 (/ws/proxy) 的下行消息
@@ -81,7 +82,7 @@ class TabletWsDispatcher(
                 }
             }
 
-            // 模式 A 核心逻辑：若无 id 或未命中 id，检查是否有等待该 routePath 响应的主动请求
+            // 透传通道核心逻辑：若无 id 或未命中 id，检查是否有等待该 routePath 响应的主动请求
             val routeDeferred = mutex.withLock {
                 val queue = pendingRouteRequests[routePath]
                 val item = queue?.removeFirstOrNull()
@@ -145,22 +146,18 @@ class TabletWsDispatcher(
     fun sendOneWay(
         route: String,
         msgPayload: Any? = null,
-        targetNode: String = TcpNode.ARM,
-        serverMode: ServerMode = ServerMode.MODE_A
+        targetNode: String = TcpNode.ARM
     ) {
         val parts = route.trim('/').split("/")
         val type = parts.getOrNull(0) ?: ""
         val topic = parts.getOrNull(1) ?: ""
         val messageId = uuid4().toString().replace("-", "")
 
-        val isModeB = serverMode == ServerMode.MODE_B
-        val isTargetTablet = targetNode == TcpNode.TABLET
-
-        if (isModeB || isTargetTablet) {
-            // 标准格式 -> 发送至 /ws/tablet
+        if (targetNode == TcpNode.TABLET) {
+            // 手机业务通道 (/ws/tablet): 发给平板自身拦截消费（智能体、本地 TTS、音量等），具备明确 from/to/id
             val requestElement = buildJsonObject {
                 put("from", TcpNode.PHONE)
-                put("to", targetNode)
+                put("to", TcpNode.TABLET)
                 put("id", messageId)
                 put("type", type)
                 put("topic", topic)
@@ -170,7 +167,7 @@ class TabletWsDispatcher(
             }
             tabletWsClient.sendToTablet(requestElement.toString())
         } else {
-            // 模式 A 下发往服务端 (ARM) -> 发送原始无包装 JSON 至 /ws/proxy
+            // 手机透传通道 (/ws/proxy): 发往机器人主控 (ARM 底盘、高频摇杆等)，发送原始无包装 JSON 直达
             val requestElement = buildJsonObject {
                 put("type", type)
                 put("topic", topic)
@@ -189,8 +186,7 @@ class TabletWsDispatcher(
         route: String,
         msgPayload: Any? = null,
         targetNode: String = TcpNode.ARM,
-        timeoutMs: Long = 15000L,
-        serverMode: ServerMode = ServerMode.MODE_A
+        timeoutMs: Long = 15000L
     ): JsonObject? {
         val parts = route.trim('/').split("/")
         val type = parts.getOrNull(0) ?: ""
@@ -198,16 +194,13 @@ class TabletWsDispatcher(
         val routePath = "/$type/$topic/"
         val messageId = uuid4().toString().replace("-", "")
 
-        val isModeB = serverMode == ServerMode.MODE_B
-        val isTargetTablet = targetNode == TcpNode.TABLET
-
         val deferred = CompletableDeferred<JsonObject>()
 
-        if (isModeB || isTargetTablet) {
-            // 标准格式 -> /ws/tablet，通过 messageId 匹配
+        if (targetNode == TcpNode.TABLET) {
+            // 手机业务通道 (/ws/tablet): 标准格式，通过 messageId 精准恢复响应
             val requestElement = buildJsonObject {
                 put("from", TcpNode.PHONE)
-                put("to", targetNode)
+                put("to", TcpNode.TABLET)
                 put("id", messageId)
                 put("type", type)
                 put("topic", topic)
@@ -227,17 +220,17 @@ class TabletWsDispatcher(
                     deferred.await()
                 }
             } catch (e: TimeoutCancellationException) {
-                KLog.w(TAG, "WS 请求超时 [$routePath]: id=$messageId, timeout=${timeoutMs}ms")
+                KLog.w(TAG, "业务通道 [/ws/tablet] 请求超时 [$routePath]: id=$messageId, timeout=${timeoutMs}ms")
                 mutex.withLock { pendingIdRequests.remove(messageId) }
                 null
             } catch (e: Exception) {
-                KLog.w(TAG, "WS 请求异常 [$routePath]: id=$messageId, error=${e.message}", e)
+                KLog.w(TAG, "业务通道 [/ws/tablet] 请求异常 [$routePath]: id=$messageId, error=${e.message}", e)
                 mutex.withLock { pendingIdRequests.remove(messageId) }
                 null
             }
 
         } else {
-            // 模式 A 发往服务端 (ARM) -> /ws/proxy，发送原始 JSON，通过 routePath 匹配
+            // 手机透传通道 (/ws/proxy): 原始 JSON 发送，主控回包不带 id，按 routePath 匹配恢复
             val requestElement = buildJsonObject {
                 put("type", type)
                 put("topic", topic)
@@ -257,7 +250,7 @@ class TabletWsDispatcher(
                     deferred.await()
                 }
             } catch (e: TimeoutCancellationException) {
-                KLog.w(TAG, "WS 代理请求超时 [$routePath]: timeout=${timeoutMs}ms")
+                KLog.w(TAG, "透传通道 [/ws/proxy] 请求超时 [$routePath]: timeout=${timeoutMs}ms")
                 mutex.withLock {
                     val queue = pendingRouteRequests[routePath]
                     queue?.remove(deferred)
@@ -267,7 +260,7 @@ class TabletWsDispatcher(
                 }
                 null
             } catch (e: Exception) {
-                KLog.w(TAG, "WS 代理请求异常 [$routePath]: error=${e.message}", e)
+                KLog.w(TAG, "透传通道 [/ws/proxy] 请求异常 [$routePath]: error=${e.message}", e)
                 mutex.withLock {
                     val queue = pendingRouteRequests[routePath]
                     queue?.remove(deferred)

@@ -139,6 +139,9 @@ class TabletWsClient(
             if (_connectionError.value == null) {
                 _connectionError.value = "透传通道异常: ${e.message ?: "连接失败"}"
             }
+            if (_connectionState.value == TcpState.CONNECTING) {
+                _connectionState.value = TcpState.DISCONNECTED
+            }
         } finally {
             isProxyConnected = false
             proxySession = null
@@ -195,6 +198,9 @@ class TabletWsClient(
             if (_connectionError.value == null) {
                 _connectionError.value = "业务通道异常: ${e.message ?: "连接失败"}"
             }
+            if (_connectionState.value == TcpState.CONNECTING) {
+                _connectionState.value = TcpState.DISCONNECTED
+            }
         } finally {
             isTabletConnected = false
             tabletSession = null
@@ -203,13 +209,19 @@ class TabletWsClient(
     }
 
     private fun updateOverallState() {
-        // 当两个通道中至少有一个成功连接（尤其是透传通道或业务通道连通）时，视为已连接
-        if (isProxyConnected || isTabletConnected) {
+        // 双通道同时连接成功时，视为老框架完整连接成功
+        if (isProxyConnected && isTabletConnected) {
             _connectionState.value = TcpState.CONNECTED
-        } else {
-            // 两个通道均断开
+            _connectionError.value = null
+        } else if (!isProxyConnected && !isTabletConnected) {
             if (_connectionState.value == TcpState.CONNECTED) {
                 _connectionState.value = TcpState.DISCONNECTED
+            }
+        } else {
+            // 其中一个通道断开
+            if (_connectionState.value == TcpState.CONNECTED) {
+                _connectionState.value = TcpState.DISCONNECTED
+                _connectionError.value = if (!isProxyConnected) "透传通道 [/ws/proxy] 断开" else "业务通道 [/ws/tablet] 断开"
             }
         }
     }

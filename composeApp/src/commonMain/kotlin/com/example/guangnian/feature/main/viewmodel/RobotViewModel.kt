@@ -3,7 +3,6 @@ package com.example.guangnian.feature.main.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.core.network.ws.CommunicationFramework
-import com.example.guangnian.core.network.ws.ServerMode
 import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +35,6 @@ class RobotViewModel(
 
     // 桥接全局连接状态
     val framework: StateFlow<CommunicationFramework> = connectionManager.framework
-    val serverMode: StateFlow<ServerMode> = connectionManager.serverMode
     val ip: StateFlow<String> = connectionManager.ip
     val port: StateFlow<String> = connectionManager.port
     val connectionState: StateFlow<TcpState> = connectionManager.connectionState
@@ -49,10 +47,6 @@ class RobotViewModel(
         connectionManager.setFramework(framework)
     }
 
-    fun setServerMode(mode: ServerMode) {
-        connectionManager.setServerMode(mode)
-    }
-
     fun onIpChanged(newIp: String) {
         connectionManager.onIpChanged(newIp)
     }
@@ -63,6 +57,10 @@ class RobotViewModel(
 
     fun connect() {
         connectionManager.connect()
+    }
+
+    fun connectWithFramework(framework: CommunicationFramework) {
+        connectionManager.connectWithFramework(framework)
     }
 
     fun disconnect() {

@@ -4,7 +4,6 @@ import com.example.guangnian.core.network.tcp.KmpTcpClient
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.core.network.ws.CommunicationFramework
 import com.example.guangnian.core.network.ws.FrameworkManager
-import com.example.guangnian.core.network.ws.ServerMode
 import com.example.guangnian.core.network.ws.TabletWsClient
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.feature.console.data.api.RobotStatusApi
@@ -38,7 +37,6 @@ class RobotConnectionManager(
     private var heartbeatJob: Job? = null
 
     val framework: StateFlow<CommunicationFramework> = frameworkManager.currentFramework
-    val serverMode: StateFlow<ServerMode> = frameworkManager.serverMode
 
     // 状态流：当前编辑中的 IP 和 端口
     private val _ip = MutableStateFlow(getInitialIp(framework.value))
@@ -134,10 +132,6 @@ class RobotConnectionManager(
         _lastConnectedPort.value = targetPort
     }
 
-    fun setServerMode(mode: ServerMode) {
-        frameworkManager.setServerMode(mode)
-    }
-
     private fun saveCurrentParams(fw: CommunicationFramework, currentIp: String, currentPort: String) {
         when (fw) {
             CommunicationFramework.NEW_FRAMEWORK -> {
@@ -159,6 +153,13 @@ class RobotConnectionManager(
 
     fun onPortChanged(newPort: String) {
         _port.value = newPort
+    }
+
+    fun connectWithFramework(targetFw: CommunicationFramework) {
+        if (framework.value != targetFw) {
+            setFramework(targetFw)
+        }
+        connect()
     }
 
     fun connect() {
@@ -186,7 +187,7 @@ class RobotConnectionManager(
             KLog.i(TAG, "【新框架】发起 TCP 连接: $currentIp:$portInt")
             KmpTcpClient.connect(currentIp, portInt)
         } else {
-            KLog.i(TAG, "【老框架】发起平板端 WS 连接: $currentIp:$portInt (模式: ${serverMode.value})")
+            KLog.i(TAG, "【老框架】发起平板端 WS 双通道连接: $currentIp:$portInt (透传 /ws/proxy + 业务 /ws/tablet)")
             tabletWsClient.connect(currentIp, portInt)
         }
     }

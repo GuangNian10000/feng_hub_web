@@ -4,7 +4,6 @@ import com.benasher44.uuid.uuid4
 import com.example.guangnian.core.utils.KLog
 import com.example.guangnian.core.network.ws.CommunicationFramework
 import com.example.guangnian.core.network.ws.FrameworkManager
-import com.example.guangnian.core.network.ws.ServerMode
 import com.example.guangnian.core.network.ws.TabletWsClient
 import com.example.guangnian.core.network.ws.TabletWsDispatcher
 import com.example.guangnian.feature.console.data.bean.BaseBean
@@ -141,7 +140,6 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
         val shouldShowErrorDialog = !isQuietRoute && targetNode != TcpNode.TABLET && isConnectedState
 
         val currentFramework = FrameworkManager.instance?.currentFramework?.value ?: CommunicationFramework.NEW_FRAMEWORK
-        val serverMode = FrameworkManager.instance?.serverMode?.value ?: ServerMode.MODE_A
 
         val requestElement = buildJsonObject {
             put("from", TcpNode.PHONE)
@@ -162,13 +160,12 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
                 TabletWsDispatcher.instance?.sendOneWay(
                     route = route,
                     msgPayload = msgPayload,
-                    targetNode = targetNode,
-                    serverMode = serverMode
+                    targetNode = targetNode
                 )
                 if (!isQuietRoute) {
                     KLog.d(
                         "BaseTcpApi[WS]",
-                        "WS请求发送成功 [$routeName]: mode=$serverMode, target=$targetNode, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
+                        "WS请求发送成功 [$routeName]: target=$targetNode, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms"
                     )
                 }
                 return Unit as T
@@ -179,8 +176,7 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
                 route = route,
                 msgPayload = msgPayload,
                 targetNode = targetNode,
-                timeoutMs = timeoutMs,
-                serverMode = serverMode
+                timeoutMs = timeoutMs
             ) ?: run {
                 val errorMsg = "WS请求超时: $routeName"
                 if (isQuietRoute) {
@@ -230,8 +226,8 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
         }
 
         val msgElement: JsonElement = responseJson["msg"] ?: run {
-            // 模式 A 下若服务端直接返回平铺字段（未包 msg 节点），直接以 responseJson 作为结果
-            if (currentFramework == CommunicationFramework.OLD_FRAMEWORK && serverMode == ServerMode.MODE_A && responseJson.keys.any { it != "type" && it != "topic" }) {
+            // 老框架下发往主控时，若主控直接返回平铺字段（未包 msg 节点），直接以 responseJson 作为结果
+            if (currentFramework == CommunicationFramework.OLD_FRAMEWORK && targetNode != TcpNode.TABLET && responseJson.keys.any { it != "type" && it != "topic" }) {
                 responseJson
             } else {
                 val serverError = responseJson["error"]?.jsonPrimitive?.content

@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import org.koin.compose.viewmodel.koinViewModel
 import com.example.guangnian.core.network.tcp.TcpState
 import com.example.guangnian.core.network.ws.CommunicationFramework
-import com.example.guangnian.core.network.ws.ServerMode
 import com.example.guangnian.feature.blue.isBleSupported
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 import com.example.guangnian.feature.main.viewmodel.ControlType
@@ -45,7 +44,6 @@ fun MainControlScreen(
 ) {
     val viewModel: RobotViewModel = koinViewModel()
     val framework by viewModel.framework.collectAsState()
-    val serverMode by viewModel.serverMode.collectAsState()
     val ip by viewModel.ip.collectAsState()
     val port by viewModel.port.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
@@ -55,10 +53,18 @@ fun MainControlScreen(
     val controlType by viewModel.controlType.collectAsState()
 
     var showTypeDialog by remember { mutableStateOf(false) }
+    var showFrameworkDialog by remember { mutableStateOf(false) }
+
+    val handleConnectClick = {
+        if (connectionState == TcpState.CONNECTED) {
+            viewModel.disconnect()
+        } else {
+            showFrameworkDialog = true
+        }
+    }
 
     MainControlContent(
         framework = framework,
-        serverMode = serverMode,
         ip = ip,
         port = port,
         connectionState = connectionState,
@@ -66,16 +72,25 @@ fun MainControlScreen(
         latency = latency,
         canConnect = canConnect,
         controlType = controlType,
-        onFrameworkChange = viewModel::setFramework,
-        onServerModeChange = viewModel::setServerMode,
         onIpChange = viewModel::onIpChanged,
         onPortChange = viewModel::onPortChanged,
-        onConnectClick = viewModel::connect,
+        onConnectClick = handleConnectClick,
         onNavigateToInteraction = onNavigateToInteraction,
         onNavigateToFace = onNavigateToFace,
         onNavigateToBle = onNavigateToBle,
         onTypeClick = { showTypeDialog = true }
     )
+
+    if (showFrameworkDialog) {
+        FrameworkSelectionDialog(
+            currentFramework = framework,
+            onDismiss = { showFrameworkDialog = false },
+            onSelect = { selectedFw ->
+                showFrameworkDialog = false
+                viewModel.connectWithFramework(selectedFw)
+            }
+        )
+    }
 
     if (showTypeDialog) {
         ControlTypeSelectionDialog(
@@ -92,7 +107,6 @@ fun MainControlScreen(
 @Composable
 fun MainControlContent(
     framework: CommunicationFramework = CommunicationFramework.NEW_FRAMEWORK,
-    serverMode: ServerMode = ServerMode.MODE_A,
     ip: String,
     port: String,
     connectionState: TcpState,
@@ -100,8 +114,6 @@ fun MainControlContent(
     latency: Long? = null,
     canConnect: Boolean,
     controlType: ControlType,
-    onFrameworkChange: (CommunicationFramework) -> Unit = {},
-    onServerModeChange: (ServerMode) -> Unit = {},
     onIpChange: (String) -> Unit,
     onPortChange: (String) -> Unit,
     onConnectClick: () -> Unit,
@@ -126,14 +138,11 @@ fun MainControlContent(
         ) {
             TopConnectionBar(
                 framework = framework,
-                serverMode = serverMode,
                 ip = ip,
                 port = port,
                 connectionState = connectionState,
                 connectionError = connectionError,
                 canConnect = canConnect,
-                onFrameworkChange = onFrameworkChange,
-                onServerModeChange = onServerModeChange,
                 onIpChange = onIpChange,
                 onPortChange = onPortChange,
                 onConnectClick = onConnectClick
@@ -155,12 +164,74 @@ fun MainControlContent(
                 connectionState = connectionState,
                 controlType = controlType,
                 framework = framework,
-                serverMode = serverMode,
                 latency = latency,
                 onTypeClick = onTypeClick
             )
         }
     }
+}
+
+@Composable
+fun FrameworkSelectionDialog(
+    currentFramework: CommunicationFramework,
+    onDismiss: () -> Unit,
+    onSelect: (CommunicationFramework) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "选择连接框架",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                CommunicationFramework.entries.forEach { fw ->
+                    val isSelected = fw == currentFramework
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(fw) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { onSelect(fw) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFF00E5FF)
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = fw.displayName,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color(0xFF00E5FF) else Color.White
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = when (fw) {
+                                    CommunicationFramework.NEW_FRAMEWORK -> "TCP直连机器人底层主控 ARM (默认端口 9002)"
+                                    CommunicationFramework.OLD_FRAMEWORK -> "WS双通道连接车载平板端 (默认端口 9090: 透传+业务)"
+                                },
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消", color = Color(0xFF00E5FF))
+            }
+        }
+    )
 }
 
 @Composable
@@ -203,14 +274,11 @@ fun ControlTypeSelectionDialog(
 @Composable
 fun TopConnectionBar(
     framework: CommunicationFramework,
-    serverMode: ServerMode,
     ip: String,
     port: String,
     connectionState: TcpState,
     connectionError: String?,
     canConnect: Boolean,
-    onFrameworkChange: (CommunicationFramework) -> Unit,
-    onServerModeChange: (ServerMode) -> Unit,
     onIpChange: (String) -> Unit,
     onPortChange: (String) -> Unit,
     onConnectClick: () -> Unit
@@ -218,68 +286,6 @@ fun TopConnectionBar(
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
     ) {
-        // 第一行：通讯框架选择与平板端模式选择
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // 框架选择
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "通讯框架:",
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = TextStyle(shadow = DefaultTextShadow)
-                )
-
-                FrameworkChip(
-                    title = "新框架 (TCP直连)",
-                    selected = framework == CommunicationFramework.NEW_FRAMEWORK,
-                    onClick = { onFrameworkChange(CommunicationFramework.NEW_FRAMEWORK) }
-                )
-
-                FrameworkChip(
-                    title = "老框架 (WS双通道)",
-                    selected = framework == CommunicationFramework.OLD_FRAMEWORK,
-                    onClick = { onFrameworkChange(CommunicationFramework.OLD_FRAMEWORK) }
-                )
-            }
-
-            // 当选择老框架时，显示平板端模式选择 (模式 A / 模式 B)
-            if (framework == CommunicationFramework.OLD_FRAMEWORK) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "平板模式:",
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        style = TextStyle(shadow = DefaultTextShadow)
-                    )
-
-                    ServerModeChip(
-                        title = "模式 A (透传/默认)",
-                        selected = serverMode == ServerMode.MODE_A,
-                        onClick = { onServerModeChange(ServerMode.MODE_A) }
-                    )
-
-                    ServerModeChip(
-                        title = "模式 B (全网关)",
-                        selected = serverMode == ServerMode.MODE_B,
-                        onClick = { onServerModeChange(ServerMode.MODE_B) }
-                    )
-                }
-            }
-        }
-
-        // 第二行：连接操作与 IP / 端口输入
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -397,86 +403,6 @@ fun TopConnectionBar(
 }
 
 @Composable
-private fun FrameworkChip(
-    title: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val bg = if (selected) Color(0xFF00E5FF).copy(alpha = 0.25f) else Color(0xFF0F172A).copy(alpha = 0.6f)
-    val border = if (selected) Color(0xFF00E5FF) else Color(0xFF334155).copy(alpha = 0.5f)
-    val textColor = if (selected) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.75f)
-
-    Surface(
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .clickable(onClick = onClick),
-        color = bg,
-        border = BorderStroke(1.dp, border),
-        shape = RoundedCornerShape(6.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(if (selected) Color(0xFF00E5FF) else Color.Gray.copy(alpha = 0.5f))
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = title,
-                color = textColor,
-                fontSize = 12.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                style = TextStyle(shadow = DefaultTextShadow)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ServerModeChip(
-    title: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val bg = if (selected) Color(0xFFA855F7).copy(alpha = 0.25f) else Color(0xFF0F172A).copy(alpha = 0.6f)
-    val border = if (selected) Color(0xFFA855F7) else Color(0xFF334155).copy(alpha = 0.5f)
-    val textColor = if (selected) Color(0xFFE9D5FF) else Color.White.copy(alpha = 0.75f)
-
-    Surface(
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .clickable(onClick = onClick),
-        color = bg,
-        border = BorderStroke(1.dp, border),
-        shape = RoundedCornerShape(6.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(if (selected) Color(0xFFA855F7) else Color.Gray.copy(alpha = 0.5f))
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = title,
-                color = textColor,
-                fontSize = 11.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                style = TextStyle(shadow = DefaultTextShadow)
-            )
-        }
-    }
-}
-
-@Composable
 fun FunctionGrid(
     modifier: Modifier = Modifier,
     controlType: ControlType,
@@ -572,7 +498,6 @@ fun BottomStatusBar(
     connectionState: TcpState,
     controlType: ControlType,
     framework: CommunicationFramework,
-    serverMode: ServerMode,
     latency: Long?,
     onTypeClick: () -> Unit
 ) {
@@ -585,7 +510,7 @@ fun BottomStatusBar(
     val frameworkText = if (framework == CommunicationFramework.NEW_FRAMEWORK) {
         "新框架 (TCP直连)"
     } else {
-        "老框架 (WS: ${serverMode.displayName})"
+        "老框架 (WS双通道)"
     }
 
     Row(
