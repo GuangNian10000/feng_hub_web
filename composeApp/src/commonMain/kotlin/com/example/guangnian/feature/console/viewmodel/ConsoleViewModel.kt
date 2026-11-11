@@ -15,6 +15,9 @@ import com.example.guangnian.feature.console.data.event.RobotEventBus
 import com.example.guangnian.core.network.tcp.KmpTcpClient
 import com.example.guangnian.core.network.tcp.KmpTcpDispatcher
 import com.example.guangnian.core.network.tcp.TcpState
+import com.example.guangnian.core.network.ws.CommunicationFramework
+import com.example.guangnian.core.network.ws.FrameworkManager
+import com.example.guangnian.core.network.ws.TabletWsClient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.encodeToString
@@ -87,6 +90,9 @@ class ConsoleViewModel(
             coerceInputValues = true
         }
     }
+
+    private val joystickSpeedMultiplier: Double
+        get() = if (FrameworkManager.instance?.currentFramework?.value == CommunicationFramework.OLD_FRAMEWORK) 0.5 else 1.0
 
     private val _uiState = MutableStateFlow(ConsoleUiState())
     val uiState: StateFlow<ConsoleUiState> = _uiState.asStateFlow()
@@ -165,14 +171,37 @@ class ConsoleViewModel(
         }
     }
 
+    private fun isClientConnected(): Boolean {
+        val framework = FrameworkManager.instance?.currentFramework?.value ?: CommunicationFramework.NEW_FRAMEWORK
+        return if (framework == CommunicationFramework.OLD_FRAMEWORK) {
+            TabletWsClient.instance?.connectionState?.value == TcpState.CONNECTED
+        } else {
+            KmpTcpClient.connectionState.value == TcpState.CONNECTED
+        }
+    }
+
     private fun observeConnectionState() {
         viewModelScope.launch {
-            KmpTcpClient.connectionState.collect { state ->
-                val connected = state == TcpState.CONNECTED
+            val tcpFlow = KmpTcpClient.connectionState
+            val wsFlow = TabletWsClient.instance?.connectionState ?: flowOf(TcpState.DISCONNECTED)
+            val fwFlow = FrameworkManager.instance?.currentFramework ?: flowOf(CommunicationFramework.NEW_FRAMEWORK)
+
+            combine(tcpFlow, wsFlow, fwFlow) { tcpState, wsState, fw ->
+                if (fw == CommunicationFramework.OLD_FRAMEWORK) wsState == TcpState.CONNECTED else tcpState == TcpState.CONNECTED
+            }.distinctUntilChanged().collect { connected ->
                 _uiState.update { it.copy(isConnected = connected) }
                 if (connected) {
-                    KLog.i(TAG, "TCP连接已建立，开始同步基础数据")
+                    KLog.i(TAG, "连接已建立 (框架: ${FrameworkManager.instance?.currentFramework?.value?.displayName})，开始同步基础数据")
                     refreshAllData()
+                } else {
+                    KLog.i(TAG, "连接已断开/脱机，清空动作与姿态等业务数据")
+                    _uiState.update {
+                        it.copy(
+                            postures = emptyList(),
+                            armActions = emptyList(),
+                            motions = emptyList()
+                        )
+                    }
                 }
             }
         }
@@ -195,7 +224,7 @@ class ConsoleViewModel(
     private fun startSystemInfoPolling() {
         viewModelScope.launch {
             while (isActive) {
-                if (KmpTcpClient.connectionState.value != TcpState.CONNECTED) {
+                if (!isClientConnected()) {
                     delay(2000)
                     continue
                 }
@@ -235,19 +264,21 @@ class ConsoleViewModel(
     }
 
     fun toggleAgentWakeUp() {
-        val status = _uiState.value.agentStatus ?: return
-        sendAgentStatus(status.copy(isWakeUp = !status.isWakeUp))
+        val current = _uiState.value.agentStatus ?: AgentStatusBean(isWakeUp = false, isAsrEnabled = true)
+        sendAgentStatus(current.copy(isWakeUp = !current.isWakeUp))
     }
 
     fun toggleAgentAsr() {
-        val status = _uiState.value.agentStatus ?: return
-        sendAgentStatus(status.copy(isAsrEnabled = !status.isAsrEnabled))
+        val current = _uiState.value.agentStatus ?: AgentStatusBean(isWakeUp = true, isAsrEnabled = false)
+        sendAgentStatus(current.copy(isAsrEnabled = !current.isAsrEnabled))
     }
 
     private fun sendAgentStatus(status: AgentStatusBean) {
         viewModelScope.launch {
             try {
                 agentControlApi.setAgentStatus(status)
+                _uiState.update { it.copy(agentStatus = status) }
+                KLog.i(TAG, "设置智能体状态成功: isWakeUp=${status.isWakeUp}, isAsrEnabled=${status.isAsrEnabled}")
             } catch (e: Exception) {
                 KLog.e(TAG, "设置智能体状态失败: ${e.message}")
             }
@@ -258,6 +289,7 @@ class ConsoleViewModel(
         viewModelScope.launch {
             try {
                 agentControlApi.interruptDialogue()
+                KLog.i(TAG, "打断智能体对话指令已发送成功")
             } catch (e: Exception) {
                 KLog.e(TAG, "打断智能体对话失败: ${e.message}")
             }
@@ -305,6 +337,7 @@ class ConsoleViewModel(
     }
 
     fun fetchPostureList() {
+        if (!isClientConnected()) return
         executeTask("获取姿态列表失败") {
             val list = motionControlApi.getPostureList()
             _uiState.update { it.copy(postures = list) }
@@ -312,6 +345,7 @@ class ConsoleViewModel(
     }
 
     fun fetchArmList() {
+        if (!isClientConnected()) return
         executeTask("获取机械臂动作失败") {
             val list = motionControlApi.getArmList()
             _uiState.update { it.copy(armActions = list) }
@@ -624,19 +658,22 @@ class ConsoleViewModel(
                 joystickJob = viewModelScope.launch {
                     while (isActive) {
                         val distance = hypot(lastLeftX, lastLeftY)
-                        val translateLevel = (distance * 10).toInt().coerceIn(0, 10)
+                        val multiplier = joystickSpeedMultiplier
+                        val rawTranslateLevel = (distance * 10).roundToInt().coerceIn(0, 10)
+                        val translateLevel = (rawTranslateLevel * multiplier).roundToInt().coerceIn(0, 10)
                         var angle = 0.0
                         if (translateLevel > 0) {
                             angle = atan2(-lastLeftX.toDouble(), lastLeftY.toDouble()) * 180 / PI
                             if (angle < 0) angle += 360
                         }
-                        val rotateLevel = (-lastRightX * 10).toInt().coerceIn(-10, 10)
+                        val rawRotateLevel = (-lastRightX * 10).roundToInt().coerceIn(-10, 10)
+                        val rotateLevel = (rawRotateLevel * multiplier).roundToInt().coerceIn(-10, 10)
                         joystickSeq += 1
                         val seq = joystickSeq
                         val startTime = Clock.System.now().toEpochMilliseconds()
 
                         try {
-                            KLog.d(TAG, "准备发送摇杆指令 #$seq: angle=$angle, translateLevel=$translateLevel, rotateLevel=$rotateLevel")
+                            KLog.d(TAG, "准备发送摇杆指令 #$seq: angle=$angle, translateLevel=$translateLevel, rotateLevel=$rotateLevel (倍率=$multiplier)")
                             motionControlApi.moveMixed(angle, translateLevel, rotateLevel)
                             KLog.d(TAG, "摇杆指令发送成功 #$seq: angle=$angle, translateLevel=$translateLevel, rotateLevel=$rotateLevel, 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
                         } catch (e: Exception) {
@@ -655,6 +692,9 @@ class ConsoleViewModel(
                 try {
                     KLog.d(TAG, "发送摇杆归零指令")
                     motionControlApi.moveMixed(0.0, 0, 0)
+                    if (FrameworkManager.instance?.currentFramework?.value == CommunicationFramework.OLD_FRAMEWORK) {
+                        motionControlApi.stopTranslate()
+                    }
                     KLog.d(TAG, "摇杆归零指令发送成功: 耗时=${Clock.System.now().toEpochMilliseconds() - startTime}ms")
                 } catch (e: Exception) {
                     KLog.w(TAG, "停止摇杆指令发送失败: ${e.message}", e)

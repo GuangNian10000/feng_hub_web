@@ -29,6 +29,13 @@ import com.example.guangnian.feature.console.viewmodel.*
 import com.example.guangnian.feature.console.data.bean.RobotNavState
 import com.example.guangnian.feature.main.viewmodel.RobotViewModel
 
+// 动作执行确认弹窗数据载荷
+data class ActionConfirmDialogState(
+    val title: String = "确认执行",
+    val message: String,
+    val onConfirm: () -> Unit
+)
+
 @OptIn(ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun InteractionScreen(
@@ -78,8 +85,8 @@ fun InteractionScreen(
         customHeaderActions = null
     }
 
-    // 动作执行确认弹窗状态
-    var confirmActionPayload by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    // 动作执行确认弹窗状态 (包含标题与安全提示信息)
+    var confirmActionDialog by remember { mutableStateOf<ActionConfirmDialogState?>(null) }
 
     val menus = listOf("姿态动作", "动作", "动作编辑", "导览管理", "语音合成", "智能体设置", "系统设置", "地图管理", "知识库", "日志")
 
@@ -98,6 +105,7 @@ fun InteractionScreen(
 
     LaunchedEffect(Unit) {
         consoleViewModel.fetchNavStatus()
+        consoleViewModel.fetchAgentStatus()
     }
 
     LaunchedEffect(activeFragment, inspectionTab) {
@@ -158,22 +166,22 @@ fun InteractionScreen(
             )
         }
 
-        if (confirmActionPayload != null) {
+        if (confirmActionDialog != null) {
             AlertDialog(
-                onDismissRequest = { confirmActionPayload = null },
-                title = { Text("确认执行", color = Color.Black, fontWeight = FontWeight.Bold) },
-                text = { Text("确定要执行 “${confirmActionPayload?.first}” 吗？", color = Color.DarkGray) },
+                onDismissRequest = { confirmActionDialog = null },
+                title = { Text(confirmActionDialog?.title ?: "确认执行", color = Color.Black, fontWeight = FontWeight.Bold) },
+                text = { Text(confirmActionDialog?.message ?: "", color = Color.DarkGray) },
                 backgroundColor = Color.White,
                 confirmButton = {
                     TextButton(onClick = {
-                        confirmActionPayload?.second?.invoke()
-                        confirmActionPayload = null
+                        confirmActionDialog?.onConfirm?.invoke()
+                        confirmActionDialog = null
                     }) {
                         Text("确定", color = Color(0xFF007AFF))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { confirmActionPayload = null }) {
+                    TextButton(onClick = { confirmActionDialog = null }) {
                         Text("取消", color = Color.Gray)
                     }
                 }
@@ -200,22 +208,29 @@ fun InteractionScreen(
             showEndMapping = uiState.robotNavStatus.state == RobotNavState.MAPPING,
             onPauseToggle = {
                 val actionName = if (uiState.isInspectionPaused) "继续导航" else "暂停导航"
-                confirmActionPayload = actionName to {
-                    if (uiState.isInspectionPaused) {
-                        consoleViewModel.resumeNavigation()
-                    } else {
-                        consoleViewModel.pauseNavigation()
+                confirmActionDialog = ActionConfirmDialogState(
+                    message = "确定要执行 “$actionName” 吗？",
+                    onConfirm = {
+                        if (uiState.isInspectionPaused) {
+                            consoleViewModel.resumeNavigation()
+                        } else {
+                            consoleViewModel.pauseNavigation()
+                        }
                     }
-                }
+                )
             },
             onCancelClick = {
-                confirmActionPayload = "取消导航" to {
-                    consoleViewModel.stopNavigation()
-                }
+                confirmActionDialog = ActionConfirmDialogState(
+                    message = "确定要执行 “取消导航” 吗？",
+                    onConfirm = { consoleViewModel.stopNavigation() }
+                )
             },
             onEndMappingClick = {
                 if (!uiState.isEndingMapping) {
-                    confirmActionPayload = "结束建图" to { consoleViewModel.endMapping() }
+                    confirmActionDialog = ActionConfirmDialogState(
+                        message = "确定要执行 “结束建图” 吗？",
+                        onConfirm = { consoleViewModel.endMapping() }
+                    )
                 }
             },
             modifier = Modifier
@@ -224,7 +239,7 @@ fun InteractionScreen(
         )
 
         AnimatedVisibility(
-            visible = uiState.agentStatus != null,
+            visible = true,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(top = 64.dp, start = 24.dp),
@@ -249,12 +264,18 @@ fun InteractionScreen(
             onExpandToggle = { isPosturesExpanded = !isPosturesExpanded },
             favoriteActions = uiState.favoriteActions,
             onActionClick = { fav ->
-                confirmActionPayload = fav.name to {
-                    if (fav.isArmAction) {
-                        consoleViewModel.sendArmCommand(fav.id)
-                    } else {
-                        consoleViewModel.sendPostureCommand(fav.id)
-                    }
+                if (fav.isArmAction) {
+                    confirmActionDialog = ActionConfirmDialogState(
+                        title = "确认执行动作",
+                        message = "确定执行手臂动作「${fav.name}」（ID: ${fav.id}）吗？\n请确认机器人周围环境安全。",
+                        onConfirm = { consoleViewModel.sendArmCommand(fav.id) }
+                    )
+                } else {
+                    confirmActionDialog = ActionConfirmDialogState(
+                        title = "确认执行姿态",
+                        message = "确定执行姿态「${fav.name}」吗？\n此操作会改变机器人姿态，请确认周围环境安全。",
+                        onConfirm = { consoleViewModel.sendPostureCommand(fav.id) }
+                    )
                 }
             },
             modifier = Modifier
@@ -266,9 +287,15 @@ fun InteractionScreen(
             isEmergency = uiState.robotNavStatus.state == RobotNavState.EMERGENCY_STOP,
             onClick = {
                 if (uiState.robotNavStatus.state == RobotNavState.EMERGENCY_STOP) {
-                    confirmActionPayload = "恢复" to { consoleViewModel.recover() }
+                    confirmActionDialog = ActionConfirmDialogState(
+                        message = "确定要执行 “恢复” 吗？",
+                        onConfirm = { consoleViewModel.recover() }
+                    )
                 } else {
-                    confirmActionPayload = "急停" to { consoleViewModel.stopAll() }
+                    confirmActionDialog = ActionConfirmDialogState(
+                        message = "确定要执行 “急停” 吗？",
+                        onConfirm = { consoleViewModel.stopAll() }
+                    )
                 }
             },
             modifier = Modifier
@@ -323,7 +350,11 @@ fun InteractionScreen(
                             postures = uiState.postures,
                             favoriteActions = uiState.favoriteActions,
                             onActionClick = { id, name ->
-                                confirmActionPayload = name to { consoleViewModel.sendPostureCommand(id) }
+                                confirmActionDialog = ActionConfirmDialogState(
+                                    title = "确认执行姿态",
+                                    message = "确定执行姿态「$name」吗？\n此操作会改变机器人姿态，请确认周围环境安全。",
+                                    onConfirm = { consoleViewModel.sendPostureCommand(id) }
+                                )
                             },
                             onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id, name, false) },
                             onRetryClick = { consoleViewModel.fetchPostureList() }
@@ -332,9 +363,13 @@ fun InteractionScreen(
                             armActions = uiState.armActions,
                             favoriteActions = uiState.favoriteActions,
                             onActionClick = { id, name ->
-                                confirmActionPayload = name to { consoleViewModel.sendArmCommand(id) }
+                                confirmActionDialog = ActionConfirmDialogState(
+                                    title = "确认执行动作",
+                                    message = "确定执行手臂动作「$name」（ID: $id）吗？\n请确认机器人周围环境安全。",
+                                    onConfirm = { consoleViewModel.sendArmCommand(id) }
+                                )
                             },
-                            onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id.toString(), name, true) },
+                            onActionLongClick = { id, name -> consoleViewModel.toggleFavorite(id, name, true) },
                             onRetryClick = { consoleViewModel.fetchArmList() }
                         )
                         "动作编辑" -> {
@@ -350,14 +385,20 @@ fun InteractionScreen(
                             selectedTab = inspectionTab,
                             onPointClick = { id ->
                                 val name = uiState.endpoints.find { it.point_id == id }?.name ?: "该点位"
-                                confirmActionPayload = "前往导览点 $name" to { consoleViewModel.startInspectionPoint(id) }
+                                confirmActionDialog = ActionConfirmDialogState(
+                                    message = "确定前往导览点 “$name” 吗？",
+                                    onConfirm = { consoleViewModel.startInspectionPoint(id) }
+                                )
                             },
                             onAddCurrentPosition = { consoleViewModel.addInspectionPoint(it) },
                             onDeletePoint = { consoleViewModel.deleteInspectionPoint(it) },
                             onUpdatePoint = { consoleViewModel.updateInspectionPoint(it) },
                             onRouteClick = { id ->
                                 val name = uiState.routes.find { it.route_id == id }?.route_name ?: "该路线"
-                                confirmActionPayload = "开始路线 $name" to { consoleViewModel.startRoute(id) }
+                                confirmActionDialog = ActionConfirmDialogState(
+                                    message = "确定开始路线 “$name” 吗？",
+                                    onConfirm = { consoleViewModel.startRoute(id) }
+                                )
                             },
                             onAddRoute = { consoleViewModel.addRoute(it) },
                             onDeleteRoute = { consoleViewModel.deleteRoute(it) },

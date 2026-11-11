@@ -156,8 +156,16 @@ class RobotConnectionManager(
     }
 
     fun connectWithFramework(targetFw: CommunicationFramework) {
+        val typedIp = _ip.value
+        val typedPort = _port.value
         if (framework.value != targetFw) {
             setFramework(targetFw)
+            if (typedIp.isNotBlank()) {
+                _ip.value = typedIp
+            }
+            if (typedPort.isNotBlank()) {
+                _port.value = typedPort
+            }
         }
         connect()
     }
@@ -205,24 +213,29 @@ class RobotConnectionManager(
         heartbeatJob?.cancel()
         heartbeatJob = scope.launch {
             KLog.i(TAG, "已连接，启动心跳保活机制 (当前框架: ${framework.value.displayName})")
+            var consecutiveFailures = 0
             while (isActive) {
                 try {
                     val startTime = Clock.System.now().toEpochMilliseconds()
                     val heartbeat = robotApi.sendHeartbeat(startTime)
                     val endTime = Clock.System.now().toEpochMilliseconds()
-                    _latency.value = endTime - startTime
-                    KLog.d(TAG, "心跳成功: latency=${_latency.value}ms, status=${heartbeat.status}")
+                    _latency.value = (endTime - startTime).coerceAtLeast(0)
+                    consecutiveFailures = 0
                 } catch (e: Exception) {
-                    KLog.w(TAG, "心跳异常，判定为连接假死，主动断开", e)
+                    consecutiveFailures++
+                    KLog.w(TAG, "心跳异常 (连续 $consecutiveFailures 次): ${e.message}")
                     _latency.value = null
-                    if (framework.value == CommunicationFramework.NEW_FRAMEWORK) {
-                        KmpTcpClient.setConnectionError("心跳超时或发送失败")
-                        KmpTcpClient.disconnectAndReset()
-                    } else {
-                        tabletWsClient.setConnectionError("心跳超时或发送失败")
-                        tabletWsClient.disconnectAndReset()
+                    if (consecutiveFailures >= 3) {
+                        KLog.w(TAG, "心跳连续失败达到 3 次，判定为连接假死，主动断开", e)
+                        if (framework.value == CommunicationFramework.NEW_FRAMEWORK) {
+                            KmpTcpClient.setConnectionError("心跳连续超时，连接已断开")
+                            KmpTcpClient.disconnectAndReset()
+                        } else {
+                            tabletWsClient.setConnectionError("心跳连续超时，连接已断开")
+                            tabletWsClient.disconnectAndReset()
+                        }
+                        break
                     }
-                    break
                 }
                 delay(HEARTBEAT_INTERVAL)
             }

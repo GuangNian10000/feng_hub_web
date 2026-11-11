@@ -4,6 +4,8 @@ import com.example.guangnian.feature.console.data.bean.ArmActionBean
 import com.example.guangnian.feature.console.data.bean.BatteryBean
 import com.example.guangnian.core.network.tcp.BaseTcpApi
 import com.example.guangnian.core.network.tcp.TcpNode
+import com.example.guangnian.core.network.ws.CommunicationFramework
+import com.example.guangnian.core.network.ws.FrameworkManager
 import com.example.guangnian.feature.console.data.bean.AgentEntity
 import com.example.guangnian.feature.console.data.bean.AgentListResponse
 import com.example.guangnian.feature.console.data.bean.AgentStatusBean
@@ -111,45 +113,68 @@ class RobotTcpApiImpl(eventBus: RobotEventBus? = null) : BaseTcpApi(eventBus), R
     override suspend fun deleteKnowledge(knowledge: com.example.guangnian.feature.console.data.bean.KnowledgeEntity) =
         request<BaseBean>("/knowledge/delete_knowledge/", mapOf("knowledge" to Json.encodeToString(knowledge)), targetNode = TcpNode.TABLET)
 
-    // 获取动态动作列表
-    override suspend fun getPostureList() = request<List<PostureBean>>("action/get_posture")
+    private val isOldFramework: Boolean
+        get() = FrameworkManager.instance?.currentFramework?.value == CommunicationFramework.OLD_FRAMEWORK
 
-    // 获取手臂动作列表
-    override suspend fun getArmList() = request<List<ArmActionBean>>("action/list")
+    // 获取动态动作列表 (老框架对接 webrtc/get_posture，新框架保留 action/get_posture)
+    override suspend fun getPostureList() =
+        if (isOldFramework) request<List<PostureBean>>("webrtc/get_posture")
+        else request<List<PostureBean>>("action/get_posture")
 
-    // 获取运动控制列表
-    override suspend fun getMotionList() = request<List<MotionBean>>("action/get_motion")
+    // 获取手臂动作列表 (老框架对接 webrtc/get_arm，新框架保留 action/list)
+    override suspend fun getArmList() =
+        if (isOldFramework) request<List<ArmActionBean>>("webrtc/get_arm")
+        else request<List<ArmActionBean>>("action/list")
+
+    // 获取运动控制列表 (老框架对接 webrtc/get_motion，新框架保留 action/get_motion)
+    override suspend fun getMotionList() =
+        if (isOldFramework) request<List<MotionBean>>("webrtc/get_motion")
+        else request<List<MotionBean>>("action/get_motion")
 
     // 启动机器人握手
-    override suspend fun startRobot() = request<StartupHeartbeatBean>("action/stl_start")
+    override suspend fun startRobot() =
+        if (isOldFramework) request<StartupHeartbeatBean>("webrtc/stl_start")
+        else request<StartupHeartbeatBean>("action/stl_start")
 
     // 执行动作命令（通用）
-    override suspend fun executePosture(msg: Map<String, String>) = request<Unit>("action/execution", msg)
+    override suspend fun executePosture(msg: Map<String, String>) =
+        if (isOldFramework) request<Unit>("webrtc/execution", msg)
+        else request<Unit>("action/execution", msg)
 
     // 执行动作命令（姿态）
     override suspend fun executePosture(postureName: String) =
         executePosture(mapOf("posture_name" to postureName))
 
-    // 执行运动控制动作
+    // 执行运动控制动作 (老框架发送整型 arm_id，新框架发送字符串 arm_id)
     override suspend fun executeMotion(motionId: String) =
-        request<Unit>("action/execute", mapOf("arm_id" to motionId))
+        if (isOldFramework) {
+            request<Unit>("webrtc/execution", mapOf("arm_id" to (motionId.toIntOrNull() ?: 0)))
+        } else {
+            request<Unit>("action/execute", mapOf("arm_id" to motionId))
+        }
 
-    // 执行运动控制动作
+    // 执行运动控制动作 (姿态切换)
     override suspend fun executePostureName(motionName: String) =
-        request<Unit>("action/posture", mapOf("posture_name" to motionName))
+        if (isOldFramework) {
+            request<Unit>("webrtc/execution", mapOf("posture_name" to motionName))
+        } else {
+            request<Unit>("action/posture", mapOf("posture_name" to motionName))
+        }
 
     // 执行预设运动控制（ahead/back/left/right/turn_left/turn_right/turn_back）
     override suspend fun executeSport(sport: String) =
-        request<Unit>("action/execution", mapOf("sport" to sport))
+        if (isOldFramework) request<Unit>("webrtc/execution", mapOf("sport" to sport))
+        else request<Unit>("action/execution", mapOf("sport" to sport))
 
     // 执行手臂动作
     override suspend fun executeArm(armId: Int) =
-        request<Unit>("action/execution", mapOf("arm_id" to armId))
+        if (isOldFramework) request<Unit>("webrtc/execution", mapOf("arm_id" to armId))
+        else request<Unit>("action/execution", mapOf("arm_id" to armId))
 
     // 平移摇杆控制
     override suspend fun moveTranslate(angle: Double, level: Int) =
         request<Unit>(
-            "action/move",
+            if (isOldFramework) "webrtc/move" else "action/move",
             mapOf(
                 "joystick" to "translate",
                 "angle" to angle,
@@ -160,17 +185,17 @@ class RobotTcpApiImpl(eventBus: RobotEventBus? = null) : BaseTcpApi(eventBus), R
     // 旋转摇杆控制
     override suspend fun moveRotate(level: Int) =
         request<Unit>(
-            "action/move",
+            if (isOldFramework) "webrtc/move" else "action/move",
             mapOf(
                 "joystick" to "rotate",
                 "level" to level
             )
         )
 
-    // 混合摇杆控制
+    // 混合摇杆控制 (老框架对接 webrtc/move，新框架保留 action/move)
     override suspend fun moveMixed(angle: Double, translateLevel: Int, rotateLevel: Int) =
         request<Unit>(
-            "action/move",
+            if (isOldFramework) "webrtc/move" else "action/move",
             mapOf(
                 "joystick" to "translate",
                 "angle" to angle,
@@ -181,22 +206,41 @@ class RobotTcpApiImpl(eventBus: RobotEventBus? = null) : BaseTcpApi(eventBus), R
 
     // 停止平移摇杆
     override suspend fun stopTranslate() =
-        request<Unit>("action/stop", mapOf("joystick" to "translate"))
+        request<Unit>(
+            if (isOldFramework) "webrtc/stop" else "action/stop",
+            mapOf("joystick" to "translate")
+        )
 
     // 停止旋转摇杆
     override suspend fun stopRotate() =
-        request<Unit>("action/stop", mapOf("joystick" to "rotate"))
+        request<Unit>(
+            if (isOldFramework) "webrtc/stop" else "action/stop",
+            mapOf("joystick" to "rotate")
+        )
 
     // 上报 TCP 断开状态
     override suspend fun notifyTcpDisconnected() =
-        request<Unit>("action/state", mapOf("state" to "false"))
+        if (isOldFramework) request<Unit>("webrtc/state", mapOf("state" to false))
+        else request<Unit>("action/state", mapOf("state" to "false"))
 
     // 发送心跳包
-    override suspend fun sendHeartbeat(timestamp: Long) =
-        request<HeartbeatStatusBean>(
-            "heartbeat/connection",
-            mapOf("timestamp" to timestamp.toString())
-        )
+    override suspend fun sendHeartbeat(timestamp: Long): HeartbeatStatusBean {
+        val framework = FrameworkManager.instance?.currentFramework?.value ?: CommunicationFramework.NEW_FRAMEWORK
+        return if (framework == CommunicationFramework.OLD_FRAMEWORK) {
+            request<HeartbeatStatusBean>(
+                "heartbeat/connection",
+                mapOf("timestamp" to timestamp.toString()),
+                targetNode = TcpNode.TABLET,
+                timeoutMs = 4000L
+            )
+        } else {
+            request<HeartbeatStatusBean>(
+                "heartbeat/connection",
+                mapOf("timestamp" to timestamp.toString()),
+                timeoutMs = 4000L
+            )
+        }
+    }
 
     // 开始录制示教动作
     override suspend fun startTeach(name: String) =
@@ -390,13 +434,21 @@ class RobotTcpApiImpl(eventBus: RobotEventBus? = null) : BaseTcpApi(eventBus), R
 
     // --- ActionEditingApi Implementation ---
     override suspend fun executeActionEditing(armId: String) =
-        request<Unit>("action/execute", mapOf("arm_id" to armId, "wrist_lock" to false))
+        if (isOldFramework) {
+            request<Unit>("webrtc/execution", mapOf("arm_id" to (armId.toIntOrNull() ?: 0)))
+        } else {
+            request<Unit>("action/execute", mapOf("arm_id" to armId, "wrist_lock" to false))
+        }
 
     override suspend fun getActionEditingRecordStatus() =
         request<TeachStatusBean>("action/record_status")
 
     override suspend fun getActionEditingList() =
-        request<List<ArmActionBean>>("action/list")
+        if (isOldFramework) {
+            request<List<ArmActionBean>>("webrtc/get_arm")
+        } else {
+            request<List<ArmActionBean>>("action/list")
+        }
 
     override suspend fun setActionEditingSession(phase: String) =
         request<SessionResponseBean>("action/session", mapOf("phase" to phase))

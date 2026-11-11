@@ -2,17 +2,11 @@ package com.example.guangnian.feature.console.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.guangnian.feature.console.data.api.AgentManagerApi
-import com.example.guangnian.feature.console.data.bean.AgentEntity
-import com.example.guangnian.feature.console.data.bean.AgentListResponse
 import com.example.guangnian.core.utils.KLog
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import com.example.guangnian.feature.console.data.api.AgentManagerApi
+import com.example.guangnian.feature.console.data.bean.AgentListResponse
+import com.example.guangnian.feature.console.data.bean.VoiceAgent
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
@@ -56,35 +50,39 @@ class AgentViewModel(private val api: AgentManagerApi) : ViewModel() {
         }
     }
 
-    fun selectAgent(agent: AgentEntity) {
+    fun selectAgent(agent: VoiceAgent) {
         executeTask("切换异常") {
             val res = api.selectAgent(agent)
-            _toastEvent.emit(res.msg)
-            if (res.st == 200) fetchAgentList()
+            val tip = res.msg.ifEmpty { res.message }.ifEmpty { "已应用智能体: ${agent.voiceName}" }
+            _toastEvent.emit(tip)
+            fetchAgentList()
         }
     }
 
-    fun deleteAgent(agent: AgentEntity) {
+    fun deleteAgent(agent: VoiceAgent) {
         executeTask("删除异常") {
             val res = api.deleteAgent(agent)
-            _toastEvent.emit(res.msg)
-            if (res.st == 200) fetchAgentList()
+            val tip = res.msg.ifEmpty { res.message }.ifEmpty { "已删除智能体" }
+            _toastEvent.emit(tip)
+            fetchAgentList()
         }
     }
 
-    fun editAgent(agent: AgentEntity) {
+    fun editAgent(agent: VoiceAgent) {
         executeTask("修改异常") {
             val res = api.editAgent(agent)
-            _toastEvent.emit(res.msg)
-            if (res.st == 200) fetchAgentList()
+            val tip = res.msg.ifEmpty { res.message }.ifEmpty { "已保存智能体配置" }
+            _toastEvent.emit(tip)
+            fetchAgentList()
         }
     }
 
-    fun addAgent(agent: AgentEntity) {
+    fun addAgent(agent: VoiceAgent) {
         executeTask("添加异常") {
             val res = api.addAgent(agent)
-            _toastEvent.emit(res.msg)
-            if (res.st == 200) fetchAgentList()
+            val tip = res.msg.ifEmpty { res.message }.ifEmpty { "已添加智能体" }
+            _toastEvent.emit(tip)
+            fetchAgentList()
         }
     }
 }

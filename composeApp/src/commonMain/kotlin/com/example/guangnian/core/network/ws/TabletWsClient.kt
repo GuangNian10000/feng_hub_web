@@ -135,6 +135,10 @@ class TabletWsClient(
                 }
             }
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                KLog.d(TAG, "透传通道 [/ws/proxy] 协程已取消")
+                throw e
+            }
             KLog.w(TAG, "透传通道 [/ws/proxy] 异常或断开: ${e.message}")
             if (_connectionError.value == null) {
                 _connectionError.value = "透传通道异常: ${e.message ?: "连接失败"}"
@@ -194,6 +198,10 @@ class TabletWsClient(
                 }
             }
         } catch (e: Exception) {
+            if (e is CancellationException) {
+                KLog.d(TAG, "业务通道 [/ws/tablet] 协程已取消")
+                throw e
+            }
             KLog.w(TAG, "业务通道 [/ws/tablet] 异常或断开: ${e.message}")
             if (_connectionError.value == null) {
                 _connectionError.value = "业务通道异常: ${e.message ?: "连接失败"}"

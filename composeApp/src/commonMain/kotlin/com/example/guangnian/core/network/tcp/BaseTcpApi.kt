@@ -225,9 +225,9 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
                 }
         }
 
-        val msgElement: JsonElement = responseJson["msg"] ?: run {
-            // 老框架下发往主控时，若主控直接返回平铺字段（未包 msg 节点），直接以 responseJson 作为结果
-            if (currentFramework == CommunicationFramework.OLD_FRAMEWORK && targetNode != TcpNode.TABLET && responseJson.keys.any { it != "type" && it != "topic" }) {
+        val msgElement: JsonElement = responseJson["msg"]
+            ?: responseJson["data"]
+            ?: if (responseJson.keys.any { it != "type" && it != "topic" && it != "from" && it != "to" && it != "id" }) {
                 responseJson
             } else {
                 val serverError = responseJson["error"]?.jsonPrimitive?.content
@@ -248,7 +248,6 @@ abstract class BaseTcpApi(val eventBus: RobotEventBus? = null) {
                 }
                 throw Exception(errorMsg)
             }
-        }
 
         return try {
             val result = json.decodeFromJsonElement<T>(msgElement)

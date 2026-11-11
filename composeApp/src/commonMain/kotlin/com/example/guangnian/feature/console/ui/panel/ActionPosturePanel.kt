@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -40,7 +42,7 @@ fun ActionPosturePanel(
     if (postures.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "暂无动作数据，点击重试",
+                text = "暂无姿态数据，点击重试",
                 color = Color.White,
                 fontSize = 14.sp,
                 modifier = Modifier
@@ -63,7 +65,8 @@ fun ActionPosturePanel(
                 val displayName = if (isFavorited) "★ ${posture.name}" else posture.name
 
                 ActionItem(
-                    text = displayName,
+                    title = displayName,
+                    subtitle = posture.posture_name,
                     isFavorited = isFavorited,
                     onClick = { onActionClick(posture.posture_name, posture.name) },
                     onLongClick = { onActionLongClick(posture.posture_name, posture.name) }
@@ -75,24 +78,45 @@ fun ActionPosturePanel(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ActionItem(text: String, isFavorited: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun ActionItem(
+    title: String,
+    subtitle: String,
+    isFavorited: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
     Box(
         modifier = Modifier
-            .height(44.dp)
+            .height(52.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Color(0x33FFFFFF))
-            .border(0.5.dp, Color(0x22FFFFFF), RoundedCornerShape(6.dp))
+            .border(0.5.dp, if (isFavorited) Color(0xFFFFD700) else Color(0x22FFFFFF), RoundedCornerShape(6.dp))
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
-            ),
+            )
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = text,
-            color = if (isFavorited) Color(0xFFFFD700) else Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                color = if (isFavorited) Color(0xFFFFD700) else Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    color = Color(0x99FFFFFF),
+                    fontSize = 10.sp,
+                    maxLines = 1
+                )
+            }
+        }
     }
 }

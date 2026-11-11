@@ -41,7 +41,12 @@ object TcpLogFormatter {
     fun isQuiet(input: String): Boolean {
         val trimmed = input.trimStart()
         val route = if (trimmed.startsWith("{")) routeOf(trimmed) else input.trim('/')
-        return route == "slam/get_position" || route == "slam/position" || route == "slam/point_cloud"
+        return route == "slam/get_position" ||
+               route == "slam/position" ||
+               route == "slam/point_cloud" ||
+               route == "webrtc/move" ||
+               route == "action/move" ||
+               route.startsWith("heartbeat/")
     }
 
     fun shortId(id: String): String {
