@@ -108,11 +108,11 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.feng.hub"
+        applicationId = "com.web.hub"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 107
-        versionName = "1.0.7"
+        versionCode = 101
+        versionName = "1.0.1"
     }
     signingConfigs {
         create("release") {

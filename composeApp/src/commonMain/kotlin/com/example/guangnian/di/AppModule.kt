@@ -1,79 +1,23 @@
 package com.example.guangnian.di
 
+import com.example.guangnian.core.event.RobotEventBus
 import com.example.guangnian.core.network.createPlatformHttpClient
-import com.example.guangnian.feature.console.data.api.*
-import com.example.guangnian.feature.console.data.event.RobotEventBus
-import com.example.guangnian.feature.console.data.manager.RobotConnectionManager
-import com.example.guangnian.feature.console.ui.panel.SpeechSynthesisViewModel
-import com.example.guangnian.feature.console.viewmodel.*
-import com.example.guangnian.feature.teach.viewmodel.TeachViewModel
-import com.example.guangnian.feature.main.viewmodel.RobotViewModel
-import com.example.guangnian.feature.motion.data.api.ActionEditingApi
-import com.example.guangnian.feature.teach.data.api.TeachApi
+import com.example.guangnian.core.network.ws.FrameworkManager
+import com.example.guangnian.core.network.ws.TabletWsClient
+import com.example.guangnian.core.network.ws.TabletWsDispatcher
 import com.russhwolf.settings.Settings
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 val appModule = module {
-    // Core Utilities
+    // Core Utilities & Event Bus
     single { RobotEventBus() }
     single { Settings() }
 
-    // Data Sources
-    single<RobotTcpApi> { RobotTcpApiImpl(eventBus = get()) }
-    
-    // Scoped API Interfaces for better isolation (ISP)
-    single<RobotStatusApi> { get<RobotTcpApi>() }
-    single<MotionControlApi> { get<RobotTcpApi>() }
-    single<NavigationApi> { get<RobotTcpApi>() }
-    single<AgentManagerApi> { get<RobotTcpApi>() }
-    single<AgentControlApi> { get<RobotTcpApi>() }
-    single<KnowledgeApi> { get<RobotTcpApi>() }
-    single<TeachApi> { get<RobotTcpApi>() }
-    single<ActionEditingApi> { get<RobotTcpApi>() }
-    single<SystemSettingsApi> { get<RobotTcpApi>() }
-    single<RouteApi> { get<RobotTcpApi>() }
-    single<VoiceApi> { get<RobotTcpApi>() }
+    // Core Network Clients
     single { createPlatformHttpClient() }
-    
-    // Framework & WS Management
-    single { com.example.guangnian.core.network.ws.FrameworkManager(get()) }
-    single { com.example.guangnian.core.network.ws.TabletWsClient(get()) }
-    single(createdAtStart = true) { com.example.guangnian.core.network.ws.TabletWsDispatcher(get()) }
 
-    // ViewModels
-    single { RobotConnectionManager(get(), get(), get(), get()) }
-    factory { RobotViewModel(get(), get()) }
-    factory { 
-        ConsoleViewModel(
-            motionControlApi = get(),
-            navigationApi = get(),
-            routeApi = get(),
-            agentControlApi = get(),
-            robotStatusApi = get(),
-            systemSettingsApi = get(),
-            eventBus = get(),
-            settings = get(),
-            httpClient = get()
-        ) 
-    }
-    factory { 
-        MapViewModel(
-            navigationApi = get(),
-            settings = get(),
-            httpClient = get(),
-            eventBus = get()
-        ) 
-    }
-    factory { AgentViewModel(get()) }
-    factory { KnowledgeViewModel(get()) }
-    factory { TeachViewModel(get()) }
-    factory { com.example.guangnian.feature.motion.viewmodel.ActionEditingViewModel(get()) }
-    single { com.example.guangnian.feature.face.data.repository.FaceRepository(get(), get()) }
-    factory { com.example.guangnian.feature.face.viewmodel.FaceViewModel(get()) }
-    factory { SpeechSynthesisViewModel(get(), get()) }
+    // Framework & WS Management
+    single { FrameworkManager(get()) }
+    single { TabletWsClient(get()) }
+    single(createdAtStart = true) { TabletWsDispatcher(get()) }
 }

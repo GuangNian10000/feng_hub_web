@@ -1,46 +1,57 @@
 package com.example.guangnian
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
 import android.view.KeyEvent
+import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.darkColors
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.guangnian.core.utils.VolumeKeyInterceptor
-import com.example.guangnian.feature.update.AppUpdater
+import com.example.guangnian.feature.web.RobotWebPortalApp
 
 class MainActivity : ComponentActivity() {
 
-    // ─── BLE 权限请求（Android 12+ 需要 BLUETOOTH_SCAN / BLUETOOTH_CONNECT）──────
+    private var activeWebOrigin: Uri? = null
+    private var pendingFileCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingWebPermission: PermissionRequest? = null
 
-    private val blePermissionLauncher = registerForActivityResult(
+    private val fileChooserLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val callback = pendingFileCallback
+        pendingFileCallback = null
+        val files = if (result.resultCode == RESULT_OK) {
+            WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+        } else {
+            null
+        }
+        callback?.onReceiveValue(files)
+    }
+
+    private val webPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { /* 权限结果由 BleManagerService 在绑定时自行校验 */ }
+    ) { results ->
+        val request = pendingWebPermission
+        pendingWebPermission = null
+        if (request == null) return@registerForActivityResult
 
-    private fun requestBlePermissionsIfNeeded() {
-        val required = buildList {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                add(Manifest.permission.BLUETOOTH_SCAN)
-                add(Manifest.permission.BLUETOOTH_CONNECT)
-            } else {
-                add(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-        }
-        val missing = required.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (missing.isNotEmpty()) {
-            blePermissionLauncher.launch(missing.toTypedArray())
-        }
+        val isCurrentOrigin = isActiveWebOrigin(request.origin)
+        val allGranted = results.isNotEmpty() && results.values.all { it }
+        if (isCurrentOrigin && allGranted) request.grant(request.resources) else request.deny()
     }
 
     // ─── 音量键拦截 ────────────────────────────────────────────────────────────
@@ -76,14 +87,104 @@ class MainActivity : ComponentActivity() {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
 
-        // 3. 请求 BLE 权限（启动时触发，用户授权后服务可正常扫描连接）
-        requestBlePermissionsIfNeeded()
-
-        AppUpdater.init(this)
+        val preferences = getSharedPreferences("robot_web_portal", MODE_PRIVATE)
+        val initialIp = preferences.getString("ip", "192.168.123.164") ?: "192.168.123.164"
+        val initialPort = preferences.getInt("port", 8080)
 
         setContent {
-            App()
+            MaterialTheme(colors = darkColors()) {
+                RobotWebPortalApp(
+                    initialIp = initialIp,
+                    initialPort = initialPort,
+                    onConnect = { ip, port ->
+                        val nextOrigin = Uri.parse("http://$ip:$port")
+                        val permissionOrigin = pendingWebPermission?.origin
+                        if (permissionOrigin != null && !isSameOrigin(permissionOrigin, nextOrigin)) {
+                            pendingWebPermission?.deny()
+                            pendingWebPermission = null
+                        }
+                        activeWebOrigin = nextOrigin
+                        preferences.edit()
+                            .putString("ip", ip)
+                            .putInt("port", port)
+                            .apply()
+                    },
+                    onChooseFiles = ::openFileChooser,
+                    onWebPermissionRequest = ::handleWebPermissionRequest,
+                    onWebPermissionCancelled = ::handleWebPermissionCancelled,
+                )
+            }
         }
+    }
+
+    private fun openFileChooser(
+        params: WebChromeClient.FileChooserParams,
+        callback: ValueCallback<Array<Uri>>,
+    ): Boolean {
+        pendingFileCallback?.onReceiveValue(null)
+        pendingFileCallback = callback
+        return try {
+            fileChooserLauncher.launch(params.createIntent())
+            true
+        } catch (_: ActivityNotFoundException) {
+            pendingFileCallback = null
+            callback.onReceiveValue(null)
+            false
+        }
+    }
+
+    private fun handleWebPermissionRequest(request: PermissionRequest) {
+        if (!isActiveWebOrigin(request.origin)) {
+            request.deny()
+            return
+        }
+
+        val resources = request.resources.toSet()
+        if (resources.isEmpty() || resources.any {
+                it != PermissionRequest.RESOURCE_AUDIO_CAPTURE &&
+                    it != PermissionRequest.RESOURCE_VIDEO_CAPTURE
+            }
+        ) {
+            request.deny()
+            return
+        }
+
+        val androidPermissions = buildList {
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE in resources) add(Manifest.permission.RECORD_AUDIO)
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE in resources) add(Manifest.permission.CAMERA)
+        }
+        val missingPermissions = androidPermissions.filter { permission ->
+            ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missingPermissions.isEmpty()) {
+            request.grant(request.resources)
+            return
+        }
+
+        pendingWebPermission?.deny()
+        pendingWebPermission = request
+        webPermissionLauncher.launch(missingPermissions.toTypedArray())
+    }
+
+    private fun handleWebPermissionCancelled(request: PermissionRequest) {
+        if (pendingWebPermission === request) pendingWebPermission = null
+    }
+
+    private fun isActiveWebOrigin(origin: Uri): Boolean {
+        val active = activeWebOrigin ?: return false
+        return isSameOrigin(origin, active)
+    }
+
+    private fun isSameOrigin(first: Uri, second: Uri): Boolean {
+        return first.scheme.equals(second.scheme, ignoreCase = true) &&
+            first.host.equals(second.host, ignoreCase = true) &&
+            effectivePort(first) == effectivePort(second)
+    }
+
+    private fun effectivePort(uri: Uri): Int = when {
+        uri.port >= 0 -> uri.port
+        uri.scheme.equals("https", ignoreCase = true) -> 443
+        else -> 80
     }
 }
 

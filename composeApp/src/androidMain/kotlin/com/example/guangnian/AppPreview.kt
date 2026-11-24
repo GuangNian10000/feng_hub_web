@@ -4,9 +4,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.guangnian.core.network.tcp.TcpState
-import com.example.guangnian.feature.main.ui.MainControlContent
-import com.example.guangnian.feature.main.viewmodel.ControlType
 
 @Preview(
     device = "spec:width=896dp,height=414dp,orientation=landscape",
@@ -16,18 +13,6 @@ import com.example.guangnian.feature.main.viewmodel.ControlType
 @Composable
 fun AppLandscapePreview() {
     MaterialTheme(colors = darkColors()) {
-        MainControlContent(
-            ip = "192.168.3.100",
-            port = "8080",
-            connectionState = TcpState.DISCONNECTED,
-            canConnect = true,
-            controlType = ControlType.DOG,
-            onIpChange = {},
-            onPortChange = {},
-            onConnectClick = {},
-            onNavigateToInteraction = {},
-            onTypeClick = {},
-            onNavigateToFace = {}
-        )
+        TestScreen()
     }
 }

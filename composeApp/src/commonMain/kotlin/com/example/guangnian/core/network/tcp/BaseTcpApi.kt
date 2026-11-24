@@ -6,9 +6,9 @@ import com.example.guangnian.core.network.ws.CommunicationFramework
 import com.example.guangnian.core.network.ws.FrameworkManager
 import com.example.guangnian.core.network.ws.TabletWsClient
 import com.example.guangnian.core.network.ws.TabletWsDispatcher
-import com.example.guangnian.feature.console.data.bean.BaseBean
-import com.example.guangnian.feature.console.data.event.RobotEvent
-import com.example.guangnian.feature.console.data.event.RobotEventBus
+import com.example.guangnian.core.network.model.BaseBean
+import com.example.guangnian.core.event.RobotEvent
+import com.example.guangnian.core.event.RobotEventBus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
